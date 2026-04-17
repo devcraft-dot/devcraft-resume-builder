@@ -44,6 +44,7 @@ class GenerationRead(BaseModel):
 
 class GenerationPatch(BaseModel):
     stage: str | None = None
+    title: str | None = Field(None, max_length=500)
     company_name: str | None = Field(None, max_length=500)
     salary_range: str | None = Field(None, max_length=200)
 

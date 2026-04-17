@@ -188,3 +188,16 @@ def patch_generation(gen_id: int, payload: GenerationPatch, db: Session = Depend
     db.commit()
     db.refresh(gen)
     return gen
+
+
+# ---------------------------------------------------------------------------
+# DELETE /api/generations/{id}
+# ---------------------------------------------------------------------------
+
+@router.delete("/generations/{gen_id}", status_code=204)
+def delete_generation(gen_id: int, db: Session = Depends(get_db)):
+    gen = db.get(Generation, gen_id)
+    if not gen:
+        raise HTTPException(404, "Generation not found")
+    db.delete(gen)
+    db.commit()

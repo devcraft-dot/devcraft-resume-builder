@@ -27,9 +27,6 @@ function formatDate(iso: string) {
   });
 }
 
-function truncate(str: string, max = 40) {
-  return str.length > max ? str.slice(0, max) + "…" : str;
-}
 
 /* ─── Inline-editable text cell ─────────────────────────────────────── */
 
@@ -84,13 +81,12 @@ function DownloadBtn({ url, label }: { url: string; label: string }) {
   if (!url) return <span className="text-gray-300">—</span>;
 
   return (
-    <span className="inline-flex items-center gap-1">
-      <span className="text-xs text-gray-500">{label}</span>
+    <span className="inline-flex items-center gap-1.5">
       <a
         href={driveExportUrl(url, "pdf")}
         target="_blank"
         rel="noreferrer"
-        className="text-xs px-1.5 py-0.5 rounded bg-red-50 text-red-600 hover:bg-red-100 transition"
+        className="text-xs font-medium px-2 py-1 rounded bg-red-50 text-red-600 hover:bg-red-100 transition"
         title={`Download ${label} as PDF`}
       >
         PDF
@@ -99,12 +95,32 @@ function DownloadBtn({ url, label }: { url: string; label: string }) {
         href={driveExportUrl(url, "docx")}
         target="_blank"
         rel="noreferrer"
-        className="text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
+        className="text-xs font-medium px-2 py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
         title={`Download ${label} as DOCX`}
       >
         DOCX
       </a>
     </span>
+  );
+}
+
+function LinkBtn({ url }: { url: string }) {
+  if (!url) return <span className="text-gray-300">—</span>;
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
+      title={url}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
+        <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
+      </svg>
+      Open
+    </a>
   );
 }
 
@@ -238,47 +254,38 @@ export function Dashboard() {
                 </td>
 
                 {/* Title */}
-                <td className="px-3 py-2.5 max-w-[200px]">
-                  <EditableCell
-                    value={row.title}
-                    onSave={(v) => handlePatch(row.id, "title", v)}
-                  />
+                <td className="px-3 py-2.5 min-w-[140px] max-w-[220px]">
+                  <div className="line-clamp-2">
+                    <EditableCell
+                      value={row.title}
+                      onSave={(v) => handlePatch(row.id, "title", v)}
+                    />
+                  </div>
                 </td>
 
                 {/* Company (editable) */}
-                <td className="px-3 py-2.5 max-w-[160px]">
-                  <EditableCell
-                    value={row.company_name}
-                    onSave={(v) => handlePatch(row.id, "company_name", v)}
-                  />
+                <td className="px-3 py-2.5 min-w-[100px] max-w-[160px]">
+                  <div className="line-clamp-2">
+                    <EditableCell
+                      value={row.company_name}
+                      onSave={(v) => handlePatch(row.id, "company_name", v)}
+                    />
+                  </div>
                 </td>
 
                 {/* Salary (editable) */}
-                <td className="px-3 py-2.5 whitespace-nowrap">
-                  <EditableCell
-                    value={row.salary_range}
-                    onSave={(v) => handlePatch(row.id, "salary_range", v)}
-                  />
+                <td className="px-3 py-2.5 min-w-[90px] max-w-[140px]">
+                  <div className="line-clamp-2">
+                    <EditableCell
+                      value={row.salary_range}
+                      onSave={(v) => handlePatch(row.id, "salary_range", v)}
+                    />
+                  </div>
                 </td>
 
                 {/* URL link */}
-                <td className="px-3 py-2.5 max-w-[120px]">
-                  {row.url ? (
-                    <a
-                      href={row.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-600 hover:text-blue-800 hover:underline text-xs"
-                      title={row.url}
-                    >
-                      {truncate(
-                        row.url.replace(/^https?:\/\/(www\.)?/, ""),
-                        30,
-                      )}
-                    </a>
-                  ) : (
-                    "—"
-                  )}
+                <td className="px-3 py-2.5">
+                  <LinkBtn url={row.url} />
                 </td>
 
                 {/* Resume download */}

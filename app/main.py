@@ -8,10 +8,12 @@ import app.models.generation as _generation_model  # noqa: F401 — register tab
 
 app = FastAPI(title=settings.app_name)
 
+# allow_credentials=True is incompatible with allow_origins=["*"] (Starlette/FastAPI).
+# Without a reflected ACAO header, browsers block extension and web cross-origin calls.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

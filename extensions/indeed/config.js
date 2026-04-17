@@ -1,0 +1,11 @@
+const API_URL = "https://devcraft-resume-builder.vercel.app";
+
+const DELAYS = {
+  AFTER_PAGE_LOAD: 3000,
+  AFTER_CLICK_JOB: 2800,
+  BETWEEN_JOBS: 1500,
+  APPLY_TAB_SETTLE: 3500,
+  APPLY_BFF_POLL: 900,
+  APPLY_NEW_TAB_POLL: 200,
+  APPLY_CLICK_NEW_TAB_WAIT: 9000,
+};

@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     google_sheet_worksheet: str = "Sheet1"
 
     model_config = SettingsConfigDict(
-        env_file=str(_APP_DIR / ".env"),
+        env_file=str(_APP_DIR / ".env") if (_APP_DIR / ".env").exists() else None,
         env_file_encoding="utf-8",
         extra="ignore",
     )

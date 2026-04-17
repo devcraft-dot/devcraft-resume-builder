@@ -20,7 +20,8 @@ class GenerateRequest(BaseModel):
     description_text: str = ""
     salary_range: str = Field("", max_length=200)
     questions: list[QuestionField] = Field(default_factory=list)
-    profile: dict = Field(...)
+    profile_name: str = Field("", max_length=200)
+    profile_text: str = Field(..., min_length=1)
     model: str = Field("gpt-5.4-mini")
 
 

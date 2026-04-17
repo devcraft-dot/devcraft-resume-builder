@@ -61,7 +61,7 @@ def _get_client(model_key: str) -> tuple[OpenAI, str]:
 
 
 # ---------------------------------------------------------------------------
-# Prompt building (absorbed from prompt_builder.py)
+# Prompt building
 # ---------------------------------------------------------------------------
 
 _PROMPT_TEMPLATE = """
@@ -81,7 +81,7 @@ JOB DESCRIPTION
 ==================================================
 CANDIDATE PROFILE
 ==================================================
-{profile}
+{profile_text}
 
 ==================================================
 APPLICATION QUESTIONS (from job form)
@@ -102,138 +102,6 @@ OUTPUT CONTRACT
 4) Do not wrap the entire response in a code fence.
 5) Do not invent experience the candidate does not have.
 """.strip()
-
-
-_MONTH_ABBR = {
-    "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
-    "05": "May", "06": "Jun", "07": "Jul", "08": "Aug",
-    "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dec",
-}
-
-_PROFILE_SKIP_KEYS = {"id", "school_attribution_note"}
-
-
-def _format_date(raw: str) -> str:
-    s = raw.strip()
-    m = re.match(r"^(\d{4})-(\d{2})$", s)
-    if m:
-        return f"{_MONTH_ABBR.get(m.group(2), m.group(2))} {m.group(1)}"
-    return s
-
-
-def _human_label(key: str) -> str:
-    return " ".join(part.capitalize() for part in str(key).replace("-", "_").split("_") if part)
-
-
-def _format_inline_list(val: Any) -> str:
-    if val is None:
-        return ""
-    if isinstance(val, list):
-        parts = [str(x).strip() for x in val if x is not None and str(x).strip()]
-        return ", ".join(parts) if parts else ""
-    return str(val).strip()
-
-
-def _render_education_entry(i: int, edu: dict) -> list[str]:
-    if not isinstance(edu, dict):
-        return [f"{i}. {edu!s}"]
-    degree = str(edu.get("degree") or "").strip()
-    school = str(edu.get("school") or "").strip()
-    start = _format_date(str(edu.get("start") or ""))
-    end = _format_date(str(edu.get("end") or ""))
-    when = " – ".join(x for x in (start, end) if x)
-    head = f"{i}. "
-    if degree and school:
-        head += f"{degree} — {school}"
-    elif degree or school:
-        head += degree or school
-    else:
-        head += "(education entry)"
-    if when:
-        head += f" ({when})"
-    loc = str(edu.get("location") or "").strip()
-    if loc:
-        head += f", {loc}"
-    out = [head]
-    for k, v in edu.items():
-        if k in ("degree", "school", "start", "end", "location") or k in _PROFILE_SKIP_KEYS:
-            continue
-        if isinstance(v, (dict, list)):
-            continue
-        s = str(v).strip()
-        if s:
-            out.append(f"   {_human_label(k)}: {s}")
-    return out
-
-
-def _render_experience_entry(i: int, ex: dict) -> list[str]:
-    if not isinstance(ex, dict):
-        return [f"{i}. {ex!s}", ""]
-    title = str(ex.get("title") or "").strip()
-    company = str(ex.get("company") or "").strip()
-    start = _format_date(str(ex.get("start") or ""))
-    end = _format_date(str(ex.get("end") or ""))
-    when = " – ".join(x for x in (start, end) if x)
-    line = f"{i}. {title or 'Role'} — {company or 'Company'}"
-    if when:
-        line += f" ({when})"
-    out = [line]
-    for key, label in (
-        ("industry", "Industry"),
-        ("company_summary", "Company summary"),
-    ):
-        v = str(ex.get(key) or "").strip()
-        if v:
-            out.append(f"   {label}: {v}")
-    dom = _format_inline_list(ex.get("domains"))
-    if dom:
-        out.append(f"   Domains: {dom}")
-    tech = _format_inline_list(ex.get("tech_stack") or ex.get("technologies"))
-    if tech:
-        out.append(f"   Tech: {tech}")
-    out.append("")
-    return out
-
-
-def _profile_to_plain_text(profile: dict | None) -> str:
-    if not isinstance(profile, dict):
-        return str(profile or "").strip() or "(No candidate profile provided.)"
-
-    lines: list[str] = []
-    scalar_order = ("name", "email", "phone", "location", "linkedin")
-    done: set[str] = set(_PROFILE_SKIP_KEYS)
-    for k in scalar_order:
-        if k not in profile:
-            continue
-        s = str(profile[k]).strip()
-        if s:
-            lines.append(f"{_human_label(k)}: {s}")
-        done.add(k)
-    for k, v in profile.items():
-        if k in done or k in ("education", "experience"):
-            continue
-        if isinstance(v, (dict, list)):
-            continue
-        s = str(v).strip()
-        if s:
-            lines.append(f"{_human_label(k)}: {s}")
-    lines.append("")
-
-    edu = profile.get("education")
-    if isinstance(edu, list) and edu:
-        lines.append("--- Education ---")
-        for i, e in enumerate(edu, start=1):
-            lines.extend(_render_education_entry(i, e))
-        lines.append("")
-
-    exp = profile.get("experience")
-    if isinstance(exp, list) and exp:
-        lines.append("--- Work experience ---")
-        for i, e in enumerate(exp, start=1):
-            lines.extend(_render_experience_entry(i, e))
-
-    tail = "\n".join(lines).strip()
-    return tail if tail else "(Empty candidate profile.)"
 
 
 def _normalize_field_type(raw: str) -> str:
@@ -272,13 +140,13 @@ def _render_prompt(
     url: str,
     description_text: str,
     questions: list[QuestionField],
-    profile: dict,
+    profile_text: str,
 ) -> str:
     return _PROMPT_TEMPLATE.format(
         job_title=title,
         job_url=url,
         description=description_text or "(No job description provided.)",
-        profile=_profile_to_plain_text(profile),
+        profile_text=profile_text.strip() or "(No candidate profile provided.)",
         questions=_render_questions_block(questions),
     )
 
@@ -335,11 +203,11 @@ def generate_resume(
     url: str,
     description_text: str,
     questions: list[QuestionField],
-    profile: dict,
+    profile_text: str,
 ) -> GenerationResult:
     """Call the selected AI model and return parsed resume + answers."""
     client, model_id = _get_client(model_key)
-    prompt = _render_prompt(title, url, description_text, questions, profile)
+    prompt = _render_prompt(title, url, description_text, questions, profile_text)
 
     logger.info("generate_resume: model=%s title=%r", model_id, title)
 

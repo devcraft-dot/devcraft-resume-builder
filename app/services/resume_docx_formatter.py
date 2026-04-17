@@ -643,12 +643,12 @@ def _jd_text_for_job(job) -> str:
     return " ".join(p for p in parts if p)
 
 
-def build_formatted_resume_docx(resume_text: str, job, profile: dict) -> tuple[BytesIO, str]:
+def build_formatted_resume_docx(resume_text: str, job, profile_name: str) -> tuple[BytesIO, str]:
     """Build resume .docx in memory. Returns (buffer, filename)."""
     items = _parse_resume(str(resume_text or ""))
     doc = _build_docx(items, jd_text=_jd_text_for_job(job))
 
-    candidate_name = (profile or {}).get("name", "Candidate")
+    candidate_name = (profile_name or "").strip() or "Candidate"
     company_name = getattr(job, "company_name", None) or ""
     job_title = getattr(job, "title", None) or "Role"
     today = date.today().isoformat()

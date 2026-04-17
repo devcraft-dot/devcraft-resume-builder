@@ -225,9 +225,9 @@ def _add_qa_pair_to_doc(doc: Document, question: str, answer: str) -> None:
 # ---------------------------------------------------------------------------
 
 def build_resume_docx(resume_text: str, title: str, company_name: str,
-                      description_text: str, profile: dict) -> tuple[BytesIO, str]:
+                      description_text: str, profile_name: str) -> tuple[BytesIO, str]:
     job = JobData(title=title, company_name=company_name, description_text=description_text)
-    return build_formatted_resume_docx(resume_text, job, profile)
+    return build_formatted_resume_docx(resume_text, job, profile_name)
 
 
 def build_jd_docx(title: str, company_name: str, description_text: str) -> tuple[BytesIO, str]:

@@ -36,16 +36,16 @@ def generate(payload: GenerateRequest, db: Session = Depends(get_db)):
     if payload.model not in ALLOWED_MODELS:
         raise HTTPException(400, f"Invalid model. Choose from: {list(ALLOWED_MODELS)}")
 
+    profile_name = (payload.profile_name or "default").strip()
+
     existing = db.scalar(
         select(Generation).where(
             Generation.url == payload.url,
-            Generation.profile_name == (payload.profile.get("name") or "default"),
+            Generation.profile_name == profile_name,
         )
     )
     if existing:
         return existing
-
-    profile_name = str(payload.profile.get("name") or "default").strip()
 
     ai = generate_resume(
         model_key=payload.model,
@@ -53,12 +53,12 @@ def generate(payload: GenerateRequest, db: Session = Depends(get_db)):
         url=payload.url,
         description_text=payload.description_text,
         questions=payload.questions,
-        profile=payload.profile,
+        profile_text=payload.profile_text,
     )
 
     resume_buf = build_resume_docx(
         ai.resume_text, payload.title, payload.company_name,
-        payload.description_text, payload.profile,
+        payload.description_text, profile_name,
     )
     jd_buf = build_jd_docx(payload.title, payload.company_name, payload.description_text)
     answers_buf = build_answers_docx(payload.title, payload.company_name, ai.answers_text)

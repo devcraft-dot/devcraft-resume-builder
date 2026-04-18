@@ -226,6 +226,45 @@ function clickIndeedApplyButton() {
   return { ok: true, reason: "" };
 }
 
+/** Bot / security interstitial on Indeed (captcha, unusual traffic, etc.). */
+function detectBotInterstitial() {
+  const title = (document.title || "").toLowerCase();
+  const href = (location.href || "").toLowerCase();
+  if (/captcha|robot|verify you|security check|unusual traffic|access denied|interstitial/i.test(title))
+    return { bot: true };
+  if (/indeed\.com\/rc\/|interstitial|challenge|captcha/i.test(href)) return { bot: true };
+  if (document.querySelector("iframe[src*='captcha'], iframe[src*='hcaptcha'], #captcha, .g-recaptcha"))
+    return { bot: true };
+  const body = (document.body?.innerText || "").slice(0, 4000).toLowerCase();
+  if (
+    /unusual traffic from your computer network|verify you are human|please complete the security check/i.test(
+      body,
+    )
+  )
+    return { bot: true };
+  return { bot: false };
+}
+
+/**
+ * Standalone job page: prefer "Apply with Indeed", else "Apply on company site" (applystart).
+ */
+function clickDetailApplyButton() {
+  const pane = jobDetailPaneRoot();
+  const indeed = pane.querySelector("#indeedApplyButton, [data-testid='indeedApplyButton-test']");
+  if (indeed && !indeed.disabled) {
+    indeed.click();
+    return { ok: true, kind: "indeed", reason: "" };
+  }
+  const companyBtn = pane.querySelector(
+    "#applyButtonLinkContainer a[href*='applystart'], #applyButtonLinkContainer button[href*='applystart'], #viewJobButtonLinkContainer button[href*='applystart'], a[href*='indeed.com/applystart']",
+  );
+  if (companyBtn && !companyBtn.disabled) {
+    companyBtn.click();
+    return { ok: true, kind: "company", reason: "" };
+  }
+  return { ok: false, kind: "", reason: "no-apply-button" };
+}
+
 function hasNextPage() {
   return !!document.querySelector('[data-testid="pagination-page-next"]');
 }
@@ -259,6 +298,12 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       break;
     case "clickIndeedApplyButton":
       sendResponse(clickIndeedApplyButton());
+      break;
+    case "clickDetailApplyButton":
+      sendResponse(clickDetailApplyButton());
+      break;
+    case "detectBotInterstitial":
+      sendResponse(detectBotInterstitial());
       break;
     case "hasNextPage":
       sendResponse({ has: hasNextPage() });

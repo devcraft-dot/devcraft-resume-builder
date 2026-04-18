@@ -81,6 +81,20 @@
     .status-msg.paused { background: #fef3c7; color: #92400e; }
     .status-msg.error { background: #fee2e2; color: #991b1b; }
 
+    .skip-log-wrap {
+      margin-top: 10px; font-size: 11px; color: #4b5563;
+    }
+    .skip-log-wrap summary {
+      cursor: pointer; font-weight: 600; color: #374151; user-select: none;
+    }
+    .skip-log-wrap summary:hover { color: #111827; }
+    pre#skip-log {
+      margin-top: 6px; max-height: 160px; overflow: auto; white-space: pre-wrap;
+      word-break: break-word; background: #fff; border: 1px solid #e5e7eb;
+      padding: 8px; border-radius: 6px; font-size: 10px; line-height: 1.45;
+      color: #374151;
+    }
+
     /* ─── Profile selector ─── */
     .profile-select-row {
       display: flex; gap: 8px; align-items: center; margin-bottom: 14px;
@@ -187,6 +201,10 @@
         Job <strong id="s-job">0</strong> / <strong id="s-total">0</strong>
       </div>
       <div id="status-msg" class="status-msg">Ready — navigate to an Indeed search page</div>
+      <details class="skip-log-wrap">
+        <summary>Skip log (why jobs were skipped)</summary>
+        <pre id="skip-log">No skips recorded yet.</pre>
+      </details>
     </div>
 
     <div class="controls">

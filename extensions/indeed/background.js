@@ -11,7 +11,14 @@ const DEFAULT_STATE = {
   failed: 0,
   lastError: "",
   activeProfileIndex: 0,
+  /** "" | "collect_urls" | "scrape_details" */
+  phase: "",
+  scrapeIndex: 0,
+  /** Recent skip reasons (newest last), for popup + debugging */
+  skipLog: [],
 };
+
+const PENDING_DETAIL_URLS_KEY = "indeedPendingDetailUrls";
 
 let state = { ...DEFAULT_STATE };
 let searchTabId = null;
@@ -38,6 +45,16 @@ async function getProfiles() {
 
 function broadcastState() {
   chrome.runtime.sendMessage({ type: "stateUpdate", state }).catch(() => {});
+}
+
+function appendSkipLog(message) {
+  if (!Array.isArray(state.skipLog)) state.skipLog = [];
+  const ts = new Date().toISOString().slice(0, 19).replace("T", " ");
+  const line = `${ts} — ${message}`;
+  state.skipLog.push(line);
+  const max = 80;
+  if (state.skipLog.length > max) state.skipLog.splice(0, state.skipLog.length - max);
+  console.warn("[Indeed ext] skip:", line);
 }
 
 function startKeepAlive() {
@@ -93,6 +110,140 @@ function mosaicRowForJk(rows, jk) {
   if (!jk || !rows?.length) return null;
   const low = jk.toLowerCase();
   return rows.find((r) => String(r.jk || "").toLowerCase() === low) || null;
+}
+
+function jkFromDetailUrl(u) {
+  const m = String(u || "").match(/jk=([a-f0-9]+)/i);
+  return m ? m[1].toLowerCase() : "";
+}
+
+async function loadPendingDetailUrls() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get({ [PENDING_DETAIL_URLS_KEY]: [] }, (d) => {
+      const arr = d[PENDING_DETAIL_URLS_KEY];
+      resolve(Array.isArray(arr) ? arr : []);
+    });
+  });
+}
+
+async function savePendingDetailUrls(urls) {
+  return chrome.storage.local.set({ [PENDING_DETAIL_URLS_KEY]: urls });
+}
+
+async function appendPendingDetailUrlsUnique(newUrls) {
+  const cur = await loadPendingDetailUrls();
+  const seen = new Set();
+  for (const u of cur) {
+    const jk = jkFromDetailUrl(u);
+    seen.add(jk || String(u).toLowerCase());
+  }
+  const out = cur.slice();
+  for (const u of newUrls || []) {
+    const s = String(u || "").trim();
+    if (!s) continue;
+    const jk = jkFromDetailUrl(s);
+    const key = jk || s.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(s);
+  }
+  await savePendingDetailUrls(out);
+  return out;
+}
+
+async function clearPendingDetailUrls() {
+  await savePendingDetailUrls([]);
+}
+
+/**
+ * Full job URLs from SERP mosaic (`viewJobLink` / `desktopViewJobLink`).
+ */
+async function extractMosaicDetailUrls(tabId) {
+  try {
+    const [{ result }] = await chrome.scripting.executeScript({
+      target: { tabId },
+      world: "MAIN",
+      func: () => {
+        try {
+          const root = window.mosaic?.providerData?.["mosaic-provider-jobcards"];
+          const model = root?.metaData?.mosaicProviderJobCardsModel;
+          const r = model?.results || root?.results;
+          if (!r?.length) return { urls: [] };
+          const urls = [];
+          const seen = new Set();
+          for (const j of r) {
+            const jk = j.jobkey || j.jk;
+            const link = j.viewJobLink || j.desktopViewJobLink || "";
+            let abs = "";
+            try {
+              if (link) {
+                abs = link.startsWith("http") ? link : new URL(link, "https://www.indeed.com").href;
+              }
+            } catch {
+              /* */
+            }
+            if (!abs && jk) {
+              abs = "https://www.indeed.com/viewjob?jk=" + encodeURIComponent(jk);
+            }
+            if (!abs) continue;
+            const key = String(jk || abs).toLowerCase();
+            if (seen.has(key)) continue;
+            seen.add(key);
+            urls.push(abs);
+          }
+          return { urls };
+        } catch {
+          return { urls: [] };
+        }
+      },
+    });
+    const urls = result?.urls;
+    return { urls: Array.isArray(urls) ? urls : [] };
+  } catch {
+    return { urls: [] };
+  }
+}
+
+async function waitForBotClearOnTab(tabId) {
+  const maxMs = DELAYS.BOT_CHECK_MAX_WAIT_MS ?? 30000;
+  const poll = DELAYS.BOT_CHECK_POLL_MS ?? 1000;
+  const deadline = Date.now() + maxMs;
+  while (Date.now() < deadline) {
+    let bot = false;
+    try {
+      const r = await sendToTabRetry(tabId, "detectBotInterstitial", {}, 2);
+      bot = !!r?.bot;
+    } catch {
+      /* */
+    }
+    if (!bot) return;
+    await sleep(poll);
+  }
+}
+
+async function findApplyTabAfterClick(clickSourceTabId, winId, idsBefore, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const tabs = await chrome.tabs.query({ windowId: winId });
+    for (const t of tabs) {
+      if (idsBefore.has(t.id)) continue;
+      const u = String(t.pendingUrl || t.url || "").trim();
+      if (!u || u === "about:blank" || u.startsWith("chrome://") || u.startsWith("chrome-devtools:"))
+        continue;
+      if (u.startsWith("edge://") || u.startsWith("brave://")) continue;
+      if (isIndeedJobListingViewUrl(u)) continue;
+      if (isIndeedBffTabUrl(u)) return t.id;
+    }
+    try {
+      const t = await chrome.tabs.get(clickSourceTabId);
+      const u = String(t.url || t.pendingUrl || "").trim();
+      if (isIndeedBffTabUrl(u)) return clickSourceTabId;
+    } catch {
+      /* */
+    }
+    await sleep(DELAYS.APPLY_NEW_TAB_POLL);
+  }
+  return null;
 }
 
 /** Indeed SEO job page / view — never treat as apply or wait on it as the apply tab. */
@@ -253,15 +404,15 @@ function jobBaseFromEssentialsAndRow(essentials, row) {
 }
 
 /**
- * After list click + job pane visible: click "Apply with Indeed" so the browser opens a real apply tab.
- * Returns screener questions from `window.bffContext` only (JD/title come from the SERP pane, not BFF).
+ * On a job detail tab: click Indeed apply or company applystart, then read screener questions from
+ * `window.bffContext` on the apply surface (new tab or same-tab navigation).
  */
-async function fetchQuestionsViaIndeedApplyClick(searchTabId) {
+async function fetchQuestionsViaApplyClick(clickSourceTabId, refocusTabId) {
   let winId;
   try {
-    winId = (await chrome.tabs.get(searchTabId)).windowId;
+    winId = (await chrome.tabs.get(clickSourceTabId)).windowId;
   } catch {
-    return { questions: [], note: "search-tab-missing" };
+    return { questions: [], note: "source-tab-missing" };
   }
 
   const idsBefore = new Set((await chrome.tabs.query({ windowId: winId })).map((t) => t.id));
@@ -270,24 +421,29 @@ async function fetchQuestionsViaIndeedApplyClick(searchTabId) {
   try {
     let r;
     try {
-      r = await sendToTabRetry(searchTabId, "clickIndeedApplyButton");
+      r = await sendToTabRetry(clickSourceTabId, "clickDetailApplyButton");
     } catch {
       outcome = { questions: [], note: "click-failed" };
       return outcome;
     }
     if (!r?.ok) {
-      outcome = { questions: [], note: r?.reason || "no-indeed-apply-button" };
+      outcome = { questions: [], note: r?.reason || "no-apply-button" };
       return outcome;
     }
 
-    const newTab = await waitForNewTabNotInSet(winId, idsBefore, DELAYS.APPLY_CLICK_NEW_TAB_WAIT);
-    if (newTab?.id == null) {
-      outcome = { questions: [], note: "no-new-tab" };
+    const applyTabId = await findApplyTabAfterClick(
+      clickSourceTabId,
+      winId,
+      idsBefore,
+      DELAYS.APPLY_CLICK_NEW_TAB_WAIT,
+    );
+    if (applyTabId == null) {
+      outcome = { questions: [], note: "no-apply-surface" };
       return outcome;
     }
 
     try {
-      await waitForTabComplete(newTab.id, 38000);
+      await waitForTabComplete(applyTabId, 38000);
     } catch {
       /* still try BFF */
     }
@@ -295,7 +451,7 @@ async function fetchQuestionsViaIndeedApplyClick(searchTabId) {
 
     let url = "";
     try {
-      url = (await chrome.tabs.get(newTab.id)).url || "";
+      url = (await chrome.tabs.get(applyTabId)).url || "";
     } catch {
       outcome = { questions: [], note: "apply-tab-missing" };
       return outcome;
@@ -306,7 +462,7 @@ async function fetchQuestionsViaIndeedApplyClick(searchTabId) {
       return outcome;
     }
 
-    const questions = await pollQuestionsFromBffTab(newTab.id);
+    const questions = await pollQuestionsFromBffTab(applyTabId);
     if (questions === null) {
       outcome = { questions: [], note: "no-bff-questions" };
       return outcome;
@@ -318,8 +474,8 @@ async function fetchQuestionsViaIndeedApplyClick(searchTabId) {
     return outcome;
   } finally {
     try {
-      await closeSpawnedTabsExceptSearch(winId, idsBefore, searchTabId);
-      await focusSearchTab(searchTabId);
+      await closeSpawnedTabsExceptSearch(winId, idsBefore, refocusTabId);
+      await focusSearchTab(refocusTabId);
     } catch {
       /* */
     }
@@ -450,13 +606,24 @@ async function generateResume(job, profile) {
     profile_text: profile.text || "",
     model: profile.model || "gpt-5.4-mini",
   };
-  const res = await fetch(`${API_URL}/api/generate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  let res;
+  try {
+    res = await fetch(`${API_URL}/api/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    const msg = e?.message || String(e);
+    console.error("[Indeed ext] POST /api/generate failed (network/CORS)", msg, job?.url);
+    throw new Error(
+      `API unreachable or blocked by CORS (${API_URL}/api/generate): ${msg}. ` +
+        `Redeploy the FastAPI app so responses include Access-Control-Allow-Origin (see app/main.py).`,
+    );
+  }
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
+    console.error("[Indeed ext] generate HTTP error", res.status, text?.slice(0, 500), job?.url);
     throw new Error(`API ${res.status}: ${text}`);
   }
   return res.json();
@@ -496,102 +663,201 @@ async function runLoop() {
     try {
       await ensureContentScript(searchTabId, "content.js");
 
-      const { count } = await sendToTabRetry(searchTabId, "getJobCount");
-      state.totalJobsOnPage = count;
+      /* ── Phase 1: collect detail URLs from SERP (mosaic + pagination) ── */
+      if (state.phase !== "scrape_details") {
+        state.phase = "collect_urls";
+        await saveState();
+        broadcastState();
 
-      if (state.currentJobIndex >= count) {
-        const { has } = await sendToTabRetry(searchTabId, "hasNextPage");
-        if (!has) {
-          state.lastError = "Reached last page — done!";
+        while (state.running && !state.paused) {
+          await ensureContentScript(searchTabId, "content.js");
+          const { urls: pageUrls } = await extractMosaicDetailUrls(searchTabId);
+          const merged = await appendPendingDetailUrlsUnique(pageUrls);
+          state.totalJobsOnPage = merged.length;
+          state.lastError = `Collecting URLs: +${pageUrls.length} on page ${state.currentPage} (${merged.length} total)`;
+          await saveState();
+          broadcastState();
+
+          const { has } = await sendToTabRetry(searchTabId, "hasNextPage");
+          if (!has) {
+            state.phase = "scrape_details";
+            state.scrapeIndex = 0;
+            state.currentJobIndex = 0;
+            await saveState();
+            broadcastState();
+            break;
+          }
+
+          const nextRes = await sendToTabRetry(searchTabId, "clickNextPage");
+          if (!nextRes?.ok) {
+            state.phase = "scrape_details";
+            state.scrapeIndex = 0;
+            state.lastError = "Pagination click failed — scraping collected URLs only";
+            await saveState();
+            broadcastState();
+            break;
+          }
+
+          state.currentPage++;
+          await saveState();
+          broadcastState();
+          await sleep(DELAYS.AFTER_PAGE_LOAD);
+        }
+
+        if (!state.running || state.paused) break;
+      }
+
+      /* ── Phase 2: open each detail tab, wait for bot check, apply → BFF → API ── */
+      if (state.phase === "scrape_details") {
+        let pendingUrls = await loadPendingDetailUrls();
+        if (!pendingUrls.length) {
+          state.lastError = "No job URLs collected — done";
           state.running = false;
+          state.phase = "";
+          await clearPendingDetailUrls();
           await saveState();
           broadcastState();
           stopKeepAlive();
           return;
         }
-        await sendToTabRetry(searchTabId, "clickNextPage");
-        state.currentPage++;
-        state.currentJobIndex = 0;
-        state.totalJobsOnPage = 0;
-        await saveState();
-        broadcastState();
-        await sleep(DELAYS.AFTER_PAGE_LOAD);
-        continue;
+
+        state.totalJobsOnPage = pendingUrls.length;
+
+        while (state.running && !state.paused && state.scrapeIndex < pendingUrls.length) {
+          const url = pendingUrls[state.scrapeIndex];
+          const jk = jkFromDetailUrl(url);
+          const indeedUrl = jk
+            ? `https://www.indeed.com/viewjob?jk=${encodeURIComponent(jk)}`
+            : String(url).split("#")[0];
+
+          state.currentJobIndex = state.scrapeIndex + 1;
+          state.lastError = `Job ${state.scrapeIndex + 1}/${pendingUrls.length}`;
+          await saveState();
+          broadcastState();
+
+          let detailTabId = null;
+          try {
+            const t = await chrome.tabs.create({
+              url,
+              active: false,
+              openerTabId: searchTabId,
+            });
+            detailTabId = t?.id ?? null;
+          } catch {
+            state.scrapeIndex++;
+            state.skipped++;
+            const shortUrl = String(url || "").slice(0, 120);
+            appendSkipLog(`could not open detail tab | jk=${jk || "?"} | ${shortUrl}`);
+            state.lastError = `Skipped: could not open detail tab (${jk || shortUrl})`;
+            await saveState();
+            broadcastState();
+            await sleep(DELAYS.BETWEEN_JOBS);
+            continue;
+          }
+
+          try {
+            try {
+              await waitForTabComplete(detailTabId, 45000);
+            } catch {
+              /* */
+            }
+            await sleep(DELAYS.DETAIL_TAB_SETTLE ?? 2500);
+
+            await ensureContentScript(detailTabId, "content.js");
+            await waitForBotClearOnTab(detailTabId);
+
+            let essentials = {};
+            try {
+              const e = await sendToTabRetry(detailTabId, "getEssentialApplyPane");
+              essentials = e?.essentials || {};
+            } catch {
+              essentials = {};
+            }
+
+            let row = { jk, title: "", salary: "", thirdPartyApplyUrl: "", embeddedSmartApplyUrl: "" };
+            try {
+              const { rows } = await readMosaicRows(searchTabId);
+              const hit = mosaicRowForJk(rows, jk);
+              if (hit) row = hit;
+            } catch {
+              /* */
+            }
+
+            const job = jobBaseFromEssentialsAndRow(essentials, row);
+            if (!job.title && !job.description_text) {
+              state.scrapeIndex++;
+              state.skipped++;
+              appendSkipLog(
+                `no title or description on detail page | jk=${jk || "?"} | tabUrl=${String(url).slice(0, 100)}`,
+              );
+              state.lastError = `Skipped: no title/description (${jk || "no-jk"})`;
+              await saveState();
+              broadcastState();
+              continue;
+            }
+
+            const exists = await checkUrl(indeedUrl);
+            if (exists) {
+              state.scrapeIndex++;
+              state.skipped++;
+              appendSkipLog(`already in database | title=${(job.title || "").slice(0, 80)} | ${indeedUrl}`);
+              state.lastError = `Skipped (exists): ${job.title}`;
+              await saveState();
+              broadcastState();
+              continue;
+            }
+
+            state.lastError = `Fetching questions: ${job.title}`;
+            await saveState();
+            broadcastState();
+
+            const { questions } = await fetchQuestionsViaApplyClick(detailTabId, searchTabId);
+            job.questions = questions || [];
+            job.url = indeedUrl;
+
+            state.lastError = `Generating: ${job.title}`;
+            await saveState();
+            broadcastState();
+            await generateResume(job, profile);
+
+            state.processed++;
+            state.scrapeIndex++;
+            state.lastError = `Done: ${job.title}`;
+            await saveState();
+            broadcastState();
+          } catch (innerErr) {
+            state.failed++;
+            state.scrapeIndex++;
+            state.lastError = innerErr?.message || String(innerErr);
+            console.error("[Indeed ext] scrape job failed", innerErr, { jk, indeedUrl, detailUrl: url });
+            await saveState();
+            broadcastState();
+          } finally {
+            if (typeof detailTabId === "number") {
+              try {
+                await closeApplyTabSafe(detailTabId);
+              } catch {
+                /* */
+              }
+            }
+            await focusSearchTab(searchTabId);
+            await sleep(DELAYS.BETWEEN_JOBS);
+          }
+
+          pendingUrls = await loadPendingDetailUrls();
+        }
+
+        if (state.scrapeIndex >= (await loadPendingDetailUrls()).length && state.running && !state.paused) {
+          state.lastError = "All jobs processed — done!";
+          state.running = false;
+          state.phase = "";
+          await clearPendingDetailUrls();
+          await saveState();
+          broadcastState();
+          stopKeepAlive();
+          return;
+        }
       }
-
-      broadcastState();
-
-      const { jk } = await sendToTabRetry(searchTabId, "getJk", { index: state.currentJobIndex });
-      if (!jk) {
-        state.currentJobIndex++;
-        state.skipped++;
-        state.lastError = "Skipped: could not read job id from list";
-        await saveState();
-        broadcastState();
-        await sleep(DELAYS.BETWEEN_JOBS);
-        continue;
-      }
-
-      await sendToTabRetry(searchTabId, "clickJob", { index: state.currentJobIndex });
-      await sleep(DELAYS.AFTER_CLICK_JOB);
-
-      let essentials = {};
-      try {
-        const e = await sendToTabRetry(searchTabId, "getEssentialApplyPane");
-        essentials = e?.essentials || {};
-      } catch {
-        essentials = {};
-      }
-      const { rows } = await readMosaicRows(searchTabId);
-      const row = mosaicRowForJk(rows, jk) || {
-        jk,
-        title: "",
-        salary: "",
-        thirdPartyApplyUrl: "",
-        embeddedSmartApplyUrl: "",
-      };
-
-      const job = jobBaseFromEssentialsAndRow(essentials, row);
-      if (!job.title && !job.description_text) {
-        state.currentJobIndex++;
-        state.skipped++;
-        state.lastError = `Skipped: no job title or description in pane (${jk})`;
-        await saveState();
-        broadcastState();
-        await sleep(DELAYS.BETWEEN_JOBS);
-        continue;
-      }
-
-      state.lastError = `Fetching questions: ${row.title || jk}`;
-      broadcastState();
-
-      const { questions } = await fetchQuestionsViaIndeedApplyClick(searchTabId);
-      job.questions = questions || [];
-
-      const indeedUrl = `https://www.indeed.com/viewjob?jk=${encodeURIComponent(jk)}`;
-      job.url = indeedUrl;
-
-      const exists = await checkUrl(indeedUrl);
-      if (exists) {
-        state.currentJobIndex++;
-        state.skipped++;
-        state.lastError = `Skipped (exists): ${job.title}`;
-        await saveState();
-        broadcastState();
-        await sleep(DELAYS.BETWEEN_JOBS);
-        continue;
-      }
-
-      state.lastError = `Generating: ${job.title}`;
-      broadcastState();
-      await generateResume(job, profile);
-
-      state.processed++;
-      state.currentJobIndex++;
-      state.lastError = `Done: ${job.title}`;
-      await saveState();
-      broadcastState();
-      await sleep(DELAYS.BETWEEN_JOBS);
     } catch (err) {
       state.failed++;
       state.lastError = err.message;
@@ -621,7 +887,10 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           return;
         }
         searchTabId = tab.id;
-        if (msg.reset) Object.assign(state, DEFAULT_STATE);
+        if (msg.reset) {
+          Object.assign(state, DEFAULT_STATE);
+          await clearPendingDetailUrls();
+        }
         state.running = true;
         state.paused = false;
         state.activeProfileIndex = msg.profileIndex ?? state.activeProfileIndex;
@@ -676,10 +945,12 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
     case "resetState":
       Object.assign(state, DEFAULT_STATE);
-      saveState().then(() => {
-        broadcastState();
-        sendResponse({ ok: true });
-      });
+      clearPendingDetailUrls().then(() =>
+        saveState().then(() => {
+          broadcastState();
+          sendResponse({ ok: true });
+        }),
+      );
       return true;
   }
 });

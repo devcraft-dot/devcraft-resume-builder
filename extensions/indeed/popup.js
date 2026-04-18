@@ -128,6 +128,13 @@ function updateUI(s) {
   else if (s.lastError?.toLowerCase().includes("error") || s.lastError?.toLowerCase().includes("fail"))
     msg.classList.add("error");
 
+  const skipLogEl = $("#skip-log");
+  if (skipLogEl) {
+    const lines = Array.isArray(s.skipLog) ? s.skipLog : [];
+    skipLogEl.textContent =
+      lines.length > 0 ? lines.join("\n") : "No skips recorded yet (also check extension service worker console).";
+  }
+
   const isRunning = s.running && !s.paused;
   const isPaused = s.running && s.paused;
   const isStopped = !s.running;

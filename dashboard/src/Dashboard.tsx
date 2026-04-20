@@ -49,7 +49,7 @@ function EditableCell({
   if (!editing) {
     return (
       <span
-        className="cursor-pointer hover:bg-gray-100 px-0.5 rounded block truncate"
+        className="cursor-pointer hover:bg-gray-100 px-0.5 rounded block text-sm leading-snug line-clamp-2 break-words"
         onDoubleClick={() => setEditing(true)}
         title="Double-click to edit"
       >
@@ -61,7 +61,7 @@ function EditableCell({
   return (
     <input
       autoFocus
-      className="border border-blue-400 rounded px-1 py-0.5 text-xs w-full min-w-0 outline-none"
+      className="border border-blue-400 rounded px-2 py-1 text-sm w-full min-w-0 outline-none"
       value={draft}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={() => {
@@ -93,7 +93,7 @@ function TinyLink({
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="text-blue-600 hover:underline font-medium"
+      className="text-sm text-blue-600 hover:underline font-medium"
       title={title}
       onClick={(e) => e.stopPropagation()}
     >
@@ -116,7 +116,9 @@ function FilesMenu({ row }: { row: Generation }) {
     if (!url) return null;
     return (
       <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 border-b border-gray-100 pb-1.5 mb-1.5 last:border-0 last:pb-0 last:mb-0">
-        <span className="w-10 shrink-0 text-gray-500">{short}</span>
+        <span className="w-11 shrink-0 text-sm text-gray-600 font-medium">
+          {short}
+        </span>
         <TinyLink href={url} label="Doc" title={`Open ${label} in Drive`} />
         <span className="text-gray-300">·</span>
         <TinyLink
@@ -136,11 +138,11 @@ function FilesMenu({ row }: { row: Generation }) {
 
   return (
     <details className="relative">
-      <summary className="cursor-pointer select-none list-none rounded border border-gray-200 bg-gray-50 px-1 py-0.5 text-[10px] font-semibold text-gray-700 hover:bg-gray-100 max-w-full truncate [&::-webkit-details-marker]:hidden">
+      <summary className="cursor-pointer select-none list-none rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-sm font-semibold text-gray-800 hover:bg-gray-100 max-w-full truncate [&::-webkit-details-marker]:hidden">
         Files
       </summary>
       <div
-        className="absolute right-0 z-30 mt-0.5 min-w-[9.5rem] max-w-[12rem] rounded-md border border-gray-200 bg-white p-2 text-[10px] shadow-md"
+        className="absolute right-0 z-30 mt-1 min-w-[11.5rem] max-w-[14rem] rounded-lg border border-gray-200 bg-white p-2.5 text-sm shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
         {block("Resume", row.resume_drive_url, "CV")}
@@ -164,7 +166,7 @@ function JdLink({ url }: { url: string }) {
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        className="h-4 w-4"
+        className="h-5 w-5"
         viewBox="0 0 20 20"
         fill="currentColor"
         aria-hidden
@@ -287,51 +289,54 @@ export function Dashboard({
       )}
 
       <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
-        <table className="w-full table-fixed text-xs text-left border-collapse">
+        <table className="w-full table-fixed text-left text-sm leading-normal border-collapse">
           <colgroup>
-            <col className="w-[76px]" />
-            <col className="w-[72px]" />
-            <col className="w-[92px]" />
-            <col />
-            <col className="w-[22%]" />
-            <col className="w-[52px]" />
-            <col className="w-[28px]" />
-            <col className="w-[56px]" />
-            <col className="w-[72px]" />
-            <col className="w-[28px]" />
+            <col className="w-[104px]" />
+            <col className="w-[120px]" />
+            <col className="w-[128px]" />
+            <col className="w-[26%]" />
+            <col className="w-[20%]" />
+            <col className="w-[88px]" />
+            <col className="w-[44px]" />
+            <col className="w-[96px]" />
+            <col className="w-[168px]" />
+            <col className="w-[44px]" />
           </colgroup>
           <thead>
-            <tr className="bg-gray-50 text-[10px] font-medium text-gray-500 uppercase tracking-wide">
-              <th className="px-1.5 py-2">Date</th>
-              <th className="px-1.5 py-2">Profile</th>
-              <th className="px-1.5 py-2">Stage</th>
-              <th className="px-1.5 py-2">Title</th>
-              <th className="px-1.5 py-2">Company</th>
-              <th className="px-1.5 py-2">Sal</th>
-              <th className="px-1 py-2 text-center" title="Job posting">
+            <tr className="bg-gray-50 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+              <th className="px-3 py-3">Date</th>
+              <th className="px-3 py-3">Profile</th>
+              <th className="px-3 py-3">Stage</th>
+              <th className="px-3 py-3">Title</th>
+              <th className="px-3 py-3">Company</th>
+              <th className="px-3 py-3">Salary</th>
+              <th className="px-2 py-3 text-center" title="Job posting">
                 JD
               </th>
-              <th className="px-1 py-2">Files</th>
-              <th className="px-1 py-2">Model</th>
-              <th className="px-0.5 py-2 w-7" />
+              <th className="px-2 py-3">Files</th>
+              <th className="px-2 py-3">Model</th>
+              <th className="px-1 py-3" aria-label="Delete" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 text-gray-800">
             {rows.map((row) => (
               <tr key={row.id} className="hover:bg-gray-50/80 align-top">
-                <td className="px-1.5 py-1.5 whitespace-nowrap text-gray-600">
+                <td className="px-3 py-2.5 whitespace-nowrap text-gray-600 text-sm">
                   {formatDate(row.created_at)}
                 </td>
-                <td className="px-1.5 py-1.5 truncate" title={row.profile_name}>
+                <td
+                  className="px-3 py-2.5 text-sm font-medium truncate"
+                  title={row.profile_name}
+                >
                   {row.profile_name}
                 </td>
-                <td className="px-1 py-1.5">
+                <td className="px-2 py-2.5">
                   <select
                     value={row.stage}
                     onChange={(e) =>
                       handlePatch(row.id, "stage", e.target.value)
                     }
-                    className={`max-w-full truncate text-[10px] font-medium rounded-md px-1 py-0.5 border-0 cursor-pointer focus:ring-1 focus:ring-blue-400 ${STAGE_COLORS[row.stage] || "bg-gray-100 text-gray-700"}`}
+                    className={`w-full max-w-full text-xs font-semibold rounded-lg px-2 py-1.5 border-0 cursor-pointer shadow-sm focus:ring-2 focus:ring-blue-400 focus:ring-offset-0 ${STAGE_COLORS[row.stage] || "bg-gray-100 text-gray-700"}`}
                   >
                     {STAGES.map((s) => (
                       <option key={s} value={s}>
@@ -340,46 +345,49 @@ export function Dashboard({
                     ))}
                   </select>
                 </td>
-                <td className="px-1.5 py-1.5 min-w-0">
+                <td className="px-3 py-2.5 min-w-0">
                   <EditableCell
                     value={row.title}
                     onSave={(v) => handlePatch(row.id, "title", v)}
                   />
                 </td>
-                <td className="px-1.5 py-1.5 min-w-0">
+                <td className="px-3 py-2.5 min-w-0">
                   <EditableCell
                     value={row.company_name}
                     onSave={(v) => handlePatch(row.id, "company_name", v)}
                   />
                 </td>
-                <td className="px-1 py-1.5 min-w-0 truncate" title={row.salary_range}>
+                <td
+                  className="px-2 py-2.5 min-w-0 text-sm"
+                  title={row.salary_range}
+                >
                   <EditableCell
                     value={row.salary_range}
                     onSave={(v) => handlePatch(row.id, "salary_range", v)}
                   />
                 </td>
-                <td className="px-0.5 py-1.5 text-center">
+                <td className="px-1 py-2.5 text-center align-middle">
                   <JdLink url={row.url} />
                 </td>
-                <td className="px-1 py-1.5 min-w-0">
+                <td className="px-2 py-2.5 min-w-0 align-middle">
                   <FilesMenu row={row} />
                 </td>
                 <td
-                  className="px-1 py-1.5 text-gray-500 truncate font-mono text-[10px]"
+                  className="px-2 py-2.5 text-xs font-mono text-gray-700 leading-snug break-words hyphens-auto min-w-0"
                   title={row.model_name}
                 >
                   {row.model_name}
                 </td>
-                <td className="px-0.5 py-1.5 text-center">
+                <td className="px-1 py-2.5 text-center align-middle">
                   <button
                     type="button"
                     onClick={() => handleDelete(row.id)}
-                    className="text-gray-400 hover:text-red-600 transition p-0.5"
+                    className="text-gray-400 hover:text-red-600 transition rounded p-1"
                     title="Delete"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-3.5 w-3.5"
+                      className="h-4 w-4"
                       viewBox="0 0 20 20"
                       fill="currentColor"
                     >

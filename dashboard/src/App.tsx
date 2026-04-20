@@ -23,7 +23,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between max-w-7xl mx-auto">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between max-w-screen-2xl mx-auto w-full">
           <div>
             <h1 className="text-xl font-semibold text-gray-900">
               Resume Builder Dashboard
@@ -50,7 +50,7 @@ export default function App() {
           </nav>
         </div>
       </header>
-      <main className="p-6 max-w-7xl mx-auto">
+      <main className="p-6 max-w-screen-2xl mx-auto w-full">
         {nav === "generations" && (
           <Dashboard
             key={resumeStageFilter ?? "__all__"}

@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   deleteGeneration,
   driveExportUrl,
@@ -94,7 +100,7 @@ function FileFormatLink({
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex min-h-9 min-w-[3.25rem] items-center justify-center rounded-lg border border-transparent px-2 text-sm font-semibold text-blue-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-900"
+      className="inline-flex min-h-10 min-w-[3.5rem] items-center justify-center rounded-lg border border-transparent px-2.5 text-base font-semibold text-blue-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-900"
       title={title}
       onClick={(e) => e.stopPropagation()}
     >
@@ -106,11 +112,40 @@ function FileFormatLink({
 const FILES_GRID =
   "grid grid-cols-[minmax(5.5rem,7rem)_minmax(3.25rem,1fr)_minmax(3.25rem,1fr)_minmax(3.25rem,1fr)] gap-x-2 gap-y-1";
 
-/** One column in the table: opens a wide, grid-aligned Drive / export menu. */
-function FilesMenu({ row }: { row: Generation }) {
+/** Controlled menu: only one row’s Files panel may be open at a time. */
+function FilesMenu({
+  row,
+  isOpen,
+  onToggle,
+  onClose,
+}: {
+  row: Generation;
+  isOpen: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+}) {
+  const rootRef = useRef<HTMLDivElement>(null);
+
   const hasAny =
     row.resume_drive_url || row.questions_drive_url || row.jd_drive_url;
   if (!hasAny) return <span className="text-gray-300">—</span>;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    function onDocMouseDown(e: MouseEvent) {
+      const el = rootRef.current;
+      if (!el?.contains(e.target as Node)) onClose();
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("mousedown", onDocMouseDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onDocMouseDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   const fileRow = (kind: string, url: string | undefined) => {
     if (!url) return null;
@@ -143,27 +178,47 @@ function FilesMenu({ row }: { row: Generation }) {
   };
 
   return (
-    <details className="relative z-30 isolate">
-      <summary className="cursor-pointer select-none list-none rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-800 shadow-sm hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 [&::-webkit-details-marker]:hidden">
-        Files
-      </summary>
-      <div
-        className="absolute left-0 top-full z-50 mt-2 w-[min(calc(100vw-2rem),22rem)] min-w-[17.5rem] rounded-xl border border-gray-200 bg-white p-3 shadow-xl ring-1 ring-gray-900/5"
-        onClick={(e) => e.stopPropagation()}
+    <div ref={rootRef} className="relative z-30">
+      <button
+        type="button"
+        aria-expanded={isOpen}
+        aria-haspopup="true"
+        aria-controls={`files-menu-${row.id}`}
+        id={`files-trigger-${row.id}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle();
+        }}
+        className={`w-full max-w-full rounded-md border px-3 py-2 text-sm font-semibold shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${
+          isOpen
+            ? "border-blue-300 bg-blue-50 text-blue-900"
+            : "border-gray-200 bg-gray-50 text-gray-800 hover:bg-gray-100"
+        }`}
       >
+        Files
+      </button>
+      {isOpen ? (
         <div
-          className={`${FILES_GRID} border-b border-gray-200 pb-2 text-xs font-bold uppercase tracking-wide text-gray-500`}
+          id={`files-menu-${row.id}`}
+          role="menu"
+          aria-labelledby={`files-trigger-${row.id}`}
+          className="absolute left-0 top-full z-50 mt-2 w-[min(calc(100vw-2rem),22rem)] min-w-[17.5rem] rounded-xl border border-gray-200 bg-white p-3 text-base shadow-xl ring-1 ring-gray-900/5"
+          onClick={(e) => e.stopPropagation()}
         >
-          <span className="pl-0.5">Document</span>
-          <span className="text-center">Doc</span>
-          <span className="text-center">PDF</span>
-          <span className="text-center">Docx</span>
+          <div
+            className={`${FILES_GRID} border-b border-gray-200 pb-2 text-sm font-bold uppercase tracking-wide text-gray-600`}
+          >
+            <span className="pl-0.5">Document</span>
+            <span className="text-center">Doc</span>
+            <span className="text-center">PDF</span>
+            <span className="text-center">Docx</span>
+          </div>
+          {fileRow("Resume", row.resume_drive_url)}
+          {fileRow("Q&A", row.questions_drive_url)}
+          {fileRow("JD", row.jd_drive_url)}
         </div>
-        {fileRow("Resume", row.resume_drive_url)}
-        {fileRow("Q&A", row.questions_drive_url)}
-        {fileRow("JD", row.jd_drive_url)}
-      </div>
-    </details>
+      ) : null}
+    </div>
   );
 }
 
@@ -205,6 +260,12 @@ export function Dashboard({
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  /** Only one Files menu open at a time (avoids stacked popovers). */
+  const [openFilesRowId, setOpenFilesRowId] = useState<number | null>(null);
+  const closeFilesMenu = useCallback(() => setOpenFilesRowId(null), []);
+  const toggleFilesMenu = useCallback((id: number) => {
+    setOpenFilesRowId((cur) => (cur === id ? null : id));
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -229,6 +290,15 @@ export function Dashboard({
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (
+      openFilesRowId != null &&
+      !rows.some((r) => r.id === openFilesRowId)
+    ) {
+      setOpenFilesRowId(null);
+    }
+  }, [rows, openFilesRowId]);
 
   async function handlePatch(id: number, field: string, value: string) {
     try {
@@ -384,7 +454,12 @@ export function Dashboard({
                   <JdLink url={row.url} />
                 </td>
                 <td className="px-2 py-2.5 min-w-0 align-middle">
-                  <FilesMenu row={row} />
+                  <FilesMenu
+                    row={row}
+                    isOpen={openFilesRowId === row.id}
+                    onToggle={() => toggleFilesMenu(row.id)}
+                    onClose={closeFilesMenu}
+                  />
                 </td>
                 <td
                   className="px-2 py-2.5 text-xs font-mono text-gray-700 leading-snug break-words hyphens-auto min-w-0"

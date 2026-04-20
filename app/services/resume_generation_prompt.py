@@ -72,7 +72,9 @@ Header — start the resume with the candidate name on its own line, then the co
 
 2. Summary — use heading ## Summary on its own line, then 3–4 clear sentences tailored to the job; reflect seniority accurately; highlight the strongest supported qualifications; use exact JD wording only where it sounds natural and remains truthful.
 
-3. Skills — heading ## Skills then one inline comma-separated line of 20–30 skills (no bullets, no bold inside the line). Order the most job-relevant supported skills first. Include only skills supported by the profile.
+3. Skills — heading ## Skills then 4–8 hyphen-prefixed category lines. Use this format:
+   - Category: skill 1, skill 2, skill 3
+   Group 20–30 supported skills into concise categories such as Frontend Development, Backend Development, Cloud and DevOps, Data and APIs, Architecture and Engineering, Methodologies, or Leadership. Order the most job-relevant supported categories first.
 
 4. Experience — heading ## Experience then for each role use one heading line in this format:
    Job Title | Company | Start - End | Location or Remote/Hybrid/Onsite
@@ -84,7 +86,7 @@ Header — start the resume with the candidate name on its own line, then the co
    Keep it simple and ATS-friendly.
 
 [FORMATTING]
-Plain ATS-friendly Markdown. Bold for Market Title, section headings (## ...), and selective keywords in experience bullets. No tables, columns, icons, or decorative symbols. Use blank lines between sections for readability. Do not use parentheses or brackets in the resume or cover letter.
+Plain ATS-friendly Markdown. Bold for Market Title, section headings (## ...), skill category labels, and selective keywords in experience bullets. No tables, columns, icons, or decorative symbols. Use blank lines between sections for readability. Do not use parentheses or brackets in the resume or cover letter.
 
 [KEYWORD OPTIMIZATION]
 Extract the most important skills, technologies, platforms, responsibilities, and domain terms from the JD. Prioritize those terms across Summary, Skills, and Experience. Reuse important terms naturally and truthfully. Reduce emphasis on unrelated skills. Do not force every keyword into every section, and do not repeat unsupported terms just to increase density.

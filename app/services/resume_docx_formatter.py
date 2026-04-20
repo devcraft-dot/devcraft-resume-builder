@@ -223,19 +223,25 @@ def _parse_resume(text: str) -> list[tuple[str, object]]:
             result.append(("job_title", _clean_line(stripped)))
             continue
 
+        skills_section = any(kw in current_section for kw in ("SKILL", "COMPETENC"))
+        if skills_section:
+            skill_line = stripped
+            bulleted = False
+            if stripped[0] in ("•", "·", "-", "*") and len(stripped) > 1 and stripped[1] in (" ", "\t"):
+                skill_line = stripped[2:].strip()
+                bulleted = True
+            if ":" in skill_line and not skill_line.startswith("http"):
+                idx = skill_line.index(":")
+                label = skill_line[:idx].replace("**", "").replace("__", "").strip()
+                values = skill_line[idx + 1 :].strip()
+                result.append(("skill", (label, values, bulleted)))
+                continue
+
         if stripped[0] in ("•", "·", "-") and (len(stripped) < 2 or stripped[1] in (" ", "\t")):
             result.append(("bullet", stripped.lstrip("•·- ").strip()))
             continue
         if stripped[0] == "*" and len(stripped) > 1 and stripped[1] == " ":
             result.append(("bullet", stripped[2:].strip()))
-            continue
-
-        skills_section = any(kw in current_section for kw in ("SKILL", "COMPETENC"))
-        if skills_section and ":" in stripped and not stripped.startswith("http"):
-            idx = stripped.index(":")
-            label = stripped[:idx].replace("**", "").replace("__", "").strip()
-            values = stripped[idx + 1 :].strip()
-            result.append(("skill", (label, values)))
             continue
 
         result.append(("body", _clean_line(stripped)))
@@ -545,8 +551,14 @@ def _build_docx(items: list[tuple[str, object]], jd_text: str = "") -> object:
             _add_md_runs(p, bullet_text, base_size_pt=10.5)
 
         elif item_type == "skill":
-            label, values = content  # type: ignore[misc]
+            label, values, bulleted = content  # type: ignore[misc]
             p = _para(space_before=0, space_after=1)
+            if bulleted:
+                p.paragraph_format.left_indent = Inches(0.2)
+                p.paragraph_format.first_line_indent = Inches(-0.2)
+                bullet_run = p.add_run("\u2022 ")
+                bullet_run.font.name = _BODY_FONT
+                bullet_run.font.size = Pt(10.5)
             r_label = p.add_run(f"{label}: ")
             r_label.bold = True
             r_label.font.name = _BODY_FONT

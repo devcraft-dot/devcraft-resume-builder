@@ -95,9 +95,10 @@ Header
 3. Skills
 
 * Include 20 to 30 relevant skills
-* Output as one inline comma-separated line
-* No bullets
-* No bold in Skills
+* Output as 4 to 8 hyphen-prefixed category lines
+* Use this format: `- Category: skill 1, skill 2, skill 3`
+* Group related skills under concise labels such as Frontend Development, Backend Development, Cloud and DevOps, Data and APIs, Architecture and Engineering, Methodologies, or Leadership
+* Bold the category label only
 * Prioritize skills based on the job description
 * Put the most relevant supported skills first
 * Include only skills reasonably supported by the candidate profile
@@ -135,7 +136,7 @@ Bullet rules:
 [FORMATTING RULES]
 
 * Use a plain ATS-friendly layout
-* Use bold only for section headers, Market Title, and highly relevant job-description-aligned keywords in Experience bullets
+* Use bold only for section headers, Market Title, skill category labels, and highly relevant job-description-aligned keywords in Experience bullets
 * Do not use tables
 * Do not use columns
 * Do not use icons

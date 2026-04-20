@@ -14,6 +14,7 @@ const DEFAULT_STATE = {
   /** "" | "collect_urls" | "scrape_details" */
   phase: "",
   scrapeIndex: 0,
+  searchTabId: null,
   /** Recent skip reasons (newest last), for popup + debugging */
   skipLog: [],
 };
@@ -120,6 +121,53 @@ function sleep(ms) {
 
 function tabEffectiveUrl(t) {
   return String(t?.pendingUrl || t?.url || "");
+}
+
+async function activateTab(tabId) {
+  if (typeof tabId !== "number") return;
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (typeof tab.windowId === "number") {
+      await chrome.windows.update(tab.windowId, { focused: true });
+    }
+    await chrome.tabs.update(tabId, { active: true });
+  } catch {
+    /* */
+  }
+}
+
+async function detectBotOnTab(tabId) {
+  try {
+    const r = await sendToTabRetry(tabId, "detectBotInterstitial", {}, 2);
+    return !!r?.bot;
+  } catch {
+    return false;
+  }
+}
+
+async function pauseForBotCheck(tabId, contextLabel) {
+  state.paused = true;
+  state.lastError =
+    `Bot check detected on ${contextLabel}. Complete the verification in the opened Indeed tab, ` +
+    `then return to the results tab and click Resume.`;
+  await saveState();
+  broadcastState();
+  await activateTab(tabId);
+}
+
+async function resolveSearchTabId(fallbackTab) {
+  const savedId = typeof state.searchTabId === "number" ? state.searchTabId : null;
+  if (savedId != null) {
+    try {
+      const savedTab = await chrome.tabs.get(savedId);
+      if (String(savedTab.url || savedTab.pendingUrl || "").includes("indeed.com")) {
+        return savedId;
+      }
+    } catch {
+      /* */
+    }
+  }
+  return fallbackTab?.id ?? null;
 }
 
 function normalizeSerpUrlForCompare(u) {
@@ -275,17 +323,14 @@ async function waitForBotClearOnTab(tabId) {
   const maxMs = DELAYS.BOT_CHECK_MAX_WAIT_MS ?? 30000;
   const poll = DELAYS.BOT_CHECK_POLL_MS ?? 1000;
   const deadline = Date.now() + maxMs;
+  let sawBot = false;
   while (Date.now() < deadline) {
-    let bot = false;
-    try {
-      const r = await sendToTabRetry(tabId, "detectBotInterstitial", {}, 2);
-      bot = !!r?.bot;
-    } catch {
-      /* */
-    }
-    if (!bot) return;
+    const bot = await detectBotOnTab(tabId);
+    if (!bot) return { cleared: true, sawBot };
+    sawBot = true;
     await sleep(poll);
   }
+  return { cleared: false, sawBot };
 }
 
 async function findApplyTabAfterClick(clickSourceTabId, winId, idsBefore, timeoutMs) {
@@ -490,6 +535,7 @@ async function fetchQuestionsViaApplyClick(clickSourceTabId, refocusTabId) {
 
   const idsBefore = new Set((await chrome.tabs.query({ windowId: winId })).map((t) => t.id));
   let outcome = { questions: [], note: "click-failed" };
+  let keepApplyTabOpen = false;
 
   try {
     let r;
@@ -522,6 +568,14 @@ async function fetchQuestionsViaApplyClick(clickSourceTabId, refocusTabId) {
     }
     await sleep(DELAYS.APPLY_TAB_SETTLE);
 
+    const botStatus = await waitForBotClearOnTab(applyTabId);
+    if (!botStatus.cleared) {
+      keepApplyTabOpen = true;
+      await pauseForBotCheck(applyTabId, "Indeed apply flow");
+      outcome = { questions: [], note: "bot-check" };
+      return outcome;
+    }
+
     let url = "";
     try {
       url = (await chrome.tabs.get(applyTabId)).url || "";
@@ -547,8 +601,10 @@ async function fetchQuestionsViaApplyClick(clickSourceTabId, refocusTabId) {
     return outcome;
   } finally {
     try {
-      await closeSpawnedTabsExceptSearch(winId, idsBefore, refocusTabId);
-      await focusSearchTab(refocusTabId);
+      if (!keepApplyTabOpen) {
+        await closeSpawnedTabsExceptSearch(winId, idsBefore, refocusTabId);
+        await focusSearchTab(refocusTabId);
+      }
     } catch {
       /* */
     }
@@ -807,6 +863,10 @@ async function runLoop() {
         broadcastState();
 
         while (state.running && !state.paused) {
+          if (await detectBotOnTab(searchTabId)) {
+            await pauseForBotCheck(searchTabId, "search results");
+            break;
+          }
           if (!(await ensureContentScript(searchTabId, "content.js"))) {
             state.lastError =
               "Search tab lost during URL collection — reopen the Indeed results page, then Resume.";
@@ -868,6 +928,11 @@ async function runLoop() {
           }
           await sleep(urlChanged ? DELAYS.AFTER_PAGE_LOAD : Math.max(DELAYS.AFTER_PAGE_LOAD, 5500));
 
+          if (await detectBotOnTab(searchTabId)) {
+            await pauseForBotCheck(searchTabId, "search results");
+            break;
+          }
+
           state.currentPage++;
           await saveState();
           broadcastState();
@@ -905,6 +970,7 @@ async function runLoop() {
           broadcastState();
 
           let detailTabId = null;
+          let keepDetailTabOpen = false;
           try {
             let t = null;
             try {
@@ -946,7 +1012,12 @@ async function runLoop() {
               broadcastState();
               continue;
             }
-            await waitForBotClearOnTab(detailTabId);
+            const botStatus = await waitForBotClearOnTab(detailTabId);
+            if (!botStatus.cleared) {
+              keepDetailTabOpen = true;
+              await pauseForBotCheck(detailTabId, `job detail ${jk || url}`);
+              break;
+            }
 
             let essentials = {};
             try {
@@ -1005,6 +1076,7 @@ async function runLoop() {
             const { questions } = await fetchQuestionsViaApplyClick(detailTabId, searchTabId);
             job.questions = questions || [];
             job.url = indeedUrl;
+            if (state.paused) break;
 
             let generatedForJob = 0;
             for (let pi = 0; pi < profiles.length; pi++) {
@@ -1053,14 +1125,14 @@ async function runLoop() {
             await saveState();
             broadcastState();
           } finally {
-            if (typeof detailTabId === "number") {
+            if (typeof detailTabId === "number" && !keepDetailTabOpen) {
               try {
                 await closeApplyTabSafe(detailTabId);
               } catch {
                 /* */
               }
             }
-            await focusSearchTab(searchTabId);
+            if (!keepDetailTabOpen) await focusSearchTab(searchTabId);
             await sleep(DELAYS.BETWEEN_JOBS);
           }
 
@@ -1106,13 +1178,14 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           sendResponse({ ok: false, error: "Not an Indeed page" });
           return;
         }
-        searchTabId = tab.id;
         if (msg.reset) {
           Object.assign(state, DEFAULT_STATE);
           await clearPendingDetailUrls();
         }
+        searchTabId = tab.id;
         state.running = true;
         state.paused = false;
+        state.searchTabId = tab.id;
         state.activeProfileIndex = msg.profileIndex ?? state.activeProfileIndex;
         state.lastError = "";
         await saveState();
@@ -1131,9 +1204,14 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           sendResponse({ ok: false, error: "Not an Indeed page" });
           return;
         }
-        searchTabId = tab.id;
+        searchTabId = await resolveSearchTabId(tab);
+        if (searchTabId == null) {
+          sendResponse({ ok: false, error: "Could not locate the Indeed results tab" });
+          return;
+        }
         state.running = true;
         state.paused = false;
+        state.searchTabId = searchTabId;
         state.lastError = "Resumed";
         await saveState();
         broadcastState();

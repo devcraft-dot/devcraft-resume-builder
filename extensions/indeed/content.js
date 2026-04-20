@@ -230,18 +230,43 @@ function clickIndeedApplyButton() {
 function detectBotInterstitial() {
   const title = (document.title || "").toLowerCase();
   const href = (location.href || "").toLowerCase();
-  if (/captcha|robot|verify you|security check|unusual traffic|access denied|interstitial/i.test(title))
-    return { bot: true };
+  if (
+    /captcha|robot|verify you|security check|unusual traffic|access denied|interstitial|just a moment/i.test(
+      title,
+    )
+  ) {
+    return { bot: true, kind: "title" };
+  }
   if (/indeed\.com\/rc\/|interstitial|challenge|captcha/i.test(href)) return { bot: true };
-  if (document.querySelector("iframe[src*='captcha'], iframe[src*='hcaptcha'], #captcha, .g-recaptcha"))
-    return { bot: true };
+  if (
+    document.querySelector(
+      [
+        "iframe[src*='captcha']",
+        "iframe[src*='hcaptcha']",
+        "iframe[title*='Cloudflare security challenge']",
+        "iframe[src*='challenges.cloudflare.com']",
+        "script[src*='/cdn-cgi/challenge-platform/']",
+        "script[src*='challenges.cloudflare.com/turnstile']",
+        "input[name='cf-turnstile-response']",
+        "input[name='cf_challenge_response']",
+        "#captcha",
+        ".g-recaptcha",
+        "#cf-box-container",
+      ].join(", "),
+    )
+  ) {
+    return { bot: true, kind: "challenge-widget" };
+  }
+  if (window.INDEED_CLOUDFLARE_STATIC_PAGE?.PAGE_TYPE) {
+    return { bot: true, kind: "indeed-cloudflare-page" };
+  }
   const body = (document.body?.innerText || "").slice(0, 4000).toLowerCase();
   if (
-    /unusual traffic from your computer network|verify you are human|please complete the security check/i.test(
+    /unusual traffic from your computer network|verify you are human|please complete the security check|additional verification required|troubleshooting cloudflare errors|your ray id|enable javascript and cookies to continue|verifying/i.test(
       body,
     )
   )
-    return { bot: true };
+    return { bot: true, kind: "body-copy" };
   return { bot: false };
 }
 

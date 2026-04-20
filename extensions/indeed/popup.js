@@ -1,13 +1,51 @@
 const $ = (s) => document.querySelector(s);
 
 /* ─── Tab switching ─────────────────────────────────────────────── */
+const API_ERROR_LOG_KEY = "indeedApiErrorLog";
+
 document.querySelectorAll(".tab-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
     document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
     btn.classList.add("active");
     $(`#panel-${btn.dataset.tab}`).classList.add("active");
+    if (btn.dataset.tab === "errors") renderApiErrorLog();
   });
+});
+
+function formatApiErrorRow(r) {
+  const ts = r.at ? new Date(r.at).toLocaleString() : "";
+  const head = `[${ts}] ${r.method || "POST"} ${r.path || ""} → HTTP ${r.status != null ? r.status : "?"}`;
+  const ctx = r.context ? `Context: ${r.context}\n` : "";
+  const det = r.detail ? String(r.detail) : "";
+  return `${head}\n${ctx}${det}`;
+}
+
+function renderApiErrorLog() {
+  const pre = $("#api-error-log-pre");
+  if (!pre) return;
+  chrome.storage.local.get({ [API_ERROR_LOG_KEY]: [] }, (d) => {
+    const arr = d[API_ERROR_LOG_KEY] || [];
+    if (!arr.length) {
+      pre.textContent =
+        "No API errors yet. Failed /api/generate or /api/check-generation-keys responses are saved here automatically.";
+      return;
+    }
+    pre.textContent = arr.map(formatApiErrorRow).join("\n\n————————————————\n\n");
+  });
+}
+
+$("#btn-api-errors-refresh")?.addEventListener("click", () => renderApiErrorLog());
+
+$("#btn-api-errors-clear")?.addEventListener("click", () => {
+  if (!confirm("Clear all stored API error entries in this browser?")) return;
+  chrome.storage.local.set({ [API_ERROR_LOG_KEY]: [] }, () => renderApiErrorLog());
+});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local" || !changes[API_ERROR_LOG_KEY]) return;
+  const panel = $("#panel-errors");
+  if (panel?.classList.contains("active")) renderApiErrorLog();
 });
 
 /* ─── Profiles (Settings + Run summary) ─────────────────────────── */

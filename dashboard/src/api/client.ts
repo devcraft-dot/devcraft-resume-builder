@@ -1,4 +1,4 @@
-import type { Generation, GenerationList } from "./types";
+import type { DashboardAnalytics, Generation, GenerationList } from "./types";
 
 const BASE = import.meta.env.VITE_API_URL || "";
 
@@ -13,6 +13,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (res.status === 204) return undefined as T;
   return res.json();
+}
+
+export function fetchDashboardAnalytics() {
+  return request<DashboardAnalytics>("/api/dashboard/analytics");
 }
 
 export function fetchGenerations(page: number, pageSize: number, q?: string) {

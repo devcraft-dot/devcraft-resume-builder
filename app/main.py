@@ -1,17 +1,29 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 
+from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.generate import router as generate_router
 from app.core.config import settings
 
 import app.models.generation as _generation_model  # noqa: F401 — register table
 
-app = FastAPI(title=settings.app_name)
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    from app.core.db import Base, _engine
+
+    Base.metadata.create_all(bind=_engine())
+    yield
+
+
+app = FastAPI(title=settings.app_name, lifespan=lifespan)
 
 # allow_credentials=True is incompatible with allow_origins=["*"] (Starlette/FastAPI).
 # Chrome extensions send Origin: chrome-extension://<id>; ensure ACAO is always present
-# (including on errors/timeouts where middleware might not add it).
+# (including on errors/timeouts where middleware might not add CORS).
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -53,3 +65,4 @@ async def cors_preflight(full_path: str, request: Request) -> Response:
 
 
 app.include_router(generate_router)
+app.include_router(dashboard_router)

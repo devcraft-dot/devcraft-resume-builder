@@ -19,6 +19,9 @@ const DEFAULT_STATE = {
 };
 
 const PENDING_DETAIL_URLS_KEY = "indeedPendingDetailUrls";
+/** Failed resume-API calls only (local extension storage; nothing on Vercel). */
+const API_ERROR_LOG_KEY = "indeedApiErrorLog";
+const API_ERROR_LOG_MAX = 60;
 
 let state = { ...DEFAULT_STATE };
 let searchTabId = null;
@@ -45,6 +48,26 @@ async function getProfiles() {
 
 function broadcastState() {
   chrome.runtime.sendMessage({ type: "stateUpdate", state }).catch(() => {});
+}
+
+async function appendApiErrorLog(entry) {
+  try {
+    const r = await chrome.storage.local.get(API_ERROR_LOG_KEY);
+    const prev = Array.isArray(r[API_ERROR_LOG_KEY]) ? r[API_ERROR_LOG_KEY] : [];
+    const row = {
+      at: new Date().toISOString(),
+      path: String(entry.path || "").slice(0, 400),
+      method: String(entry.method || "POST").slice(0, 16),
+      status: typeof entry.status === "number" ? entry.status : 0,
+      detail: String(entry.detail || "").slice(0, 3000),
+      context: String(entry.context || "").slice(0, 500),
+    };
+    await chrome.storage.local.set({
+      [API_ERROR_LOG_KEY]: [row, ...prev].slice(0, API_ERROR_LOG_MAX),
+    });
+  } catch (e) {
+    console.error("[Indeed ext] appendApiErrorLog failed", e);
+  }
 }
 
 function appendSkipLog(message) {
@@ -666,6 +689,13 @@ async function generateResume(job, profile) {
   } catch (e) {
     const msg = e?.message || String(e);
     console.error("[Indeed ext] POST /api/generate failed (network/CORS)", msg, job?.url);
+    await appendApiErrorLog({
+      path: "/api/generate",
+      method: "POST",
+      status: 0,
+      detail: msg,
+      context: `${job?.title || ""} · ${job?.url || ""}`.trim(),
+    });
     throw new Error(
       `API unreachable or blocked by CORS (${API_URL}/api/generate): ${msg}. ` +
         `Redeploy the FastAPI app so responses include Access-Control-Allow-Origin (see app/main.py).`,
@@ -683,6 +713,13 @@ async function generateResume(job, profile) {
       /* plain text body */
     }
     console.error("[Indeed ext] generate HTTP error", res.status, detail?.slice(0, 500), job?.url);
+    await appendApiErrorLog({
+      path: "/api/generate",
+      method: "POST",
+      status: res.status,
+      detail,
+      context: `${job?.title || ""} · profile: ${profile?.name || "default"}`.trim(),
+    });
     throw new Error(`API ${res.status}: ${detail}`);
   }
   return res.json();
@@ -704,10 +741,37 @@ async function checkGenerationKeys(jdUrl, profilesList) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ items }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const text = await res.text().catch(() => res.statusText);
+      let detail = text?.slice(0, 1200) || res.statusText;
+      try {
+        const j = JSON.parse(text);
+        if (j?.detail != null) {
+          detail = typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail);
+        }
+      } catch {
+        /* plain text */
+      }
+      await appendApiErrorLog({
+        path: "/api/check-generation-keys",
+        method: "POST",
+        status: res.status,
+        detail,
+        context: (jdUrl || "").slice(0, 400),
+      });
+      return null;
+    }
     const data = await res.json();
     return Array.isArray(data.items) ? data.items : [];
-  } catch {
+  } catch (e) {
+    const msg = e?.message || String(e);
+    await appendApiErrorLog({
+      path: "/api/check-generation-keys",
+      method: "POST",
+      status: 0,
+      detail: msg,
+      context: (jdUrl || "").slice(0, 400),
+    });
     return null;
   }
 }

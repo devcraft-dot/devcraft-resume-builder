@@ -188,26 +188,36 @@ export function Dashboard() {
 
   return (
     <div className="space-y-4">
-      {/* Search bar */}
-      <div className="flex items-center gap-3">
-        <input
-          type="text"
-          placeholder="Search title or company…"
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-72 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-        />
-        <span className="text-sm text-gray-500">
-          {total} result{total !== 1 ? "s" : ""}
-        </span>
-        {loading && (
-          <span className="text-sm text-blue-500 animate-pulse">
-            Loading…
+      {/* Search + refresh */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            type="text"
+            placeholder="Search title or company…"
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-72 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+          />
+          <span className="text-sm text-gray-500">
+            {total} result{total !== 1 ? "s" : ""}
           </span>
-        )}
+          {loading && (
+            <span className="text-sm text-blue-500 animate-pulse">
+              Loading…
+            </span>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => load()}
+          disabled={loading}
+          className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 transition shrink-0"
+        >
+          {loading ? "Refreshing…" : "Refresh"}
+        </button>
       </div>
 
       {error && (

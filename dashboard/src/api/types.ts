@@ -29,3 +29,27 @@ export const STAGES = [
   "success",
   "failed",
 ] as const;
+
+export interface StageCount {
+  stage: string;
+  count: number;
+}
+
+export interface ModelBreakdown {
+  model_name: string;
+  total: number;
+  success: number;
+}
+
+export interface ProfileBreakdown {
+  profile_name: string;
+  total: number;
+  success: number;
+}
+
+export interface DashboardAnalytics {
+  total_generations: number;
+  by_stage: StageCount[];
+  by_model: ModelBreakdown[];
+  by_profile: ProfileBreakdown[];
+}

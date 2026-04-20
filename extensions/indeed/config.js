@@ -1,3 +1,4 @@
+/** Must stay in sync with `host_permissions` in manifest.json (MV3 requires it for background fetch). */
 const API_URL = "https://devcraft-resume-builder.vercel.app";
 
 const DELAYS = {

@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import Response
 
 from app.api.routes.generate import router as generate_router
 from app.core.config import settings
@@ -33,6 +34,22 @@ async def ensure_cors_allow_origin(request: Request, call_next):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.options("/{full_path:path}")
+async def cors_preflight(full_path: str, request: Request) -> Response:
+    """Explicit OPTIONS so preflight always gets ACAO (some proxies strip middleware CORS)."""
+    req_headers = request.headers.get("access-control-request-headers", "")
+    allow_headers = req_headers if req_headers else "*"
+    return Response(
+        status_code=204,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": allow_headers,
+            "Access-Control-Max-Age": "86400",
+        },
+    )
 
 
 app.include_router(generate_router)

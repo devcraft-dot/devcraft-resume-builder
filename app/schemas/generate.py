@@ -53,6 +53,27 @@ class CheckUrlsRequest(BaseModel):
     urls: list[str]
 
 
+class GenerationPresenceItem(BaseModel):
+    """One (job URL, profile) pair to test for an existing generation row."""
+
+    url: str = Field(..., min_length=1, max_length=2000)
+    profile_name: str = Field("", max_length=200)
+
+
+class CheckGenerationKeysRequest(BaseModel):
+    items: list[GenerationPresenceItem] = Field(default_factory=list)
+
+
+class GenerationPresenceResult(BaseModel):
+    url: str
+    profile_name: str
+    exists: bool
+
+
+class CheckGenerationKeysResponse(BaseModel):
+    items: list[GenerationPresenceResult]
+
+
 class GenerationListResponse(BaseModel):
     items: list[GenerationRead]
     total: int

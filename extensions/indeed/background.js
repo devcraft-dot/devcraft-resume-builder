@@ -131,15 +131,23 @@ async function waitForSerpUrlChangedFrom(tabId, prevUrl, timeoutMs) {
   return false;
 }
 
+/** Inject content script if needed. Returns false if the tab no longer exists or is not scriptable. */
 async function ensureContentScript(tabId, file) {
+  if (typeof tabId !== "number") return false;
   try {
     await sendToTab(tabId, "ping");
-    return;
+    return true;
   } catch {
     /* inject */
   }
-  await chrome.scripting.executeScript({ target: { tabId }, files: [file] });
-  await sleep(400);
+  try {
+    await chrome.scripting.executeScript({ target: { tabId }, files: [file] });
+    await sleep(400);
+    return true;
+  } catch (e) {
+    console.warn("[Indeed ext] ensureContentScript failed", tabId, e?.message || e);
+    return false;
+  }
 }
 
 function mosaicRowForJk(rows, jk) {
@@ -301,6 +309,12 @@ function isIndeedBffTabUrl(u) {
 
 async function focusSearchTab(searchTabId) {
   await sleep(400);
+  if (typeof searchTabId !== "number") return;
+  try {
+    await chrome.tabs.get(searchTabId);
+  } catch {
+    return;
+  }
   try {
     await chrome.tabs.update(searchTabId, { active: true });
   } catch {
@@ -659,24 +673,42 @@ async function generateResume(job, profile) {
   }
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
-    console.error("[Indeed ext] generate HTTP error", res.status, text?.slice(0, 500), job?.url);
-    throw new Error(`API ${res.status}: ${text}`);
+    let detail = text?.slice(0, 1200) || res.statusText;
+    try {
+      const j = JSON.parse(text);
+      if (j?.detail != null) {
+        detail = typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail);
+      }
+    } catch {
+      /* plain text body */
+    }
+    console.error("[Indeed ext] generate HTTP error", res.status, detail?.slice(0, 500), job?.url);
+    throw new Error(`API ${res.status}: ${detail}`);
   }
   return res.json();
 }
 
-async function checkUrl(url) {
+/**
+ * For one JD URL, check which saved profiles already have a generation row (url + profile_name).
+ * Returns parallel array to profilesList, each { exists }; on failure returns null (caller treats as none known).
+ */
+async function checkGenerationKeys(jdUrl, profilesList) {
+  if (!jdUrl || !profilesList?.length) return [];
+  const items = profilesList.map((p) => ({
+    url: jdUrl,
+    profile_name: (p.name || "").trim() || "default",
+  }));
   try {
-    const res = await fetch(`${API_URL}/api/check-urls`, {
+    const res = await fetch(`${API_URL}/api/check-generation-keys`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ urls: [url] }),
+      body: JSON.stringify({ items }),
     });
-    if (!res.ok) return false;
+    if (!res.ok) return null;
     const data = await res.json();
-    return data[url] === true;
+    return Array.isArray(data.items) ? data.items : [];
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -693,11 +725,16 @@ async function runLoop() {
     return;
   }
 
-  const profile = profiles[state.activeProfileIndex] || profiles[0];
-
   while (state.running && !state.paused) {
     try {
-      await ensureContentScript(searchTabId, "content.js");
+      if (!(await ensureContentScript(searchTabId, "content.js"))) {
+        state.lastError =
+          "Indeed search tab was closed or is not scriptable — reopen the SERP tab, then Resume.";
+        state.paused = true;
+        await saveState();
+        broadcastState();
+        break;
+      }
 
       /* ── Phase 1: collect detail URLs from SERP (mosaic + pagination) ── */
       if (state.phase !== "scrape_details") {
@@ -706,7 +743,14 @@ async function runLoop() {
         broadcastState();
 
         while (state.running && !state.paused) {
-          await ensureContentScript(searchTabId, "content.js");
+          if (!(await ensureContentScript(searchTabId, "content.js"))) {
+            state.lastError =
+              "Search tab lost during URL collection — reopen the Indeed results page, then Resume.";
+            state.paused = true;
+            await saveState();
+            broadcastState();
+            break;
+          }
           const { urls: pageUrls } = await extractMosaicDetailUrls(searchTabId);
           const merged = await appendPendingDetailUrlsUnique(pageUrls);
           state.totalJobsOnPage = merged.length;
@@ -750,7 +794,14 @@ async function runLoop() {
             );
           }
 
-          await ensureContentScript(searchTabId, "content.js");
+          if (!(await ensureContentScript(searchTabId, "content.js"))) {
+            state.lastError =
+              "Search tab lost after pagination — reopen the Indeed results page, then Resume.";
+            state.paused = true;
+            await saveState();
+            broadcastState();
+            break;
+          }
           await sleep(urlChanged ? DELAYS.AFTER_PAGE_LOAD : Math.max(DELAYS.AFTER_PAGE_LOAD, 5500));
 
           state.currentPage++;
@@ -791,11 +842,16 @@ async function runLoop() {
 
           let detailTabId = null;
           try {
-            const t = await chrome.tabs.create({
-              url,
-              active: false,
-              openerTabId: searchTabId,
-            });
+            let t = null;
+            try {
+              t = await chrome.tabs.create({
+                url,
+                active: false,
+                openerTabId: searchTabId,
+              });
+            } catch {
+              t = await chrome.tabs.create({ url, active: false });
+            }
             detailTabId = t?.id ?? null;
           } catch {
             state.scrapeIndex++;
@@ -817,7 +873,15 @@ async function runLoop() {
             }
             await sleep(DELAYS.DETAIL_TAB_SETTLE ?? 2500);
 
-            await ensureContentScript(detailTabId, "content.js");
+            if (!(await ensureContentScript(detailTabId, "content.js"))) {
+              state.scrapeIndex++;
+              state.skipped++;
+              appendSkipLog(`detail tab closed or blocked before script | jk=${jk || "?"}`);
+              state.lastError = `Skipped: detail tab gone (${jk || "no-jk"})`;
+              await saveState();
+              broadcastState();
+              continue;
+            }
             await waitForBotClearOnTab(detailTabId);
 
             let essentials = {};
@@ -850,12 +914,21 @@ async function runLoop() {
               continue;
             }
 
-            const exists = await checkUrl(indeedUrl);
-            if (exists) {
+            const presence = await checkGenerationKeys(indeedUrl, profiles);
+            const presenceList = presence || [];
+            const allProfilesDone =
+              profiles.length > 0 &&
+              profiles.every((p, i) => {
+                const row = presenceList[i];
+                return row && row.exists === true;
+              });
+            if (allProfilesDone) {
               state.scrapeIndex++;
               state.skipped++;
-              appendSkipLog(`already in database | title=${(job.title || "").slice(0, 80)} | ${indeedUrl}`);
-              state.lastError = `Skipped (exists): ${job.title}`;
+              appendSkipLog(
+                `all profiles already in DB for this job | title=${(job.title || "").slice(0, 80)} | ${indeedUrl}`,
+              );
+              state.lastError = `Skipped (all profiles exist): ${job.title}`;
               await saveState();
               broadcastState();
               continue;
@@ -869,21 +942,50 @@ async function runLoop() {
             job.questions = questions || [];
             job.url = indeedUrl;
 
-            state.lastError = `Generating: ${job.title}`;
-            await saveState();
-            broadcastState();
-            await generateResume(job, profile);
+            let generatedForJob = 0;
+            for (let pi = 0; pi < profiles.length; pi++) {
+              if (!state.running || state.paused) break;
+              const profile = profiles[pi];
+              const row = presenceList[pi];
+              const already = row && row.exists === true;
+              if (already) {
+                state.skipped++;
+                appendSkipLog(
+                  `already in DB | profile=${(profile.name || "").trim() || "default"} | ${indeedUrl}`,
+                );
+                state.lastError = `Skipped profile: ${profile.name || "default"} — ${job.title}`;
+                await saveState();
+                broadcastState();
+                continue;
+              }
 
-            state.processed++;
+              state.lastError = `Generating: ${job.title} — ${profile.name || `profile ${pi + 1}`}`;
+              await saveState();
+              broadcastState();
+              await generateResume(job, profile);
+              state.processed++;
+              generatedForJob++;
+              state.lastError = `Generated: ${job.title} — ${profile.name || `profile ${pi + 1}`}`;
+              await saveState();
+              broadcastState();
+            }
+
             state.scrapeIndex++;
-            state.lastError = `Done: ${job.title}`;
+            state.lastError =
+              generatedForJob > 0
+                ? `Done: ${job.title} (${generatedForJob} profile(s) generated)`
+                : `Done: ${job.title} (no new profiles)`;
             await saveState();
             broadcastState();
           } catch (innerErr) {
             state.failed++;
             state.scrapeIndex++;
             state.lastError = innerErr?.message || String(innerErr);
-            console.error("[Indeed ext] scrape job failed", innerErr, { jk, indeedUrl, detailUrl: url });
+            console.error(
+              "[Indeed ext] scrape job failed",
+              innerErr?.message || String(innerErr),
+              `jk=${jk} detail=${String(url).slice(0, 100)}`,
+            );
             await saveState();
             broadcastState();
           } finally {

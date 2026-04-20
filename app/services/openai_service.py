@@ -254,6 +254,11 @@ def generate_resume(
     else:
         full_text, response_id = _generate_with_responses_api(client, model_id, prompt)
 
+    if not str(full_text or "").strip():
+        raise ValueError(
+            f"Model {model_id!r} returned empty output; check API key, base URL, and model id for provider {model_key!r}."
+        )
+
     resume_text, answers_text = _split_resume_and_answers(full_text)
 
     logger.info(

@@ -62,7 +62,7 @@
     }
     .stat-item { text-align: center; }
     .stat-num { font-size: 20px; font-weight: 700; color: #111827; }
-    .stat-label { font-size: 10px; color: #6b7280; text-transform: uppercase; }
+    .stat-label { font-size: 9px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.02em; }
     .stat-num.green { color: #059669; }
     .stat-num.yellow { color: #d97706; }
     .stat-num.red { color: #ef4444; }
@@ -95,13 +95,67 @@
       color: #374151;
     }
 
-    /* ─── Profile selector ─── */
-    .profile-select-row {
-      display: flex; gap: 8px; align-items: center; margin-bottom: 14px;
+    /* ─── Run: all profiles context ─── */
+    .run-context-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 14px;
     }
-    .profile-select-row select {
-      flex: 1; padding: 8px 10px; font-size: 13px;
-      border: 1px solid #d1d5db; border-radius: 6px; background: #fff;
+    .run-context-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 6px;
+    }
+    .run-context-hint {
+      font-size: 11px;
+      color: #6b7280;
+      line-height: 1.45;
+      margin-bottom: 8px;
+    }
+    .run-profiles-list {
+      list-style: none;
+      margin: 0 0 8px 0;
+      padding: 0;
+      max-height: 120px;
+      overflow-y: auto;
+      border: 1px solid #f3f4f6;
+      border-radius: 6px;
+      background: #fafafa;
+    }
+    .run-profiles-list li {
+      font-size: 11px;
+      padding: 6px 10px;
+      border-bottom: 1px solid #f3f4f6;
+      color: #374151;
+    }
+    .run-profiles-list li:last-child { border-bottom: none; }
+    .btn-link-settings {
+      width: 100%;
+      padding: 6px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #2563eb;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .btn-link-settings:hover { background: #dbeafe; }
+
+    .stats-note {
+      font-size: 10px;
+      color: #6b7280;
+      text-align: center;
+      margin: -4px 0 8px 0;
+      line-height: 1.35;
+    }
+    .progress-detail {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 4px;
     }
 
     /* ─── Settings panel ─── */
@@ -169,9 +223,14 @@
 
   <!-- ─── Run Panel ─── -->
   <div id="panel-run" class="panel active">
-    <div class="profile-select-row">
-      <label style="font-size:12px;font-weight:600;white-space:nowrap">Profile:</label>
-      <select id="profile-picker"></select>
+    <div class="run-context-card">
+      <div class="run-context-title">Profiles for each job</div>
+      <p class="run-context-hint">
+        Each collected Indeed job runs against <strong>every</strong> profile you saved in Settings.
+        Your API skips a profile when that <strong>job URL + profile name</strong> already exists.
+      </p>
+      <ul id="run-profiles-list" class="run-profiles-list"></ul>
+      <button type="button" class="btn-link-settings" id="btn-link-settings">Edit profiles in Settings →</button>
     </div>
 
     <div class="controls">
@@ -182,10 +241,11 @@
     </div>
 
     <div class="stats">
+      <p class="stats-note" id="stats-note"></p>
       <div class="stats-grid">
         <div class="stat-item">
           <div class="stat-num green" id="s-processed">0</div>
-          <div class="stat-label">Generated</div>
+          <div class="stat-label">Resumes</div>
         </div>
         <div class="stat-item">
           <div class="stat-num yellow" id="s-skipped">0</div>
@@ -200,6 +260,7 @@
         Page <strong id="s-page">1</strong> &nbsp;·&nbsp;
         Job <strong id="s-job">0</strong> / <strong id="s-total">0</strong>
       </div>
+      <div class="progress-detail" id="progress-detail"></div>
       <div id="status-msg" class="status-msg">Ready — navigate to an Indeed search page</div>
       <details class="skip-log-wrap">
         <summary>Skip log (why jobs were skipped)</summary>

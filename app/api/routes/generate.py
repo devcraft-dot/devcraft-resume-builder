@@ -11,10 +11,13 @@ from app.core.db import get_db
 from app.models.generation import Generation
 from app.schemas.generate import (
     ALLOWED_MODELS,
+    CheckGenerationKeysRequest,
+    CheckGenerationKeysResponse,
     CheckUrlsRequest,
     GenerateRequest,
     GenerationListResponse,
     GenerationPatch,
+    GenerationPresenceResult,
     GenerationRead,
 )
 from app.services.document_service import build_answers_docx, build_jd_docx, build_resume_docx
@@ -47,41 +50,56 @@ def generate(payload: GenerateRequest, db: Session = Depends(get_db)):
     if existing:
         return existing
 
-    ai = generate_resume(
-        model_key=payload.model,
-        title=payload.title,
-        url=payload.url,
-        description_text=payload.description_text,
-        questions=payload.questions,
-        profile_text=payload.profile_text,
-    )
+    try:
+        ai = generate_resume(
+            model_key=payload.model,
+            title=payload.title,
+            url=payload.url,
+            description_text=payload.description_text,
+            questions=payload.questions,
+            profile_text=payload.profile_text,
+        )
 
-    resume_buf = build_resume_docx(
-        ai.resume_text, payload.title, payload.company_name,
-        payload.description_text, profile_name,
-    )
-    jd_buf = build_jd_docx(payload.title, payload.company_name, payload.description_text)
-    answers_buf = build_answers_docx(payload.title, payload.company_name, ai.answers_text)
+        resume_buf = build_resume_docx(
+            ai.resume_text,
+            payload.title,
+            payload.company_name,
+            payload.description_text,
+            profile_name,
+        )
+        jd_buf = build_jd_docx(payload.title, payload.company_name, payload.description_text)
+        answers_buf = build_answers_docx(payload.title, payload.company_name, ai.answers_text)
 
-    resume_drive_url, jd_drive_url, questions_drive_url = upload_buffers_parallel(
-        [resume_buf, jd_buf, answers_buf]
-    )
+        resume_drive_url, jd_drive_url, questions_drive_url = upload_buffers_parallel(
+            [resume_buf, jd_buf, answers_buf]
+        )
 
-    gen = Generation(
-        profile_name=profile_name,
-        stage="generated",
-        title=payload.title,
-        company_name=payload.company_name,
-        salary_range=payload.salary_range,
-        url=payload.url,
-        resume_drive_url=resume_drive_url,
-        questions_drive_url=questions_drive_url,
-        jd_drive_url=jd_drive_url,
-        model_name=ai.model_name,
-    )
-    db.add(gen)
-    db.commit()
-    db.refresh(gen)
+        gen = Generation(
+            profile_name=profile_name,
+            stage="generated",
+            title=payload.title,
+            company_name=payload.company_name,
+            salary_range=payload.salary_range,
+            url=payload.url,
+            resume_drive_url=resume_drive_url,
+            questions_drive_url=questions_drive_url,
+            jd_drive_url=jd_drive_url,
+            model_name=ai.model_name,
+        )
+        db.add(gen)
+        db.commit()
+        db.refresh(gen)
+    except HTTPException:
+        raise
+    except ValueError as exc:
+        logger.warning("generate validation/model error: %s", exc)
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("POST /api/generate failed for url=%s model=%s", payload.url, payload.model)
+        msg = str(exc).strip() or type(exc).__name__
+        if len(msg) > 1200:
+            msg = msg[:1200] + "…"
+        raise HTTPException(status_code=500, detail=msg) from exc
 
     try:
         append_generation_row(
@@ -102,7 +120,32 @@ def generate(payload: GenerateRequest, db: Session = Depends(get_db)):
 
 
 # ---------------------------------------------------------------------------
-# POST /api/check-urls — bulk duplicate check for extension
+# POST /api/check-generation-keys — (url, profile_name) duplicate check for extension
+# ---------------------------------------------------------------------------
+
+
+@router.post("/check-generation-keys", response_model=CheckGenerationKeysResponse)
+def check_generation_keys(
+    payload: CheckGenerationKeysRequest,
+    db: Session = Depends(get_db),
+) -> CheckGenerationKeysResponse:
+    """True if a generation row already exists for the same JD URL and profile name."""
+    out: list[GenerationPresenceResult] = []
+    for item in payload.items:
+        url = item.url.strip()
+        pn = (item.profile_name or "default").strip()
+        hit = db.scalar(
+            select(Generation.id).where(
+                Generation.url == url,
+                Generation.profile_name == pn,
+            ).limit(1),
+        )
+        out.append(GenerationPresenceResult(url=item.url, profile_name=pn, exists=hit is not None))
+    return CheckGenerationKeysResponse(items=out)
+
+
+# ---------------------------------------------------------------------------
+# POST /api/check-urls — bulk duplicate check by URL only (legacy)
 # ---------------------------------------------------------------------------
 
 @router.post("/check-urls")

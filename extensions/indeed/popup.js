@@ -10,8 +10,20 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
   });
 });
 
-/* ─── Profiles ──────────────────────────────────────────────────── */
+/* ─── Profiles (Settings + Run summary) ─────────────────────────── */
 let profiles = [];
+
+function renderRunProfilesSummary() {
+  const host = $("#run-profiles-list");
+  if (!host) return;
+  host.innerHTML = "";
+  profiles.forEach((p, i) => {
+    const li = document.createElement("li");
+    const name = (p.name || "").trim() || `Profile ${i + 1}`;
+    li.textContent = `${name} — ${p.model || "gpt-5.4-mini"}`;
+    host.appendChild(li);
+  });
+}
 
 function loadProfiles() {
   chrome.storage.sync.get({ profiles: [] }, (d) => {
@@ -19,8 +31,12 @@ function loadProfiles() {
     if (!profiles.length) {
       profiles.push({ name: "Default", model: "gpt-5.4-mini", text: "" });
     }
-    renderProfiles();
-    renderProfilePicker();
+    chrome.runtime.sendMessage({ action: "getState" }, (s) => {
+      renderProfiles();
+      renderRunProfilesSummary();
+      if (s) updateUI(s);
+      else updateStatsNoteOnly();
+    });
   });
 }
 
@@ -61,7 +77,7 @@ function renderProfiles() {
     btn.addEventListener("click", () => {
       profiles.splice(parseInt(btn.dataset.idx), 1);
       renderProfiles();
-      renderProfilePicker();
+      renderRunProfilesSummary();
     });
   });
 }
@@ -78,19 +94,6 @@ function collectProfiles() {
   });
 }
 
-function renderProfilePicker() {
-  const sel = $("#profile-picker");
-  const prev = sel.value;
-  sel.innerHTML = "";
-  profiles.forEach((p, i) => {
-    const opt = document.createElement("option");
-    opt.value = i;
-    opt.textContent = `${p.name || "Profile " + (i + 1)} — ${p.model}`;
-    sel.appendChild(opt);
-  });
-  if (prev && parseInt(prev) < profiles.length) sel.value = prev;
-}
-
 function esc(s) {
   return (s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }
@@ -99,18 +102,32 @@ $("#btn-add").addEventListener("click", () => {
   collectProfiles();
   profiles.push({ name: "", model: "gpt-5.4-mini", text: "" });
   renderProfiles();
-  renderProfilePicker();
+  renderRunProfilesSummary();
 });
 
 $("#btn-save").addEventListener("click", () => {
   collectProfiles();
   chrome.storage.sync.set({ profiles }, () => {
-    renderProfilePicker();
+    renderRunProfilesSummary();
     const el = $("#save-status");
     el.textContent = "Saved!";
     setTimeout(() => (el.textContent = ""), 2000);
   });
 });
+
+function updateStatsNoteOnly() {
+  const note = $("#stats-note");
+  const pd = $("#progress-detail");
+  const n = profiles.length;
+  if (note) {
+    note.textContent = n
+      ? `Counts are per resume (not per job). Up to ${n} resume(s) can be produced per job.`
+      : "";
+  }
+  if (pd) {
+    pd.textContent = n ? `Using ${n} saved profile(s) for each new job.` : "";
+  }
+}
 
 /* ─── State display ─────────────────────────────────────────────── */
 function updateUI(s) {
@@ -120,6 +137,8 @@ function updateUI(s) {
   $("#s-page").textContent = s.currentPage || 1;
   $("#s-job").textContent = s.currentJobIndex || 0;
   $("#s-total").textContent = s.totalJobsOnPage || 0;
+
+  updateStatsNoteOnly();
 
   const msg = $("#status-msg");
   msg.textContent = s.lastError || (s.running ? "Running…" : "Ready");
@@ -148,9 +167,8 @@ function updateUI(s) {
 
 /* ─── Controls ──────────────────────────────────────────────────── */
 $("#btn-start").addEventListener("click", () => {
-  const idx = parseInt($("#profile-picker").value) || 0;
   chrome.runtime.sendMessage(
-    { action: "start", reset: true, profileIndex: idx },
+    { action: "start", reset: true, profileIndex: 0 },
     (res) => {
       if (!res?.ok) alert(res?.error || "Failed to start");
     },
@@ -178,6 +196,13 @@ $("#btn-reset").addEventListener("click", () => {
   });
 });
 
+$("#btn-link-settings").addEventListener("click", () => {
+  document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+  document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+  document.querySelector('.tab-btn[data-tab="settings"]')?.classList.add("active");
+  $("#panel-settings")?.classList.add("active");
+});
+
 /* ─── Listen for live updates from background ───────────────────── */
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === "stateUpdate") updateUI(msg.state);
@@ -186,7 +211,4 @@ chrome.runtime.onMessage.addListener((msg) => {
 /* ─── Init ──────────────────────────────────────────────────────── */
 document.addEventListener("DOMContentLoaded", () => {
   loadProfiles();
-  chrome.runtime.sendMessage({ action: "getState" }, (s) => {
-    if (s) updateUI(s);
-  });
 });

@@ -51,26 +51,30 @@ def upload_buffer(buf: BytesIO, filename: str) -> str:
         logger.warning("Drive credentials invalid or expired")
         return ""
 
-    service = build("drive", "v3", credentials=creds)
+    try:
+        service = build("drive", "v3", credentials=creds)
 
-    metadata: dict = {"name": filename, "mimeType": GDOC_MIME}
-    if settings.google_drive_folder_id:
-        metadata["parents"] = [settings.google_drive_folder_id]
+        metadata: dict = {"name": filename, "mimeType": GDOC_MIME}
+        if settings.google_drive_folder_id:
+            metadata["parents"] = [settings.google_drive_folder_id]
 
-    media = MediaIoBaseUpload(buf, mimetype=DOCX_MIME, resumable=True)
+        media = MediaIoBaseUpload(buf, mimetype=DOCX_MIME, resumable=True)
 
-    uploaded = service.files().create(
-        body=metadata,
-        media_body=media,
-        fields="id,webViewLink",
-    ).execute()
+        uploaded = service.files().create(
+            body=metadata,
+            media_body=media,
+            fields="id,webViewLink",
+        ).execute()
 
-    service.permissions().create(
-        fileId=uploaded["id"],
-        body={"type": "anyone", "role": "reader"},
-    ).execute()
+        service.permissions().create(
+            fileId=uploaded["id"],
+            body={"type": "anyone", "role": "reader"},
+        ).execute()
 
-    return uploaded.get("webViewLink", "")
+        return uploaded.get("webViewLink", "")
+    except Exception:
+        logger.exception("Drive upload failed for %s", filename)
+        return ""
 
 
 def upload_buffers_parallel(

@@ -44,7 +44,8 @@ function renderProfiles() {
         <select class="p-model" data-idx="${i}">
           <option value="gpt-5.4-mini" ${p.model === "gpt-5.4-mini" ? "selected" : ""}>GPT-5.4 Mini</option>
           <option value="gpt-5.4" ${p.model === "gpt-5.4" ? "selected" : ""}>GPT-5.4</option>
-          <option value="deepseek" ${p.model === "deepseek" ? "selected" : ""}>DeepSeek</option>
+          <option value="deepseek" ${p.model === "deepseek" ? "selected" : ""}>DeepSeek Chat</option>
+          <option value="deepseek-reasoner" ${p.model === "deepseek-reasoner" ? "selected" : ""}>DeepSeek Reasoner</option>
         </select>
       </div>
       <div class="field">

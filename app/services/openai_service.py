@@ -18,21 +18,30 @@ logger = logging.getLogger(__name__)
 # Model registry — both providers use the OpenAI SDK
 # ---------------------------------------------------------------------------
 
-MODEL_REGISTRY: dict[str, dict[str, str]] = {
+MODEL_REGISTRY: dict[str, dict[str, Any]] = {
     "gpt-5.4": {
         "api_key_field": "openai_api_key",
         "base_url_field": "openai_base_url",
         "model_id": "gpt-5.4",
+        "invoke": "responses",
     },
     "gpt-5.4-mini": {
         "api_key_field": "openai_api_key",
         "base_url_field": "openai_base_url",
         "model_id": "gpt-5.4-mini",
+        "invoke": "responses",
     },
     "deepseek": {
         "api_key_field": "deepseek_api_key",
         "base_url_field": "deepseek_base_url",
         "model_id": "deepseek-chat",
+        "invoke": "chat",
+    },
+    "deepseek-reasoner": {
+        "api_key_field": "deepseek_api_key",
+        "base_url_field": "deepseek_base_url",
+        "model_id": "deepseek-reasoner",
+        "invoke": "chat",
     },
 }
 
@@ -54,6 +63,10 @@ def _get_client(model_key: str) -> tuple[OpenAI, str]:
         kwargs: dict[str, Any] = {"api_key": api_key}
         base_url = getattr(settings, entry["base_url_field"], "") or ""
         if base_url:
+            base_url = base_url.rstrip("/")
+            # DeepSeek (and other OpenAI-compatible chat hosts) expect …/v1 for the SDK path.
+            if entry.get("invoke") == "chat" and not base_url.endswith("/v1"):
+                base_url = f"{base_url}/v1"
             kwargs["base_url"] = base_url
         _clients[cache_key] = OpenAI(**kwargs)
 
@@ -182,6 +195,26 @@ def _split_resume_and_answers(raw: str) -> tuple[str, str]:
     return text[: match.start()].strip(), text[match.start() :].strip()
 
 
+def _generate_with_responses_api(client: OpenAI, model_id: str, prompt: str) -> tuple[str, str | None]:
+    response = client.responses.create(model=model_id, input=prompt)
+    raw = str(getattr(response, "output_text", "") or "").strip()
+    return _strip_outer_code_fence(raw), getattr(response, "id", None)
+
+
+def _generate_with_chat_completions(client: OpenAI, model_id: str, prompt: str) -> tuple[str, str | None]:
+    """OpenAI-compatible chat (used for DeepSeek)."""
+    completion = client.chat.completions.create(
+        model=model_id,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.5,
+        max_tokens=8192,
+    )
+    if not completion.choices:
+        raise ValueError("Chat completion returned no choices")
+    raw = str(completion.choices[0].message.content or "").strip()
+    return _strip_outer_code_fence(raw), getattr(completion, "id", None)
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -206,26 +239,35 @@ def generate_resume(
     profile_text: str,
 ) -> GenerationResult:
     """Call the selected AI model and return parsed resume + answers."""
+    entry = MODEL_REGISTRY.get(model_key)
+    if not entry:
+        raise ValueError(f"Unknown model: {model_key!r}. Choose from {list(MODEL_REGISTRY)}")
+
     client, model_id = _get_client(model_key)
     prompt = _render_prompt(title, url, description_text, questions, profile_text)
+    invoke = entry.get("invoke", "responses")
 
-    logger.info("generate_resume: model=%s title=%r", model_id, title)
+    logger.info("generate_resume: model=%s invoke=%s title=%r", model_id, invoke, title)
 
-    response = client.responses.create(model=model_id, input=prompt)
+    if invoke == "chat":
+        full_text, response_id = _generate_with_chat_completions(client, model_id, prompt)
+    else:
+        full_text, response_id = _generate_with_responses_api(client, model_id, prompt)
 
-    full_text = _strip_outer_code_fence(response.output_text.strip())
     resume_text, answers_text = _split_resume_and_answers(full_text)
 
     logger.info(
         "Split result: resume_chars=%d answers_chars=%d response_id=%s",
-        len(resume_text), len(answers_text), getattr(response, "id", None),
+        len(resume_text),
+        len(answers_text),
+        response_id,
     )
 
     return GenerationResult(
         prompt_text=prompt,
         resume_text=resume_text,
         answers_text=answers_text,
-        response_id=getattr(response, "id", None),
+        response_id=response_id,
         model_name=model_id,
         raw_output_text=full_text,
     )

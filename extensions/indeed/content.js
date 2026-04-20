@@ -265,15 +265,70 @@ function clickDetailApplyButton() {
   return { ok: false, kind: "", reason: "no-apply-button" };
 }
 
+function serpPaginationNextAnchor() {
+  const selectors = [
+    'nav[aria-label="pagination"] a[data-testid="pagination-page-next"]',
+    'a[data-testid="pagination-page-next"]',
+    'nav[aria-label="pagination"] a[aria-label="Next Page"]',
+    'a[aria-label="Next Page"][href*="start="]',
+  ];
+  for (const sel of selectors) {
+    const el = document.querySelector(sel);
+    if (el instanceof HTMLAnchorElement) return el;
+  }
+  return null;
+}
+
+function nextPageLinkIsUsable(a) {
+  if (!a || !(a instanceof HTMLAnchorElement)) return false;
+  if (a.getAttribute("aria-disabled") === "true") return false;
+  const href = (a.getAttribute("href") || "").trim();
+  if (!href || href === "#") return false;
+  return true;
+}
+
 function hasNextPage() {
-  return !!document.querySelector('[data-testid="pagination-page-next"]');
+  return nextPageLinkIsUsable(serpPaginationNextAnchor());
+}
+
+/** @returns {{ ok: boolean, method?: string, to?: string, reason?: string }} */
+function prepareSerpNextNavigation() {
+  const a = serpPaginationNextAnchor();
+  if (!a || !nextPageLinkIsUsable(a)) return { ok: false, reason: "no-next-control" };
+  let abs = "";
+  try {
+    abs = new URL(a.getAttribute("href"), location.origin).href;
+  } catch {
+    return { ok: false, reason: "bad-href" };
+  }
+  const here = location.href.split("#")[0];
+  if (abs.split("#")[0] === here) return { ok: false, reason: "same-url" };
+  return { ok: true, method: "assign", to: abs };
+}
+
+/**
+ * Go to next SERP page. Prefer full navigation via resolved href (Indeed/React often ignores a bare .click()).
+ * Falls back to clicking the anchor if assign target is unusable.
+ */
+function goSerpNextPage() {
+  const prep = prepareSerpNextNavigation();
+  if (prep.ok && prep.to) {
+    setTimeout(() => {
+      location.assign(prep.to);
+    }, 0);
+    return prep;
+  }
+  const a = serpPaginationNextAnchor();
+  if (a && nextPageLinkIsUsable(a)) {
+    a.click();
+    return { ok: true, method: "click" };
+  }
+  return { ok: false, reason: prep.reason || "no-pagination" };
 }
 
 function clickNextPage() {
-  const btn = document.querySelector('[data-testid="pagination-page-next"]');
-  if (!btn) return false;
-  btn.click();
-  return true;
+  const r = goSerpNextPage();
+  return !!r.ok;
 }
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
@@ -310,6 +365,9 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       break;
     case "clickNextPage":
       sendResponse({ ok: clickNextPage() });
+      break;
+    case "goSerpNextPage":
+      sendResponse(goSerpNextPage());
       break;
     default:
       sendResponse({ error: "unknown action" });

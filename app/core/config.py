@@ -14,9 +14,9 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_base_url: str = ""
 
-    # DeepSeek (OpenAI-compatible API)
+    # DeepSeek (OpenAI-compatible chat API; SDK appends paths under …/v1)
     deepseek_api_key: str = ""
-    deepseek_base_url: str = "https://api.deepseek.com"
+    deepseek_base_url: str = "https://api.deepseek.com/v1"
 
     # Google Drive — credentials as JSON string (env var)
     google_drive_folder_id: str = ""

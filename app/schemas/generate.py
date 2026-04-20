@@ -3,7 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 
-ALLOWED_MODELS = ("gpt-5.4", "gpt-5.4-mini", "deepseek")
+ALLOWED_MODELS = ("gpt-5.4", "gpt-5.4-mini", "deepseek", "deepseek-reasoner")
 
 
 class QuestionField(BaseModel):

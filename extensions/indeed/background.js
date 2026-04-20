@@ -95,6 +95,42 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function tabEffectiveUrl(t) {
+  return String(t?.pendingUrl || t?.url || "");
+}
+
+function normalizeSerpUrlForCompare(u) {
+  try {
+    const x = new URL(u);
+    x.hash = "";
+    return x.href;
+  } catch {
+    return String(u || "");
+  }
+}
+
+/** Wait until Indeed SERP tab URL changes (pagination navigation). */
+async function waitForSerpUrlChangedFrom(tabId, prevUrl, timeoutMs) {
+  const prevNorm = normalizeSerpUrlForCompare(prevUrl);
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      const t = await chrome.tabs.get(tabId);
+      const cur = tabEffectiveUrl(t);
+      if (cur && normalizeSerpUrlForCompare(cur) !== prevNorm) {
+        const remaining = Math.max(2000, deadline - Date.now() + 2000);
+        await waitForTabComplete(tabId, Math.min(45000, remaining)).catch(() => {});
+        await sleep(500);
+        return true;
+      }
+    } catch {
+      /* */
+    }
+    await sleep(120);
+  }
+  return false;
+}
+
 async function ensureContentScript(tabId, file) {
   try {
     await sendToTab(tabId, "ping");
@@ -688,20 +724,38 @@ async function runLoop() {
             break;
           }
 
-          const nextRes = await sendToTabRetry(searchTabId, "clickNextPage");
+          let prevSerpUrl = "";
+          try {
+            prevSerpUrl = tabEffectiveUrl(await chrome.tabs.get(searchTabId));
+          } catch {
+            prevSerpUrl = "";
+          }
+
+          const nextRes = await sendToTabRetry(searchTabId, "goSerpNextPage");
+          await sleep(120);
           if (!nextRes?.ok) {
             state.phase = "scrape_details";
             state.scrapeIndex = 0;
-            state.lastError = "Pagination click failed — scraping collected URLs only";
+            state.lastError = `Pagination failed (${nextRes?.reason || "unknown"}) — scraping collected URLs only`;
             await saveState();
             broadcastState();
             break;
           }
 
+          const urlWait = DELAYS.SERP_PAGINATION_URL_WAIT_MS ?? 28000;
+          const urlChanged = await waitForSerpUrlChangedFrom(searchTabId, prevSerpUrl, urlWait);
+          if (!urlChanged) {
+            console.warn(
+              "[Indeed ext] SERP URL did not change after next-page action; waiting extra for in-place mosaic updates",
+            );
+          }
+
+          await ensureContentScript(searchTabId, "content.js");
+          await sleep(urlChanged ? DELAYS.AFTER_PAGE_LOAD : Math.max(DELAYS.AFTER_PAGE_LOAD, 5500));
+
           state.currentPage++;
           await saveState();
           broadcastState();
-          await sleep(DELAYS.AFTER_PAGE_LOAD);
         }
 
         if (!state.running || state.paused) break;

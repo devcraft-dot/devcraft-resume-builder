@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   deleteGeneration,
   driveExportUrl,
@@ -79,75 +79,89 @@ function EditableCell({
   );
 }
 
-function TinyLink({
+/** Large tap target + centered label for the files grid. */
+function FileFormatLink({
   href,
-  label,
   title,
+  children,
 }: {
   href: string;
-  label: string;
   title: string;
+  children: ReactNode;
 }) {
   return (
     <a
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="text-sm text-blue-600 hover:underline font-medium"
+      className="inline-flex min-h-9 min-w-[3.25rem] items-center justify-center rounded-lg border border-transparent px-2 text-sm font-semibold text-blue-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-900"
       title={title}
       onClick={(e) => e.stopPropagation()}
     >
-      {label}
+      {children}
     </a>
   );
 }
 
-/** One column: resume + Q&A + JD links (replaces three wide FileBtn columns). */
+const FILES_GRID =
+  "grid grid-cols-[minmax(5.5rem,7rem)_minmax(3.25rem,1fr)_minmax(3.25rem,1fr)_minmax(3.25rem,1fr)] gap-x-2 gap-y-1";
+
+/** One column in the table: opens a wide, grid-aligned Drive / export menu. */
 function FilesMenu({ row }: { row: Generation }) {
   const hasAny =
     row.resume_drive_url || row.questions_drive_url || row.jd_drive_url;
   if (!hasAny) return <span className="text-gray-300">—</span>;
 
-  const block = (
-    label: string,
-    url: string,
-    short: string,
-  ) => {
+  const fileRow = (kind: string, url: string | undefined) => {
     if (!url) return null;
     return (
-      <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 border-b border-gray-100 pb-1.5 mb-1.5 last:border-0 last:pb-0 last:mb-0">
-        <span className="w-11 shrink-0 text-sm text-gray-600 font-medium">
-          {short}
-        </span>
-        <TinyLink href={url} label="Doc" title={`Open ${label} in Drive`} />
-        <span className="text-gray-300">·</span>
-        <TinyLink
-          href={driveExportUrl(url, "pdf")}
-          label="PDF"
-          title={`${label} PDF`}
-        />
-        <span className="text-gray-300">·</span>
-        <TinyLink
-          href={driveExportUrl(url, "docx")}
-          label="Docx"
-          title={`${label} DOCX`}
-        />
+      <div className={`${FILES_GRID} items-center border-b border-gray-100 py-2.5 last:border-b-0`}>
+        <span className="text-sm font-semibold text-gray-900">{kind}</span>
+        <div className="flex justify-center">
+          <FileFormatLink href={url} title={`Open ${kind} in Google Docs`}>
+            Doc
+          </FileFormatLink>
+        </div>
+        <div className="flex justify-center">
+          <FileFormatLink
+            href={driveExportUrl(url, "pdf")}
+            title={`Download ${kind} as PDF`}
+          >
+            PDF
+          </FileFormatLink>
+        </div>
+        <div className="flex justify-center">
+          <FileFormatLink
+            href={driveExportUrl(url, "docx")}
+            title={`Download ${kind} as Word`}
+          >
+            Docx
+          </FileFormatLink>
+        </div>
       </div>
     );
   };
 
   return (
-    <details className="relative">
-      <summary className="cursor-pointer select-none list-none rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-sm font-semibold text-gray-800 hover:bg-gray-100 max-w-full truncate [&::-webkit-details-marker]:hidden">
+    <details className="relative z-30 isolate">
+      <summary className="cursor-pointer select-none list-none rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-800 shadow-sm hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 [&::-webkit-details-marker]:hidden">
         Files
       </summary>
       <div
-        className="absolute right-0 z-30 mt-1 min-w-[11.5rem] max-w-[14rem] rounded-lg border border-gray-200 bg-white p-2.5 text-sm shadow-lg"
+        className="absolute left-0 top-full z-50 mt-2 w-[min(calc(100vw-2rem),22rem)] min-w-[17.5rem] rounded-xl border border-gray-200 bg-white p-3 shadow-xl ring-1 ring-gray-900/5"
         onClick={(e) => e.stopPropagation()}
       >
-        {block("Resume", row.resume_drive_url, "CV")}
-        {block("Q&A", row.questions_drive_url, "Q&A")}
-        {block("JD", row.jd_drive_url, "JD")}
+        <div
+          className={`${FILES_GRID} border-b border-gray-200 pb-2 text-xs font-bold uppercase tracking-wide text-gray-500`}
+        >
+          <span className="pl-0.5">Document</span>
+          <span className="text-center">Doc</span>
+          <span className="text-center">PDF</span>
+          <span className="text-center">Docx</span>
+        </div>
+        {fileRow("Resume", row.resume_drive_url)}
+        {fileRow("Q&A", row.questions_drive_url)}
+        {fileRow("JD", row.jd_drive_url)}
       </div>
     </details>
   );
@@ -288,7 +302,7 @@ export function Dashboard({
         </div>
       )}
 
-      <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-visible">
         <table className="w-full table-fixed text-left text-sm leading-normal border-collapse">
           <colgroup>
             <col className="w-[104px]" />
@@ -298,7 +312,7 @@ export function Dashboard({
             <col className="w-[20%]" />
             <col className="w-[88px]" />
             <col className="w-[44px]" />
-            <col className="w-[96px]" />
+            <col className="w-[108px]" />
             <col className="w-[168px]" />
             <col className="w-[44px]" />
           </colgroup>

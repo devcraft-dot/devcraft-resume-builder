@@ -261,13 +261,30 @@ def build_jd_docx(title: str, company_name: str, description_text: str) -> tuple
     return _doc_to_buffer(doc), filename
 
 
+def _split_cover_letter_prefix(body: str) -> tuple[str, str]:
+    """If body starts with ## Cover Letter, return (cover_plain, rest for Q&A parser)."""
+    b = str(body or "").strip()
+    if not re.match(r"^##\s*Cover\s+Letter\s*$", b.split("\n", 1)[0].strip(), re.I):
+        return "", b
+    lines = b.split("\n", 1)
+    if len(lines) < 2:
+        return "", b
+    rest = lines[1].lstrip("\n")
+    m = re.search(r"^\s*##\s*Application\s+Questions\s*$", rest, re.I | re.M)
+    if m:
+        cover = rest[: m.start()].strip()
+        qa = rest[m.end() :].lstrip("\n")
+        return cover, qa
+    return rest.strip(), ""
+
+
 def build_answers_docx(title: str, company_name: str, answers_text: str) -> tuple[BytesIO, str]:
     doc = Document()
     _strip_default_paragraph(doc)
     _apply_standard_page_style(doc)
 
     title_para = doc.add_paragraph()
-    run = title_para.add_run(f"Application Q&A: {title} @ {company_name}")
+    run = title_para.add_run(f"Application packet: {title} @ {company_name}")
     run.bold = True
     run.font.name = _BODY_FONT
     run.font.size = Pt(14)
@@ -275,9 +292,34 @@ def build_answers_docx(title: str, company_name: str, answers_text: str) -> tupl
 
     body = str(answers_text or "").strip()
     if body:
-        pairs = _parse_answers_to_qa_pairs(body)
+        cover, qa_source = _split_cover_letter_prefix(body)
+        if cover:
+            h = doc.add_paragraph()
+            hr = h.add_run("Cover Letter")
+            hr.bold = True
+            hr.font.name = _BODY_FONT
+            hr.font.size = Pt(12)
+            h.paragraph_format.space_after = Pt(4)
+            for block in re.split(r"\n\s*\n+", cover):
+                para = block.strip()
+                if not para:
+                    continue
+                p = doc.add_paragraph()
+                r = p.add_run(para)
+                r.font.name = _BODY_FONT
+                r.font.size = Pt(10.5)
+                p.paragraph_format.space_after = Pt(6)
+            spacer = doc.add_paragraph()
+            spacer.paragraph_format.space_after = Pt(10)
+
+        pairs = _parse_answers_to_qa_pairs(qa_source)
         for q, a in pairs:
             _add_qa_pair_to_doc(doc, q, a)
+        if not cover and not pairs:
+            p = doc.add_paragraph()
+            r = p.add_run("No application Q&A block was parsed (optional for this job).")
+            r.font.name = _BODY_FONT
+            r.font.size = Pt(10.5)
     else:
         p = doc.add_paragraph()
         r = p.add_run("No application answers were generated for this job.")

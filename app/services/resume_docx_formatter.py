@@ -15,6 +15,7 @@ from io import BytesIO
 # ── Section detection (same semantics as automation) ──────────────────────────
 _SECTION_KEYWORDS = {
     "SUMMARY",
+    "MARKET TITLE",
     "PROFESSIONAL SUMMARY",
     "OBJECTIVE",
     "SKILLS",

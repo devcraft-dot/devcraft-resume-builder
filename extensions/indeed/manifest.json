@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Resume Builder — Indeed",
-  "version": "2.2.22",
+  "version": "2.2.23",
   "description": "Indeed search: fetch apply payload per job and send to your resume API",
   "permissions": ["storage", "activeTab", "scripting", "tabs"],
   "host_permissions": [

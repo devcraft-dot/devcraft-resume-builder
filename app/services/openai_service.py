@@ -11,6 +11,7 @@ from openai import OpenAI
 
 from app.core.config import settings
 from app.schemas.generate import QuestionField
+from app.services.resume_generation_prompt import build_generation_user_message
 
 logger = logging.getLogger(__name__)
 
@@ -77,45 +78,6 @@ def _get_client(model_key: str) -> tuple[OpenAI, str]:
 # Prompt building
 # ---------------------------------------------------------------------------
 
-_PROMPT_TEMPLATE = """
-You are helping tailor a resume for a job application.
-
-==================================================
-TARGET JOB
-==================================================
-Title: {job_title}
-URL: {job_url}
-
-==================================================
-JOB DESCRIPTION
-==================================================
-{description}
-
-==================================================
-CANDIDATE PROFILE
-==================================================
-{profile_text}
-
-==================================================
-APPLICATION QUESTIONS (from job form)
-==================================================
-{questions}
-
-==================================================
-OUTPUT CONTRACT
-==================================================
-1) Produce the full resume in Markdown (Summary, Skills, Experience, Education).
-2) If APPLICATION QUESTIONS above is not "None", you MUST append after Education:
-   ## Application Questions
-   For each question, add a subheading with the question text, then your answer.
-   - [select]: pick ONLY from the given options, matching wording exactly.
-   - [textarea]: 2-6 sentences of original prose.
-   - [input]: a concise phrase or short paragraph.
-3) If APPLICATION QUESTIONS is "None", omit ## Application Questions entirely.
-4) Do not wrap the entire response in a code fence.
-5) Do not invent experience the candidate does not have.
-""".strip()
-
 
 def _normalize_field_type(raw: str) -> str:
     t = (raw or "").lower().strip()
@@ -155,12 +117,12 @@ def _render_prompt(
     questions: list[QuestionField],
     profile_text: str,
 ) -> str:
-    return _PROMPT_TEMPLATE.format(
+    return build_generation_user_message(
         job_title=title,
         job_url=url,
         description=description_text or "(No job description provided.)",
+        questions_block=_render_questions_block(questions),
         profile_text=profile_text.strip() or "(No candidate profile provided.)",
-        questions=_render_questions_block(questions),
     )
 
 
@@ -195,6 +157,71 @@ def _split_resume_and_answers(raw: str) -> tuple[str, str]:
     return text[: match.start()].strip(), text[match.start() :].strip()
 
 
+_RESUME_HEADER_RE = re.compile(r"^##\s*Resume\s*$", re.IGNORECASE | re.MULTILINE)
+_COVER_HEADER_RE = re.compile(r"^##\s*Cover\s+Letter\s*$", re.IGNORECASE | re.MULTILINE)
+
+
+def _parse_model_sections(raw: str) -> tuple[str, str, str]:
+    """Split model output into resume Markdown, cover letter body, application Q&A block."""
+    text = _strip_outer_code_fence(str(raw or "").strip())
+    if not text:
+        return "", "", ""
+
+    low = text.lower()
+    if low.startswith("cannot generate due to"):
+        return text.strip(), "", ""
+
+    r_m = _RESUME_HEADER_RE.search(text)
+    if not r_m:
+        resume_part, app_part = _split_resume_and_answers(text)
+        return resume_part, "", app_part
+
+    pos = r_m.end()
+    next_headers: list[tuple[int, int, str]] = []
+    for m in _COVER_HEADER_RE.finditer(text, pos):
+        next_headers.append((m.start(), m.end(), "cover"))
+    for m in _ANSWERS_SECTION_RE.finditer(text, pos):
+        next_headers.append((m.start(), m.end(), "app"))
+    next_headers.sort(key=lambda x: x[0])
+    first = next_headers[0] if next_headers else None
+
+    if not first:
+        return text[pos:].strip(), "", ""
+
+    resume_body = text[pos : first[0]].strip()
+    cover_body = ""
+    app_body = ""
+
+    if first[2] == "cover":
+        c_end = first[1]
+        rest = text[c_end:].strip()
+        second = _ANSWERS_SECTION_RE.search(rest)
+        if second:
+            cover_body = rest[: second.start()].strip()
+            app_body = rest[second.end() :].strip()
+        else:
+            cover_body = rest
+
+    elif first[2] == "app":
+        app_body = text[first[1] :].strip()
+
+    return resume_body, cover_body, app_body
+
+
+def _compose_answers_doc_text(cover_letter: str, application_block: str) -> str:
+    parts: list[str] = []
+    c = (cover_letter or "").strip()
+    a = (application_block or "").strip()
+    if c:
+        parts.append(f"## Cover Letter\n\n{c}")
+    if a:
+        if a.lstrip().lower().startswith("## application"):
+            parts.append(a)
+        else:
+            parts.append(f"## Application Questions\n\n{a}")
+    return "\n\n".join(parts).strip()
+
+
 def _generate_with_responses_api(client: OpenAI, model_id: str, prompt: str) -> tuple[str, str | None]:
     response = client.responses.create(model=model_id, input=prompt)
     raw = str(getattr(response, "output_text", "") or "").strip()
@@ -227,6 +254,7 @@ class GenerationResult:
     response_id: str | None
     model_name: str
     raw_output_text: str
+    cover_letter_text: str = ""
 
 
 def generate_resume(
@@ -259,11 +287,13 @@ def generate_resume(
             f"Model {model_id!r} returned empty output; check API key, base URL, and model id for provider {model_key!r}."
         )
 
-    resume_text, answers_text = _split_resume_and_answers(full_text)
+    resume_text, cover_letter_text, app_block = _parse_model_sections(full_text)
+    answers_text = _compose_answers_doc_text(cover_letter_text, app_block)
 
     logger.info(
-        "Split result: resume_chars=%d answers_chars=%d response_id=%s",
+        "Split result: resume_chars=%d cover_chars=%d answers_chars=%d response_id=%s",
         len(resume_text),
+        len(cover_letter_text),
         len(answers_text),
         response_id,
     )
@@ -275,4 +305,5 @@ def generate_resume(
         response_id=response_id,
         model_name=model_id,
         raw_output_text=full_text,
+        cover_letter_text=cover_letter_text,
     )

@@ -1,10 +1,12 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   deleteGeneration,
   driveExportUrl,
@@ -112,7 +114,7 @@ function FileFormatLink({
 const FILES_GRID =
   "grid grid-cols-[minmax(5.5rem,7rem)_minmax(3.25rem,1fr)_minmax(3.25rem,1fr)_minmax(3.25rem,1fr)] gap-x-2 gap-y-1";
 
-/** Controlled menu: only one row’s Files panel may be open at a time. */
+/** Controlled menu; panel is portaled + fixed so later table rows don’t paint over it. */
 function FilesMenu({
   row,
   isOpen,
@@ -124,26 +126,69 @@ function FilesMenu({
   onToggle: () => void;
   onClose: () => void;
 }) {
-  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [panelPos, setPanelPos] = useState({
+    top: 0,
+    left: 0,
+    width: 352,
+  });
 
   const hasAny =
     row.resume_drive_url || row.questions_drive_url || row.jd_drive_url;
   if (!hasAny) return <span className="text-gray-300">—</span>;
 
+  const updatePanelPosition = useCallback(() => {
+    const btn = triggerRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const width = Math.min(352, Math.max(280, window.innerWidth - 24));
+    let left = rect.left;
+    if (left + width > window.innerWidth - 12) {
+      left = window.innerWidth - 12 - width;
+    }
+    if (left < 12) left = 12;
+    const top = rect.bottom + 8;
+    setPanelPos({ top, left, width });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    updatePanelPosition();
+    const el = panelRef.current;
+    const ro =
+      el && typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => updatePanelPosition())
+        : null;
+    if (el && ro) ro.observe(el);
+    window.addEventListener("resize", updatePanelPosition);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener("resize", updatePanelPosition);
+    };
+  }, [isOpen, updatePanelPosition, row.id]);
+
   useEffect(() => {
     if (!isOpen) return;
     function onDocMouseDown(e: MouseEvent) {
-      const el = rootRef.current;
-      if (!el?.contains(e.target as Node)) onClose();
+      const t = e.target as Node;
+      if (triggerRef.current?.contains(t)) return;
+      if (panelRef.current?.contains(t)) return;
+      onClose();
     }
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
+    function onScrollCapture() {
+      onClose();
+    }
     document.addEventListener("mousedown", onDocMouseDown);
     document.addEventListener("keydown", onKeyDown);
+    window.addEventListener("scroll", onScrollCapture, true);
     return () => {
       document.removeEventListener("mousedown", onDocMouseDown);
       document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("scroll", onScrollCapture, true);
     };
   }, [isOpen, onClose]);
 
@@ -177,9 +222,40 @@ function FilesMenu({
     );
   };
 
+  const panel = isOpen ? (
+    <div
+      ref={panelRef}
+      id={`files-menu-${row.id}`}
+      role="menu"
+      aria-labelledby={`files-trigger-${row.id}`}
+      style={{
+        position: "fixed",
+        top: panelPos.top,
+        left: panelPos.left,
+        width: panelPos.width,
+        zIndex: 9999,
+      }}
+      className="max-h-[min(70vh,calc(100dvh-2rem))] overflow-y-auto rounded-xl border border-gray-200 bg-white p-3 text-base shadow-xl ring-1 ring-gray-900/10"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div
+        className={`${FILES_GRID} border-b border-gray-200 pb-2 text-sm font-bold uppercase tracking-wide text-gray-600`}
+      >
+        <span className="pl-0.5">Document</span>
+        <span className="text-center">Doc</span>
+        <span className="text-center">PDF</span>
+        <span className="text-center">Docx</span>
+      </div>
+      {fileRow("Resume", row.resume_drive_url)}
+      {fileRow("Q&A", row.questions_drive_url)}
+      {fileRow("JD", row.jd_drive_url)}
+    </div>
+  ) : null;
+
   return (
-    <div ref={rootRef} className="relative z-30">
+    <div className="relative">
       <button
+        ref={triggerRef}
         type="button"
         aria-expanded={isOpen}
         aria-haspopup="true"
@@ -197,27 +273,7 @@ function FilesMenu({
       >
         Files
       </button>
-      {isOpen ? (
-        <div
-          id={`files-menu-${row.id}`}
-          role="menu"
-          aria-labelledby={`files-trigger-${row.id}`}
-          className="absolute left-0 top-full z-50 mt-2 w-[min(calc(100vw-2rem),22rem)] min-w-[17.5rem] rounded-xl border border-gray-200 bg-white p-3 text-base shadow-xl ring-1 ring-gray-900/5"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div
-            className={`${FILES_GRID} border-b border-gray-200 pb-2 text-sm font-bold uppercase tracking-wide text-gray-600`}
-          >
-            <span className="pl-0.5">Document</span>
-            <span className="text-center">Doc</span>
-            <span className="text-center">PDF</span>
-            <span className="text-center">Docx</span>
-          </div>
-          {fileRow("Resume", row.resume_drive_url)}
-          {fileRow("Q&A", row.questions_drive_url)}
-          {fileRow("JD", row.jd_drive_url)}
-        </div>
-      ) : null}
+      {panel ? createPortal(panel, document.body) : null}
     </div>
   );
 }

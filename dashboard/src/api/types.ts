@@ -38,17 +38,31 @@ export interface StageCount {
 export interface ModelBreakdown {
   model_name: string;
   total: number;
+  /** intro + tech + final + success (past initial generation) */
+  passed_resume_check: number;
+  generated: number;
+  intro: number;
+  tech: number;
+  final: number;
   success: number;
+  failed: number;
 }
 
 export interface ProfileBreakdown {
   profile_name: string;
   total: number;
+  passed_resume_check: number;
+  generated: number;
+  intro: number;
+  tech: number;
+  final: number;
   success: number;
+  failed: number;
 }
 
 export interface DashboardAnalytics {
   total_generations: number;
+  passed_resume_check_total: number;
   by_stage: StageCount[];
   by_model: ModelBreakdown[];
   by_profile: ProfileBreakdown[];

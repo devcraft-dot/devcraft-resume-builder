@@ -29,6 +29,10 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["generate"])
 
+PIPELINE_STAGES = frozenset(
+    {"generated", "intro", "tech", "final", "success", "failed"},
+)
+
 
 # ---------------------------------------------------------------------------
 # POST /api/generate — the core endpoint
@@ -170,10 +174,17 @@ def list_generations(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     q: str | None = Query(None, description="Search title or company"),
+    stage: str | None = Query(None, description="Filter by pipeline stage"),
     db: Session = Depends(get_db),
 ):
     stmt = select(Generation)
     count_stmt = select(func.count()).select_from(Generation)
+
+    if stage and stage.strip():
+        st = stage.strip().lower()
+        if st in PIPELINE_STAGES:
+            stmt = stmt.where(Generation.stage == st)
+            count_stmt = count_stmt.where(Generation.stage == st)
 
     if q and q.strip():
         term = f"%{q.strip().lower()}%"

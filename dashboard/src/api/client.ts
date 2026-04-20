@@ -19,12 +19,18 @@ export function fetchDashboardAnalytics() {
   return request<DashboardAnalytics>("/api/dashboard/analytics");
 }
 
-export function fetchGenerations(page: number, pageSize: number, q?: string) {
+export function fetchGenerations(
+  page: number,
+  pageSize: number,
+  q?: string,
+  stage?: string | null,
+) {
   const params = new URLSearchParams({
     page: String(page),
     page_size: String(pageSize),
   });
   if (q?.trim()) params.set("q", q.trim());
+  if (stage?.trim()) params.set("stage", stage.trim());
   return request<GenerationList>(`/api/generations?${params}`);
 }
 

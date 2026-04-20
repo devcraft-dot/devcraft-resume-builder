@@ -11,6 +11,14 @@ const NAV: { key: NavKey; label: string }[] = [
 
 export default function App() {
   const [nav, setNav] = useState<NavKey>("generations");
+  const [resumeStageFilter, setResumeStageFilter] = useState<string | null>(
+    null,
+  );
+
+  function goToResumesForStage(stage: string) {
+    setResumeStageFilter(stage);
+    setNav("generations");
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -43,8 +51,16 @@ export default function App() {
         </div>
       </header>
       <main className="p-6 max-w-7xl mx-auto">
-        {nav === "generations" && <Dashboard />}
-        {nav === "analytics" && <AnalyticsView />}
+        {nav === "generations" && (
+          <Dashboard
+            key={resumeStageFilter ?? "__all__"}
+            stageFilter={resumeStageFilter}
+            onClearStageFilter={() => setResumeStageFilter(null)}
+          />
+        )}
+        {nav === "analytics" && (
+          <AnalyticsView onViewResumesForStage={goToResumesForStage} />
+        )}
       </main>
     </div>
   );

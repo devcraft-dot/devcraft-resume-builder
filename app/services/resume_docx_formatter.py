@@ -417,6 +417,28 @@ def _build_docx(items: list[tuple[str, object]], jd_text: str = "") -> object:
             run.font.size = Pt(size)
         return p
 
+    def _add_bottom_rule(paragraph) -> None:
+        p_pr = paragraph._p.get_or_add_pPr()
+        borders = p_pr.find(qn("w:pBdr"))
+        if borders is None:
+            borders = OxmlElement("w:pBdr")
+            p_pr.append(borders)
+        bottom = borders.find(qn("w:bottom"))
+        if bottom is None:
+            bottom = OxmlElement("w:bottom")
+            borders.append(bottom)
+        bottom.set(qn("w:val"), "single")
+        bottom.set(qn("w:sz"), "6")
+        bottom.set(qn("w:space"), "1")
+        bottom.set(qn("w:color"), "B7C3D0")
+
+    def _next_non_empty_type(start_idx: int) -> str:
+        for next_idx in range(start_idx + 1, len(items)):
+            next_type = items[next_idx][0]
+            if next_type != "empty":
+                return next_type
+        return ""
+
     jd_keywords = _extract_jd_keywords(jd_text) if jd_text else []
     content_bold_seen: set[str] = set()
 
@@ -452,6 +474,8 @@ def _build_docx(items: list[tuple[str, object]], jd_text: str = "") -> object:
         elif item_type == "contact":
             p = _para(space_before=0, space_after=8, align=WD_ALIGN_PARAGRAPH.CENTER)
             _add_md_runs(p, str(content), base_size_pt=10.5)
+            if _next_non_empty_type(idx) == "section_header":
+                _add_bottom_rule(p)
 
         elif item_type == "hr":
             continue
@@ -466,30 +490,31 @@ def _build_docx(items: list[tuple[str, object]], jd_text: str = "") -> object:
         elif item_type == "job_title":
             raw = re.sub(r"\*\*", "", str(content)).strip()
             parts = [x.strip() for x in raw.split("|") if x.strip()]
-            first = parts[0]
-            if "--" in first:
+            first = parts[0] if parts else raw
+            if len(parts) >= 4:
+                role_co = f"{parts[0]}  |  {parts[1]}"
+                right = "  |  ".join(parts[2:])
+            elif len(parts) == 3:
+                role_co = f"{parts[0]}  |  {parts[1]}"
+                right = parts[2]
+            elif "--" in first:
                 sub = [x.strip() for x in first.split("--", 1)]
                 role_co = f"{sub[0]} \u2014 {sub[1]}"
+                right = ""
             elif "\u2014" in first:
                 sub = [x.strip() for x in first.split("\u2014", 1)]
                 role_co = f"{sub[0]} \u2014 {sub[1]}"
+                right = ""
             else:
                 role_co = first
-            # "Role | dates | city, ST" → show dates only (model often adds a third segment).
-            if len(parts) >= 3:
-                right = parts[1]
-            else:
                 right = "  |  ".join(parts[1:]) if len(parts) > 1 else ""
 
             p = _para(space_before=6, space_after=2)
-            from docx.oxml import OxmlElement as _OE
-            from docx.oxml.ns import qn as _qn
-
             pPr = p._p.get_or_add_pPr()
-            tabs_el = _OE("w:tabs")
-            tab_el = _OE("w:tab")
-            tab_el.set(_qn("w:val"), "right")
-            tab_el.set(_qn("w:pos"), "10080")
+            tabs_el = OxmlElement("w:tabs")
+            tab_el = OxmlElement("w:tab")
+            tab_el.set(qn("w:val"), "right")
+            tab_el.set(qn("w:pos"), "10080")
             tabs_el.append(tab_el)
             pPr.append(tabs_el)
 

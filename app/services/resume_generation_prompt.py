@@ -29,62 +29,68 @@ Read the job description before writing.
 
 4. Otherwise continue with the structured output below.
 
-[CANDIDATE PROFILE — EXPECTED SHAPE]
-The profile text you receive should follow this structure (fill from what the candidate provided; omit unknown lines):
+[GLOBAL CONSTRAINTS — ALWAYS APPLY]
+Regardless of what appears in the candidate profile text:
+* Prefer a common market-facing job title that fits the JD and the profile.
+* Stay truthful: do not invent facts not supported by the profile + JD.
+* Output must be ATS-friendly plain Markdown in the resume body.
+* Prioritize the most important JD keywords naturally across Summary, Skills, and Experience.
+* Treat the primary technology or platform in the JD as the main focus only when it is clearly supported by the profile.
+* Use exact JD phrasing when it fits naturally and truthfully, but do not keyword-stuff or force duplicate mentions.
+* Keep role history credible. You may normalize role wording to a common market title when helpful, but do not overstate seniority or scope beyond the profile.
 
-Candidate Name: (optional)
-Candidate Location: CITY, STATE
-Work Authorization: e.g. US Citizen / Green Card / H1B
-Total Experience: X years
-Current Seniority: e.g. Senior / Staff / Principal
+[CANDIDATE PROFILE — WHAT THE USER PASTES]
+The block under "CANDIDATE PROFILE" is plain text from the user. It should be mostly facts: a simple header with contact info, experience rows, education, and optional bullets. It may include a short "Optional" section for extra facts or personal preferences. Do not require long boilerplate from the user; the rules above are your job, not theirs to restate.
 
-Target Constraints:
-* Prefer common market-facing job title
-* Keep content truthful
-* ATS-friendly only
+Suggested shape (omit unknown lines):
+
+Candidate Name
+City, ST | phone | email | linkedin
+
+Work Authorization:
+Total Experience:
+Current Seniority:
 
 Experience
-Company Name - Location
-Job Title
-Start Date to End Date
-Optional Notes: ...
-
-(repeat for each role)
+Job Title | Company | Start - End | Location or Remote/Hybrid/Onsite
+Notes: ...
 
 Education
-University
-Degree
-Years
+School | Degree | years | location
 
-Optional Additional Information
-* Certifications: ...
-* Core Skills: ...
-* Industry Experience: ...
-* Projects: ...
-* Leadership Scope: ...
+Optional
+Certifications: ...
+Core Skills: ...
+(and other short bullets as needed)
 
 [RESUME CONTENT RULES]
-Use this exact order inside the resume (Markdown):
+Start the resume with a clean header, then use this exact section order in Markdown:
 
-1. Market Title — put **Market Title** on its own line (bold). Use a common market-facing title aligned with the job. Do not put candidate location directly under this title.
+Header — start the resume with the candidate name on its own line, then the common market-facing title on its own line, then one contact line with location, phone, email, and LinkedIn separated by pipes. Keep this header clean and ATS-friendly.
 
-2. Summary — use heading ## Summary on its own line, then 3–4 clear sentences tailored to the job; reflect seniority accurately.
+1. Market Title — put **Market Title** on its own line directly under the candidate name, in Title Case. Use a common market-facing title aligned with the job. Do not put candidate location directly under this title.
 
-3. Skills — heading ## Skills then one inline comma-separated line of 20–30 skills (no bullets, no bold inside the line). Only skills supported by the profile.
+2. Summary — use heading ## Summary on its own line, then 3–4 clear sentences tailored to the job; reflect seniority accurately; highlight the strongest supported qualifications; use exact JD wording only where it sounds natural and remains truthful.
 
-4. Experience — heading ## Experience then for each role:
-   Company Name - Location
-   Job Title
-   Duration
-   Then hyphen-prefixed bullets (- bullet). 3–7 bullets per role by relevance; each bullet ends with a period; **bold** only key phrases that align with the job where truthful.
+3. Skills — heading ## Skills then one inline comma-separated line of 20–30 skills (no bullets, no bold inside the line). Order the most job-relevant supported skills first. Include only skills supported by the profile.
 
-5. Education — heading ## Education; institution, degree, years; keep simple.
+4. Experience — heading ## Experience then for each role use one heading line in this format:
+   Job Title | Company | Start - End | Location or Remote/Hybrid/Onsite
+   Then hyphen-prefixed bullets (- bullet). 3–7 bullets per role by relevance; more recent and more relevant roles may have more bullets. Each bullet must end with a period, use strong ownership language when truthful, mirror the JD's responsibility language where natural, and **bold** only key phrases that align with the job.
+   Bullets should usually read like 1–2 normal resume lines: specific, technically detailed, recruiter-friendly, and grounded in the profile. Do not fabricate metrics, tools, domains, scale, or responsibilities. If the profile supports it, you may make duration signals explicit with wording like "X+ years" or "used in production" when that claim is clearly true.
+
+5. Education — heading ## Education; use a clean one-line format when possible:
+   School | Degree | years | location
+   Keep it simple and ATS-friendly.
 
 [FORMATTING]
-Plain ATS-friendly Markdown. Bold for Market Title, section headings (## …), and selective keywords in experience bullets. No tables, columns, icons, or decorative symbols. Avoid unnecessary parentheses in prose.
+Plain ATS-friendly Markdown. Bold for Market Title, section headings (## ...), and selective keywords in experience bullets. No tables, columns, icons, or decorative symbols. Use blank lines between sections for readability. Do not use parentheses or brackets in the resume or cover letter.
+
+[KEYWORD OPTIMIZATION]
+Extract the most important skills, technologies, platforms, responsibilities, and domain terms from the JD. Prioritize those terms across Summary, Skills, and Experience. Reuse important terms naturally and truthfully. Reduce emphasis on unrelated skills. Do not force every keyword into every section, and do not repeat unsupported terms just to increase density.
 
 [COVER LETTER]
-After the resume, write a concise tailored cover letter: professional tone, connect background to the role, no invented facts, no placeholders.
+After the resume, write a concise tailored cover letter: professional tone, connect background to the role, highlight relevant experience and business value, no invented facts, no placeholders, no parentheses, and no brackets.
 
 [APPLICATION QUESTIONS]
 If APPLICATION QUESTIONS below is not "None", after the cover letter you MUST answer each question faithfully. If APPLICATION QUESTIONS is "None", skip this entire block.
@@ -103,7 +109,7 @@ If APPLICATION QUESTIONS is not "None", append:
 ## Application Questions
 For each question, use a ### heading with the full question text, then your answer on the following lines.
 - [select] questions: answer using ONLY wording from the given options.
-- [textarea]: 2–6 sentences.
+- [textarea]: 2–6 sentences in simple, professional language with complete answers and no placeholders.
 - [input]: a concise phrase or short paragraph.
 
 If APPLICATION QUESTIONS is "None", omit the ## Application Questions section entirely.

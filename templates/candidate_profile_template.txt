@@ -1,0 +1,19 @@
+Your Name
+City, ST | 555-555-5555 | you@example.com | linkedin.com/in/yourname
+
+Work Authorization: US Citizen
+Total Experience: 10 years
+Current Seniority: Senior Software Engineer
+
+Experience
+Senior Software Engineer | Acme Corp | Jan 2021 - Present | Remote
+Notes: Payments APIs on AWS; small team lead.
+
+Software Engineer | Beta LLC | Jun 2017 - Dec 2020 | Austin, TX
+
+Education
+State University | BS Computer Science | 2011-2015 | City, ST
+
+Optional
+Certifications: AWS SA Associate
+Core Skills: Python, TypeScript, PostgreSQL, Docker, Kubernetes

@@ -105,7 +105,7 @@ function renderProfiles() {
       <div class="field">
         <label>Profile Text</label>
         <textarea class="p-text" data-idx="${i}" placeholder="Full resume / profile text…">${esc(p.text)}</textarea>
-        <div class="hint">Structured profile for the API (see repo prompt_template). Include: Candidate Location, Work Authorization, Total Experience, Current Seniority, Experience blocks (Company — Location, Title, dates, notes), Education, optional bullets for Certifications / Core Skills / Projects. Sent as plain text.</div>
+        <div class="hint">Plain-text facts for the API. Short header lines + Experience + Education + optional bullets. See repo file templates/candidate_profile_template.txt — ATS/truthfulness rules are applied on the server.</div>
       </div>
     `;
     container.appendChild(card);

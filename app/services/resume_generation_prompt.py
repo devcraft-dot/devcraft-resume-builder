@@ -106,10 +106,11 @@ Header:
   Job Title | Company | Start - End | Location or Remote/Hybrid/Onsite
 * Preserve company names, dates, and locations exactly. You may normalize the job title to a JD-aligned market title only when it does not overstate seniority.
 
-Bullet count per role is fixed:
-* Role 1: exactly 6 bullets
-* Role 2: exactly 5 bullets
-* Role 3 and older: exactly 4 bullets each
+Bullet count per role:
+* Use 3 to 6 bullets per role based on recency, relevance, and available evidence.
+* More recent and more relevant roles may have more bullets.
+* Older or less relevant roles should have fewer bullets.
+* Do not add filler bullets just to hit a target count.
 
 Recent-role tailoring:
 * Identify the JD's anchor tools, platforms, responsibilities, and project/domain language.
@@ -147,19 +148,16 @@ Action verb quality:
   - testing/quality: Tested, Validated, Hardened, Audited
 
 Metrics:
-* Only about 30–40% of bullets may contain metrics. The rest should show scope, ownership, and qualitative impact.
-* Aim for this floor unless the profile truly cannot support it:
-  - Role 1: at least 2 metric bullets
-  - Role 2: at least 1 metric bullet, preferably 2
-  - Role 3+: at least 1 metric bullet
-* Vary metric formats: time, counts, money, throughput, ratios/scale, team size, adoption, before/after.
-* Prefer metrics tied to a concrete artifact or workflow.
+* Use metrics only when clearly supported and meaningful.
+* Prefer a natural mix of qualitative and quantitative bullets.
+* Prefer metrics tied to a concrete artifact, workflow, system, or business outcome.
+* Vary metric formats when used: time, counts, money, throughput, ratios/scale, team size, adoption, before/after.
 * Do not fabricate numbers. Approximate wording like "about", "roughly", "~", "20+", or "200+" is acceptable when reasonable.
+* If no defensible metric exists, show scope, technical depth, ownership, or business effect instead.
 
 Bolding in Experience:
-* Bold selectively: AT MOST 2–3 phrases per role across all bullets.
-* Bold only real product names or tightly JD-aligned technical nouns.
-* Never bold generic nouns, action verbs, outcome phrases, or full sentences.
+* Use selective bolding only for section headings, skill category labels, and a small number of highly relevant technical terms when helpful.
+* Do not bold generic nouns, action verbs, outcome phrases, or full sentences.
 
 4. Education
 * Heading: ## Education

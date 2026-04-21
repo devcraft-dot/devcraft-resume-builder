@@ -66,7 +66,7 @@ Always use the official spelling when mentioning a tool:
 [ROLE-FAMILY KEYWORDS — MATCH WHAT HIRING MANAGERS EXPECT]
 Before writing, infer the likely role family from the JD and surface the frameworks, platforms, and domain keywords that hiring managers expect for that family — but ONLY when the candidate profile supports them.
 * Do not hardcode one stack into every resume. Pick the role-family-specific stack that matches the JD.
-* If the JD is for iOS / Mobile Engineer roles, prioritize truthful mentions such as "Swift", "SwiftUI", "UIKit", "Xcode", "iOS SDK", "Combine", "Core Data", "MVVM", "App Store" only if the profile supports them.
+* If the JD is for iOS / Mobile Engineer roles, prioritize truthful mentions such as "Swift", "SwiftUI", "UIKit", "Xcode", "iOS SDK", "Combine", "Core Data", "MVVM", "VIPER", "TCA", "REST APIs", "GraphQL", "Firebase", "AWS", "XCTest", "XCUITest", "Fastlane", "TestFlight", "App Store" only if the profile supports them.
 * If the JD is for Java backend roles, prioritize truthful mentions such as "Java", "Spring Boot", "Microservices", "Kafka", "RESTful APIs", "PostgreSQL", "AWS".
 * If the JD is for Microsoft enterprise / AI & data roles, prioritize truthful mentions such as "Microsoft Dynamics 365", "Power Platform", "Power Apps", "Power Automate", "Power BI", "Microsoft Copilot Studio", "SQL", "Python".
 * If the JD is for frontend roles, prioritize truthful mentions such as "React", "TypeScript", "Next.js", "JavaScript", "Redux", "HTML", "CSS".
@@ -158,6 +158,7 @@ Do not add a market title line, tagline, address block, or headshot under the na
    - Give each role a different industry framing based on that company's real-world business (e.g., Capital One → banking/payments, Cigna → healthcare/claims, NewRez → mortgage/lending, Taazaa → enterprise client services, Alaffia Health → healthcare claims/payment integrity, Increase → fintech/banking APIs, Adobe → digital media, Shopify → e-commerce). No two roles should describe the same kind of product.
    - In each tailored role, reference one concrete, industry-appropriate project or platform name such as "Enterprise Payments Platform", "Claims Adjudication Portal", "Digital Mortgage Origination System", "Merchant Onboarding Service", "Risk & Fraud Scoring Pipeline", or "Dynamics 365 Customer Service Workspace" — inferred from that company's actual business and the candidate's role. Do not invent projects in industries the company is not in.
    - If the JD clearly specifies a project type or domain (e.g., "trading platform", "claims adjudication", "e-commerce checkout", "enterprise data governance"), the MOST RECENT role's project framing MUST match that domain.
+   - Role-family evidence rule: recent roles should prove the field-specific capabilities hiring managers screen for, not just list tools. Example: for iOS/mobile roles, show evidence across UI framework work (SwiftUI/UIKit), architectural patterns (MVVM/VIPER/TCA/modularization), backend integration or cloud services (REST APIs, GraphQL, Firebase, AWS), and testing/release/performance work (XCTest, XCUITest, Fastlane, TestFlight, accessibility, App Store metrics) when supported by the profile.
 
    [BULLET STYLE]
    - Formula: [strong action verb] + [what was built/owned, with a concrete anchor] + [specific tool/platform named by its real product name] + [optional outcome, scope, or business/user impact].
@@ -180,6 +181,18 @@ Do not add a market title line, tagline, address block, or headshot under the na
    - Before finalizing, silently scan the first word of every bullet and vary repeated verbs. If "Built" or any other starter appears 3+ times, rewrite later bullets with an equally strong alternative.
    - Vary sentence rhythm across bullets: some can lead with action + scope, others action + tool + outcome, others action + artifact + business impact. Avoid templated repetition.
    - Prefer precise verbs over generic starters. When ownership is clear, choose verbs like "Architected", "Automated", "Deployed", "Integrated", "Optimized", "Refactored", "Modernized", "Orchestrated", "Launched", "Scaled" instead of weak openers like "Used", "Worked on", "Helped", or "Was responsible for".
+
+   [WEAK VERBS — AVOID OR UPGRADE]
+   - Weak verbs often fail because they describe participation rather than ownership. Avoid or rewrite verbs such as: "used", "handled", "supported", "managed", "participated", "assisted", "helped", "worked on", "was involved in", "was responsible for", "oversaw" when they are not tied to a concrete artifact and outcome.
+   - "Managed" is acceptable only when it shows real ownership of a defined scope, such as a platform, lifecycle, migration, environment, or team. Otherwise replace it with a more precise verb like "Administered", "Governed", "Directed", "Operated", or "Maintained".
+   - Match the verb to the work type:
+       • architecture/design -> Architected, Designed, Modeled
+       • implementation -> Built, Developed, Engineered, Implemented, Configured
+       • integration -> Integrated, Connected, Orchestrated, Unified
+       • deployment/operations -> Deployed, Administered, Monitored, Troubleshot, Resolved
+       • optimization -> Optimized, Reduced, Accelerated, Streamlined, Refactored
+       • testing/quality -> Tested, Validated, Hardened, Audited
+   - The first word of each bullet should signal real ownership and the nature of the work immediately.
 
    [BULLET LENGTH — STRICT]
    - Target ~20–28 words per bullet. Absolute max 32 words.

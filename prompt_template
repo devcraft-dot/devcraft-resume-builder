@@ -62,7 +62,7 @@ Check the job description before writing.
 
 * Before writing, infer the likely role family from the JD and surface the frameworks, platforms, and domain keywords that hiring managers expect for that family, but ONLY when the candidate profile supports them
 * Do not hardcode one stack into every resume; pick the role-family-specific stack that matches the JD
-* For iOS / Mobile Engineer roles, prioritize truthful mentions such as Swift, SwiftUI, UIKit, Xcode, iOS SDK, Combine, Core Data, MVVM, App Store only if the profile supports them
+* For iOS / Mobile Engineer roles, prioritize truthful mentions such as Swift, SwiftUI, UIKit, Xcode, iOS SDK, Combine, Core Data, MVVM, VIPER, TCA, REST APIs, GraphQL, Firebase, AWS, XCTest, XCUITest, Fastlane, TestFlight, App Store only if the profile supports them
 * For Java backend roles, prioritize truthful mentions such as Java, Spring Boot, Microservices, Kafka, RESTful APIs, PostgreSQL, AWS
 * For Microsoft enterprise / AI & data roles, prioritize truthful mentions such as Microsoft Dynamics 365, Power Platform, Power Apps, Power Automate, Power BI, Microsoft Copilot Studio, SQL, Python
 * For frontend roles, prioritize truthful mentions such as React, TypeScript, Next.js, JavaScript, Redux, HTML, CSS
@@ -178,6 +178,7 @@ JD tailoring rules for the 2-3 most recent roles:
 * In each tailored role, reference one concrete, industry-appropriate project or platform name such as "Enterprise Payments Platform", "Claims Adjudication Portal", "Digital Mortgage Origination System", "Merchant Onboarding Service", "Risk and Fraud Scoring Pipeline", or "Dynamics 365 Customer Service Workspace", inferred from that company's actual business and the candidate role
 * Do not invent projects in industries a company is not actually in
 * If the job description specifies a clear project type or domain, the MOST RECENT role's project framing MUST match that domain
+* Role-family evidence rule: recent roles should prove the field-specific capabilities hiring managers screen for, not just list tools; for iOS/mobile roles, show evidence across UI framework work (SwiftUI/UIKit), architectural patterns (MVVM/VIPER/TCA/modularization), backend integration or cloud services (REST APIs, GraphQL, Firebase, AWS), and testing/release/performance work (XCTest, XCUITest, Fastlane, TestFlight, accessibility, App Store metrics) when supported by the profile
 
 Bullet style:
 
@@ -208,6 +209,16 @@ Action verb variety (strict):
 * Before finalizing, silently scan the first word of every bullet and vary repeated verbs; if "Built" or any other starter appears 3+ times, rewrite later bullets with an equally strong alternative
 * Vary sentence rhythm across bullets; avoid making every bullet follow the exact same cadence
 * Prefer precise verbs over generic starters; when ownership is clear, choose verbs like Architected, Automated, Deployed, Integrated, Optimized, Refactored, Modernized, Orchestrated, Launched, or Scaled instead of weak openers like Used, Worked on, Helped, or Was responsible for
+* Weak verbs often fail because they describe participation rather than ownership; avoid or rewrite verbs such as Used, Handled, Supported, Managed, Participated, Assisted, Helped, Worked on, Was involved in, Was responsible for, or Oversaw when they are not tied to a concrete artifact and outcome
+* "Managed" is acceptable only when it shows real ownership of a defined scope, such as a platform, lifecycle, migration, environment, or team; otherwise replace it with a more precise verb like Administered, Governed, Directed, Operated, or Maintained
+* Match the verb to the work type:
+  - architecture/design -> Architected, Designed, Modeled
+  - implementation -> Built, Developed, Engineered, Implemented, Configured
+  - integration -> Integrated, Connected, Orchestrated, Unified
+  - deployment/operations -> Deployed, Administered, Monitored, Troubleshot, Resolved
+  - optimization -> Optimized, Reduced, Accelerated, Streamlined, Refactored
+  - testing/quality -> Tested, Validated, Hardened, Audited
+* The first word of each bullet should signal real ownership and the nature of the work immediately
 
 Bullet bolding (strict):
 

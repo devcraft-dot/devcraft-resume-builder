@@ -135,6 +135,12 @@ Do not add a market title line, tagline, address block, or headshot under the na
    - Skills is for hard skills, platforms, frameworks, languages, tools, certifications, and concrete methodologies. Do NOT list vague soft skills or personality traits here.
    - Never include buzzword entries such as "collaborator", "team player", "communication", "problem solving", "leadership" without scope, "detail-oriented", "hardworking", or "adaptable" as standalone skills.
 
+   [SKILLS PRUNING — STRICT]
+   - Prefer specific tools and concrete technologies over broad capability labels.
+   - Weak/generic entries to avoid unless the profile gives no better specificity: "AI integration", "dashboard development", "system administration", "performance optimization", "analytics", "automation", "data processing", "troubleshooting", "business process automation".
+   - If a generic skill can be replaced by a named tool or concrete method, replace it. Example: use "Power BI" instead of "dashboard development", "Microsoft Dynamics 365 administration" instead of "system administration", "Power Automate" instead of "automation", "SQL" / "PostgreSQL" instead of "data processing".
+   - Keep only the strongest, recruiter-recognizable hard skills. Cut filler skills that merely restate the bullets in vague language.
+
 3. Experience — heading ## Experience then for each role use one heading line in this exact format:
    Job Title | Company | Start - End | Location or Remote/Hybrid/Onsite
    List roles in reverse chronological order. Preserve the company names, dates, and locations from the candidate profile exactly; do not rename companies. The job title may be normalized to a JD-aligned market title when it does not overstate seniority.
@@ -160,6 +166,14 @@ Do not add a market title line, tagline, address block, or headshot under the na
    - NEVER begin a bullet with: "Worked on", "Helped with", "Responsible for", "Assisted in", "Participated in", "Involved in", "Duties included", "Tasks included", "Contributed to".
    - Avoid stock filler phrasing unless it is anchored to a named tool, workflow, artifact, and concrete outcome. Weak examples to avoid: "AI-powered solutions for enterprise clients", "actionable insights", "platform performance and user adoption", "comprehensive system administration and technical support", "complex business workflows", "system integrity", "modern visualization tools".
    - Do not use placeholder metrics or blanks such as "XX%", "X+", "N+", or "[metric]". Every number must be truthful, naturally worded, and resume-ready.
+
+   [GENERIC BULLET REWRITE CHECK — REQUIRED]
+   Before finalizing the Experience section, silently reject and rewrite any bullet that still reads like generic recruiter bait instead of evidence.
+   - Rewrite bullets that rely on vague objects such as "enterprise clients", "stakeholders", "multiple systems", "business workflows", "data processing", "operational performance", "key metrics", "internal operations", or "technical support" without naming the actual system, workflow, report, platform, or user group.
+   - Rewrite bullets that say what kind of work happened but not where it happened. Example: "automated complex business workflows" is too vague unless it names the workflow or platform.
+   - Rewrite bullets that mention a tool but still feel generic. Example: "Built dashboards in Power BI to provide stakeholders with actionable insights" is still too weak unless it names what the dashboards tracked.
+   - For service-company roles (such as Taazaa / consulting-style firms), do not hide behind "enterprise clients" alone. Infer the client environment truthfully from the JD-aligned role and name the likely business workflow, platform, report, or support function.
+   - If a bullet could fit almost any software engineer at almost any company, it is too generic and must be rewritten.
 
    [ACTION VERB VARIETY — STRICT]
    - Do not start more than 2 bullets in the entire Experience section with the same action verb.
@@ -191,6 +205,8 @@ Do not add a market title line, tagline, address block, or headshot under the na
      - "Built interactive dashboards and reports using modern visualization tools."
      - "Provided comprehensive system administration and technical support."
      - "Worked on AI-powered solutions for enterprise clients."
+     - "Architected and delivered custom AI-powered solutions for enterprise clients, integrating machine learning models to automate complex business workflows and data processing."
+     - "Built interactive dashboards and reports using Power BI to provide stakeholders with actionable insights into operational performance and key metrics."
    Over-bolded (banned — too many bold phrases per role):
      - "Architected and delivered **AI-powered features** for a **claims adjudication platform**, integrating **clinical rules engines** to automate **payment integrity** review."
    Strong (target quality, ~22–27 words, 0–1 bold per bullet):
@@ -198,6 +214,7 @@ Do not add a market title line, tagline, address block, or headshot under the na
      - "Maintained and optimized **Dynamics 365** and related data workflows, troubleshooting user issues and supporting configuration updates for 200+ internal users."
      - "Designed and deployed custom agents in **Copilot Studio** to triage claims questions, cutting average response time from 2 business days to same-day."
      - "Automated invoice reconciliation across Power Apps and Power Automate, eliminating manual export/import steps for the finance operations team."
+     - "Configured Power Automate approval flows for customer onboarding exceptions, routing cases across finance and operations teams and removing 15+ hours of weekly manual follow-up."
 
    [METRICS — CRITICAL]
    - Only about 30–40% of bullets may contain a quantified metric. The remaining 60–70% describe scope, ownership, and qualitative impact. Do not add a number to every bullet — this is the biggest tell of AI-written resumes and must be avoided.

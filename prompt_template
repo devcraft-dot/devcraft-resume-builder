@@ -34,6 +34,22 @@ Check the job description before writing.
 * Keep role history credible and aligned with actual seniority and scope
 * Do not quantify every achievement; mix qualitative and quantitative bullets (see Metric Rules below)
 
+[YEARS OF EXPERIENCE — COMPUTE FROM THE PROFILE]
+
+* Compute years of experience from the listed roles themselves; do not copy a number the user pasted and do not fabricate
+* Y = (end date of the most recent role, or "present" = today) minus (start date of the earliest role), rounded to the nearest whole year
+* If the profile states "Total Experience: N years" and agrees within 1 year of the dated roles, use it; if it disagrees by more than 1 year, ignore it and use the dated computation
+* Never claim more years than the dates on the resume support
+
+[TOOL NAME CANONICALIZATION]
+
+* Use the official spelling when mentioning a tool
+* Microsoft Copilot Studio (not CoPilot Studio)
+* Microsoft Dynamics 365 (or Dynamics 365)
+* Power Platform — when referenced, expand at least once to "Power Apps, Power Automate, Power BI"
+* Power BI (two words), Power Apps (two words), Power Automate (two words)
+* Node.js, Next.js, PostgreSQL, Kubernetes, Spring Boot, Terraform, GraphQL, Elasticsearch, GitHub, GitLab, RESTful APIs
+
 [CANDIDATE PROFILE FORMAT]
 Candidate Name
 [CITY, STATE] | [PHONE] | [EMAIL] | [LINKEDIN]
@@ -84,11 +100,11 @@ Header
 
 * Write 3 to 4 polished sentences aimed at impressing a recruiter and hiring manager at first glance
 * Target shape (do not label the parts out loud):
-  - Sentence 1: seniority + years of experience + primary specialization aligned with the job description
-  - Sentence 2: core technology depth and architectural strength relevant to the job description
-  - Sentence 3: representative value theme such as scalability, reliability, security, modernization, delivery speed, or team leadership
-  - Sentence 4 (optional): cross-functional collaboration, mentorship, or delivery track record
-* Bold 4 to 6 of the most critical job-description-aligned keywords or short phrases across the paragraph using **markdown** (tech names, domain terms, architecture concepts)
+  - Sentence 1: job-description-aligned market title + years of experience (computed per YEARS OF EXPERIENCE rule) + primary specialization; when the JD targets a specific role such as AI Engineer, AI & Data Management Engineer, or Java Backend Engineer, bridge to that language here rather than sticking to a generic "Senior Software Engineer"
+  - Sentence 2: core tools and platforms depth relevant to the job description; name the JD primary platforms by their exact product name when the profile supports them (for example Microsoft Dynamics 365, Power Platform with Power Apps, Power Automate, Power BI, Microsoft Copilot Studio, Java, Spring Boot, AWS); do not hide them behind generic words like "modern tools"
+  - Sentence 3: representative value theme such as automation, data governance, scalability, reliability, security, modernization, delivery speed, or team leadership
+  - Sentence 4 (optional): cross-functional collaboration, mentorship, end-user support, or delivery track record
+* Bold 4 to 6 of the most critical job-description-aligned keywords or short phrases across the paragraph using **markdown** (tool names, platform names, domain terms)
 * Do not bold more than 6 items; do not bold full sentences
 * Do not include hard numeric metrics in the summary; keep it qualitative, confident, and senior in voice
 * Silently align the summary with a common market-facing title for the job description without printing that title as a separate line
@@ -98,10 +114,12 @@ Header
 * Include 20 to 30 relevant skills
 * Output as 4 to 8 plain category lines (no hyphen or bullet prefix)
 * Use this format: `Category: skill 1, skill 2, skill 3`
-* Group related skills under concise labels such as Frontend Development, Backend Development, Cloud and DevOps, Data and APIs, Architecture and Engineering, Methodologies, or Leadership
+* Pick category labels that reflect the job-description domain, for example: AI & Data Management, Microsoft Platform, Development & Automation, Cloud & DevOps, Data & APIs, Frontend Development, Backend Development, Architecture & Engineering, Methodologies, Leadership
 * Bold only the category label; do not bold individual skill entries
 * Order categories by job-description priority: primary stack first, supporting stack next, general tools and methodologies last
 * Within each line, list the most job-description-relevant skills first
+* Use official tool spellings from the TOOL NAME CANONICALIZATION block
+* When the profile mentions an umbrella platform such as Power Platform, expand it to its concrete sub-tools relevant to the JD, for example "Power Platform (Power Apps, Power Automate, Power BI)", so ATS can match the individual product names
 * When an industry-standard term has both a common abbreviation and a full form (for example CI/CD and continuous integration, REST and RESTful APIs, ML and machine learning), you may include both naturally to help ATS matching
 * Include only skills reasonably supported by the candidate profile
 
@@ -119,27 +137,40 @@ Ordering and company rules:
 
 JD tailoring rules for the 2-3 most recent roles:
 
-* Identify the job description primary stack and project type (for example Java, Spring Boot, microservices, event-driven, payment processing)
-* Weave those exact terms naturally into the bullets of the 2-3 most recent roles
-* Give each role a different industry framing based on that company's real-world business (for example Capital One = banking/payments, Cigna = healthcare/claims, NewRez = mortgage/lending, Adobe = digital media, Shopify = e-commerce); no two roles should describe the same kind of product
-* In each tailored role, reference one concrete, industry-appropriate project or platform name such as "Enterprise Payments Platform", "Claims Adjudication Portal", "Digital Mortgage Origination System", "Merchant Onboarding Service", or "Risk and Fraud Scoring Pipeline", inferred from that company's actual business and the candidate role
+* Identify the job description primary platforms, tools, and project type (for example Java + Spring Boot + microservices, or Dynamics 365 + Power Platform + Copilot Studio + Power BI)
+* Weave those exact product names into actual Experience bullets, not only into Skills; Skills-only mention is not proof of hands-on use
+* Distribution rule: every primary job-description platform or tool must appear in at least one bullet across the 2-3 most recent roles; if the job description lists four anchor tools, cover all four across those recent roles
+* Give each role a different industry framing based on that company's real-world business (for example Capital One = banking/payments, Cigna = healthcare/claims, NewRez = mortgage/lending, Taazaa = enterprise client services, Alaffia Health = healthcare claims payment integrity, Increase = fintech banking APIs, Adobe = digital media, Shopify = e-commerce); no two roles should describe the same kind of product
+* In each tailored role, reference one concrete, industry-appropriate project or platform name such as "Enterprise Payments Platform", "Claims Adjudication Portal", "Digital Mortgage Origination System", "Merchant Onboarding Service", "Risk and Fraud Scoring Pipeline", or "Dynamics 365 Customer Service Workspace", inferred from that company's actual business and the candidate role
 * Do not invent projects in industries a company is not actually in
 * If the job description specifies a clear project type or domain, the MOST RECENT role's project framing MUST match that domain
 
 Bullet style:
 
 * Use 3 to 7 bullets per role depending on relevance and recency; more recent and more relevant roles get more bullets
-* Formula: strong action verb + what was built or owned + specific technology from job description or profile + optional outcome, scope, or user-facing impact
-* Start every bullet with a strong action verb such as Architected, Built, Led, Designed, Delivered, Implemented, Developed, Migrated, Integrated, Secured, Automated, Modernized, Refactored, Scaled, Optimized, Orchestrated, Spearheaded, Owned, Launched
+* Formula: strong action verb + what was built or owned (with a concrete anchor) + specific tool/platform named by its real product name + optional outcome, scope, or business/user impact
+* Every bullet MUST contain at least one concrete anchor: a named tool/platform, a named workflow or subsystem, a named business artifact (dashboard, report, API, service, agent, pipeline), or a named business outcome. No bullet may be purely generic like "provided technical support" or "built dashboards using modern visualization tools"
+* Start every bullet with a strong action verb such as Architected, Built, Led, Designed, Delivered, Implemented, Developed, Migrated, Integrated, Secured, Automated, Modernized, Refactored, Scaled, Optimized, Orchestrated, Spearheaded, Owned, Launched, Configured, Administered, Maintained, Deployed, Monitored
 * Never begin a bullet with "Worked on", "Helped with", "Responsible for", "Assisted in", "Participated in", "Involved in", "Duties included", "Tasks included", or "Contributed to"
 * Every bullet ends with a period
 * Each bullet should usually be 1 to 2 lines in a normal resume
 * Mirror job description language where truthful, but do not keyword-stuff
-* Bold 3 to 5 of the most important job-description-aligned keywords or short phrases per role across its bullets (tech names, domain terms, one architecture concept)
-* Do not bold generic words like "APIs", "cloud", or "services" by themselves, and do not bold full sentences
+* Bold 3 to 5 of the most important job-description-aligned keywords or short phrases per role across its bullets (tool names, platform names, domain terms, one architecture concept)
+* Do not bold generic words like "APIs", "cloud", "services", "solutions", or "data" by themselves, and do not bold full sentences
 * Do not bold individual skill entries in Skills (only the category label is bold there)
 * Keep role progression credible and aligned with actual seniority
 * Do not fabricate tools, platforms, domains, responsibilities, or scope
+* For each tailored role, aim for bullet coverage across these dimensions where truthful: what platform/tool was used, what was automated or built, what data process was owned, what admin/support responsibility was owned, what dashboards or reports were delivered, what business problem was solved
+
+Bullet examples (aim for this specificity, stay truthful):
+
+* Weak and banned: "Built interactive dashboards and reports using modern visualization tools."
+* Weak and banned: "Provided comprehensive system administration and technical support."
+* Weak and banned: "Worked on AI-powered solutions for enterprise clients."
+* Strong: "Built operational dashboards in **Power BI** to track data quality, workflow throughput, and exception trends, giving business stakeholders clearer visibility into process health and follow-up actions."
+* Strong: "Maintained and optimized **Dynamics 365** and related enterprise data workflows, troubleshooting user issues, supporting configuration updates, and improving day-to-day system reliability for 200+ internal users."
+* Strong: "Designed and deployed custom agents in **Microsoft Copilot Studio** to triage incoming claims questions, reducing average response time from 2 business days to same-day."
+* Strong: "Automated invoice reconciliation across **Power Apps** and **Power Automate**, eliminating manual export/import steps for finance ops."
 
 Metric rules (critical):
 
@@ -171,8 +202,9 @@ Metric rules (critical):
 * Do not use columns
 * Do not use icons or emoji anywhere (including the contact line)
 * Do not use decorative symbols
-* Do not use parentheses
-* Do not use brackets
+* Parentheses are allowed only in Skills to expand umbrella platforms (for example "Power Platform (Power Apps, Power Automate, Power BI)") and for common tool abbreviations (for example "CI/CD (continuous integration)")
+* Do not use parentheses inside Summary or Experience bullets
+* Do not use square brackets anywhere
 * Do not add sections that were not requested
 * Keep spacing clean and readable
 * Use blank lines between sections

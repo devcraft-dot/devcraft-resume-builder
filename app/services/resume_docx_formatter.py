@@ -106,6 +106,18 @@ _TECH_SPELLING_FIXES: dict[re.Pattern, str] = {
     re.compile(r"\bAmaozn\b"): "Amazon",
     re.compile(r"\bMircroservices?\b"): "Microservices",
     re.compile(r"\bMicroservies\b"): "Microservices",
+    # Microsoft platform canonicalizations (feedback 2026-04).
+    re.compile(r"\bCoPilot\b"): "Copilot",
+    re.compile(r"\bMicrosoft\s+CoPilot\s+Studio\b", re.IGNORECASE): "Microsoft Copilot Studio",
+    re.compile(r"\bCopilot\s+studio\b"): "Copilot Studio",
+    re.compile(r"\bDynamics\s*365\b", re.IGNORECASE): "Dynamics 365",
+    re.compile(r"\bD365\b"): "Dynamics 365",
+    re.compile(r"\bPowerBI\b", re.IGNORECASE): "Power BI",
+    re.compile(r"\bPower\s+Bi\b"): "Power BI",
+    re.compile(r"\bPowerApps\b", re.IGNORECASE): "Power Apps",
+    re.compile(r"\bPowerAutomate\b", re.IGNORECASE): "Power Automate",
+    re.compile(r"\bSpringBoot\b"): "Spring Boot",
+    re.compile(r"\bSpring\s+boot\b"): "Spring Boot",
 }
 
 
@@ -472,6 +484,23 @@ def _build_docx(items: list[tuple[str, object]], jd_text: str = "") -> object:
             else:
                 last_bullet_indices.add(_i)
 
+    def _set_right_tab(paragraph, pos: int = 10080) -> None:
+        pPr = paragraph._p.get_or_add_pPr()
+        tabs_el = OxmlElement("w:tabs")
+        tab_el = OxmlElement("w:tab")
+        tab_el.set(qn("w:val"), "right")
+        tab_el.set(qn("w:pos"), str(pos))
+        tabs_el.append(tab_el)
+        pPr.append(tabs_el)
+
+    def _add_plain(paragraph, text: str, *, bold: bool = False, size: float = 10.5) -> None:
+        run = paragraph.add_run(text)
+        run.bold = bold
+        run.font.name = _BODY_FONT
+        run.font.size = Pt(size)
+
+    current_section = ""
+
     for idx, (item_type, content) in enumerate(items):
         if item_type == "empty":
             continue
@@ -501,6 +530,7 @@ def _build_docx(items: list[tuple[str, object]], jd_text: str = "") -> object:
 
         elif item_type == "section_header":
             display = str(content).strip().title()
+            current_section = display.upper()
             p = _para(space_before=10, space_after=4)
             run = p.add_run(display)
             run.bold = True
@@ -510,47 +540,84 @@ def _build_docx(items: list[tuple[str, object]], jd_text: str = "") -> object:
 
         elif item_type == "job_title":
             raw = re.sub(r"\*\*", "", str(content)).strip()
-            parts = [x.strip() for x in raw.split("|") if x.strip()]
-            first = parts[0] if parts else raw
-            if len(parts) >= 4:
-                role_co = f"{parts[0]}  |  {parts[1]}"
-                right = "  |  ".join(parts[2:])
-            elif len(parts) == 3:
-                role_co = f"{parts[0]}  |  {parts[1]}"
-                right = parts[2]
-            elif "--" in first:
-                sub = [x.strip() for x in first.split("--", 1)]
-                role_co = f"{sub[0]} \u2014 {sub[1]}"
-                right = ""
-            elif "\u2014" in first:
-                sub = [x.strip() for x in first.split("\u2014", 1)]
-                role_co = f"{sub[0]} \u2014 {sub[1]}"
-                right = ""
+            # Some upstream resumes mix ``|`` with tabs as the separator
+            # (e.g., ``Role  |  Company\tDates  |  Location``). Normalize
+            # any run of tab or multi-space that sits between `|` groups
+            # so the row splits cleanly into its 4 fields.
+            normalized = re.sub(r"\t+", " | ", raw)
+            parts = [x.strip() for x in normalized.split("|") if x.strip()]
+            is_education = "EDUCATION" in current_section
+
+            # Experience: Role | Company | Dates | Location  ->
+            #   Line 1:  **Company**, Role                           Dates
+            #   Line 2:  Location
+            # Education: School | Degree | Years | Location  ->
+            #   Line 1:  **School**, Degree - Location               Years
+            if is_education and len(parts) >= 3:
+                school = parts[0]
+                degree = parts[1] if len(parts) > 1 else ""
+                years = parts[2] if len(parts) > 2 else ""
+                location = parts[3] if len(parts) > 3 else ""
+                right_side = years
+
+                p = _para(space_before=4, space_after=2)
+                _set_right_tab(p)
+                _add_plain(p, school, bold=True, size=11)
+                detail_bits = []
+                if degree:
+                    detail_bits.append(degree)
+                if location:
+                    detail_bits.append(location)
+                if detail_bits:
+                    _add_plain(p, ", " + " - ".join(detail_bits), bold=False, size=10.5)
+                if right_side:
+                    _add_plain(p, "\t", bold=False, size=10.5)
+                    _add_plain(p, right_side, bold=False, size=10.5)
+
+            elif not is_education and len(parts) >= 3:
+                role = parts[0]
+                company = parts[1]
+                dates = parts[2] if len(parts) > 2 else ""
+                location = parts[3] if len(parts) > 3 else ""
+
+                # Primary line: company (bold) + ", " + role + right-aligned dates.
+                p1 = _para(space_before=6, space_after=0)
+                _set_right_tab(p1)
+                _add_plain(p1, company, bold=True, size=11)
+                if role:
+                    _add_plain(p1, ", " + role, bold=False, size=11)
+                if dates:
+                    _add_plain(p1, "\t", bold=False, size=10.5)
+                    _add_plain(p1, dates, bold=False, size=10.5)
+
+                # Secondary line: location (plain, small, left-aligned).
+                if location:
+                    p2 = _para(space_before=0, space_after=2)
+                    _add_plain(p2, location, bold=False, size=10.5)
+
             else:
-                role_co = first
-                right = "  |  ".join(parts[1:]) if len(parts) > 1 else ""
-
-            p = _para(space_before=6, space_after=2)
-            pPr = p._p.get_or_add_pPr()
-            tabs_el = OxmlElement("w:tabs")
-            tab_el = OxmlElement("w:tab")
-            tab_el.set(qn("w:val"), "right")
-            tab_el.set(qn("w:pos"), "10080")
-            tabs_el.append(tab_el)
-            pPr.append(tabs_el)
-
-            run = p.add_run(role_co)
-            run.bold = True
-            run.font.name = _BODY_FONT
-            run.font.size = Pt(11)
-            if right:
-                run_tab = p.add_run("\t")
-                run_tab.font.name = _BODY_FONT
-                run_tab.font.size = Pt(10.5)
-                run2 = p.add_run(right)
-                run2.bold = False
-                run2.font.name = _BODY_FONT
-                run2.font.size = Pt(10.5)
+                # Fallback for oddly shaped lines (em-dash, 2 parts, etc.).
+                first = parts[0] if parts else raw
+                if "\u2014" in first:
+                    sub = [x.strip() for x in first.split("\u2014", 1)]
+                    role_co = f"{sub[0]} \u2014 {sub[1]}"
+                    right = ""
+                elif "--" in first:
+                    sub = [x.strip() for x in first.split("--", 1)]
+                    role_co = f"{sub[0]} \u2014 {sub[1]}"
+                    right = ""
+                elif len(parts) >= 2:
+                    role_co = f"{parts[1]}, {parts[0]}"
+                    right = ""
+                else:
+                    role_co = first
+                    right = ""
+                p = _para(space_before=6, space_after=2)
+                _set_right_tab(p)
+                _add_plain(p, role_co, bold=True, size=11)
+                if right:
+                    _add_plain(p, "\t", size=10.5)
+                    _add_plain(p, right, size=10.5)
 
         elif item_type == "bullet":
             is_last_bullet = idx in last_bullet_indices

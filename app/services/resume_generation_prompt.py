@@ -56,6 +56,16 @@ Always use the official spelling when mentioning a tool:
 * "CI/CD" and "continuous integration" — fine to use together once.
 * Other exact product names: "Node.js", "Next.js", "PostgreSQL", "Kubernetes", "Spring Boot", "Terraform", "GraphQL", "Elasticsearch", "GitHub", "GitLab".
 
+[ROLE-FAMILY KEYWORDS — MATCH WHAT HIRING MANAGERS EXPECT]
+Before writing, infer the likely role family from the JD and surface the frameworks, platforms, and domain keywords that hiring managers expect for that family — but ONLY when the candidate profile supports them.
+* Do not hardcode one stack into every resume. Pick the role-family-specific stack that matches the JD.
+* If the JD is for iOS / Mobile Engineer roles, prioritize truthful mentions such as "Swift", "SwiftUI", "UIKit", "Xcode", "iOS SDK", "Combine", "Core Data", "MVVM", "App Store" only if the profile supports them.
+* If the JD is for Java backend roles, prioritize truthful mentions such as "Java", "Spring Boot", "Microservices", "Kafka", "RESTful APIs", "PostgreSQL", "AWS".
+* If the JD is for Microsoft enterprise / AI & data roles, prioritize truthful mentions such as "Microsoft Dynamics 365", "Power Platform", "Power Apps", "Power Automate", "Power BI", "Microsoft Copilot Studio", "SQL", "Python".
+* If the JD is for frontend roles, prioritize truthful mentions such as "React", "TypeScript", "Next.js", "JavaScript", "Redux", "HTML", "CSS".
+* If the JD is for data / ML / AI roles, prioritize truthful mentions such as "Python", "SQL", "ETL", "Airflow", "Databricks", "TensorFlow", "PyTorch", "LLMs", "MLOps".
+These are examples, not mandatory lists. The rule is: identify the role family, then reflect its expected keywords across Summary, Skills, and recent Experience when supported by the profile.
+
 [CANDIDATE PROFILE — WHAT THE USER PASTES]
 The block under "CANDIDATE PROFILE" is plain text from the user. It should be mostly facts: a simple header with contact info, experience rows, education, and optional bullets. It may include a short "Optional" section for extra facts or personal preferences. Do not require long boilerplate from the user; the rules above are your job, not theirs to restate.
 
@@ -90,7 +100,7 @@ Do not add a market title line, tagline, address block, or headshot under the na
 
 1. Summary — heading ## Summary then 3–4 polished sentences written to impress a recruiter and hiring manager at first glance. Target shape (do not label these out loud):
    - Sentence 1: JD-aligned market title + years of experience (computed per [YEARS OF EXPERIENCE]) + primary specialization. When the JD targets a specific role (e.g., "AI Engineer", "AI & Data Management Engineer", "Java Backend Engineer"), bridge to that language here rather than sticking with a generic title like "Senior Software Engineer".
-   - Sentence 2: core tools and platforms depth as they relate to the JD. Name the JD's primary platforms/products by their exact product name when the profile supports them (e.g., Microsoft Dynamics 365, Power Platform with Power Apps, Power Automate, Power BI, Microsoft Copilot Studio, Java and Spring Boot, AWS). Do not hide them behind generic words like "modern tools".
+   - Sentence 2: core tools and platforms depth as they relate to the JD and its role family. Name the JD's primary frameworks/platforms/products by their exact product name when the profile supports them (e.g., SwiftUI and UIKit for iOS, Microsoft Dynamics 365, Power Platform with Power Apps, Power Automate, Power BI, Microsoft Copilot Studio, Java and Spring Boot, AWS). Do not hide them behind generic words like "modern tools".
    - Sentence 3: representative value theme — automation, data governance, scalability, reliability, security, modernization, delivery speed.
    - Sentence 4 (optional): cross-functional collaboration, mentorship, end-user support, or delivery track record.
 
@@ -102,6 +112,7 @@ Do not add a market title line, tagline, address block, or headshot under the na
    - Only the category label is bold. Do not bold individual skill entries.
    - Order categories by JD priority: the JD's primary stack first, supporting stack next, general tools and methodologies last.
    - Within each line, list the most JD-relevant skills first.
+   - Make the first 1–2 categories reflect the role family explicitly when helpful. Example: for iOS/mobile roles, lead with categories like "iOS Development" or "Mobile Architecture"; for Java roles, "Backend Development"; for Microsoft enterprise roles, "Microsoft Platform" or "AI & Data Management".
    - Group 18–24 supported skills into concise, visually balanced categories. Pick category names that reflect the JD domain, for example: AI & Data Management, Microsoft Platform, Development & Automation, Cloud & DevOps, Data & APIs, Frontend Development, Backend Development, Architecture & Engineering, Methodologies, Leadership.
    - Aim for 3–5 skills per category; if one category is obviously heavier than the rest, split it into two. Do not let a single line run past ~90 characters.
    - Use official tool spellings from [TOOL NAME CANONICALIZATION].
@@ -110,7 +121,13 @@ Do not add a market title line, tagline, address block, or headshot under the na
 
 3. Experience — heading ## Experience then for each role use one heading line in this exact format:
    Job Title | Company | Start - End | Location or Remote/Hybrid/Onsite
-   List roles in reverse chronological order. Preserve the company names, dates, and locations from the candidate profile exactly; do not rename companies. The job title may be normalized to a JD-aligned market title when it does not overstate seniority. 3–7 hyphen-prefixed bullets per role; more recent/relevant roles get more bullets, older ones fewer.
+   List roles in reverse chronological order. Preserve the company names, dates, and locations from the candidate profile exactly; do not rename companies. The job title may be normalized to a JD-aligned market title when it does not overstate seniority.
+
+   [BULLET COUNT PER ROLE — FIXED]
+   - Role 1 (most recent): exactly 6 hyphen-prefixed bullets.
+   - Role 2 (second most recent): exactly 5 bullets.
+   - Role 3 and any older role: exactly 4 bullets each.
+   Never produce fewer than the stated count. Never produce more. This is a hard constraint, not a guideline.
 
    [JD TAILORING — most recent 2–3 roles]
    - Identify the JD's primary platforms, tools, and project type (e.g., Java + Spring Boot + microservices, or Dynamics 365 + Power Platform + Copilot Studio, or AWS + Kubernetes + data lakes). These are the resume's anchor keywords. Before you write the bullets, list those anchors to yourself internally (do not print the list in the output).
@@ -125,6 +142,13 @@ Do not add a market title line, tagline, address block, or headshot under the na
    - Every bullet MUST contain at least one concrete anchor: a named tool/platform (Dynamics 365, Power BI, Spring Boot, PostgreSQL, Copilot Studio…), a named workflow or subsystem (claims review, payment reconciliation, onboarding flow, data governance policy…), a named business artifact (dashboard, report, API, service, agent, pipeline), OR a named business outcome (throughput, data quality, compliance, reliability). No bullet may be purely generic like "provided technical support" or "built dashboards using modern visualization tools".
    - Start every bullet with a strong action verb: Architected, Built, Led, Designed, Delivered, Implemented, Developed, Migrated, Integrated, Secured, Automated, Modernized, Refactored, Scaled, Optimized, Orchestrated, Spearheaded, Owned, Launched, Configured, Administered, Maintained, Deployed, Monitored.
    - NEVER begin a bullet with: "Worked on", "Helped with", "Responsible for", "Assisted in", "Participated in", "Involved in", "Duties included", "Tasks included", "Contributed to".
+   - Avoid stock filler phrasing unless it is anchored to a named tool, workflow, artifact, and concrete outcome. Weak examples to avoid: "AI-powered solutions for enterprise clients", "actionable insights", "platform performance and user adoption", "comprehensive system administration and technical support", "complex business workflows", "system integrity", "modern visualization tools".
+   - Do not use placeholder metrics or blanks such as "XX%", "X+", "N+", or "[metric]". Every number must be truthful, naturally worded, and resume-ready.
+
+   [ACTION VERB VARIETY — STRICT]
+   - Do not start more than 2 bullets in the entire Experience section with the same action verb.
+   - Before finalizing, silently scan the first word of every bullet and vary repeated verbs. If "Built" or any other starter appears 3+ times, rewrite later bullets with an equally strong alternative.
+   - Vary sentence rhythm across bullets: some can lead with action + scope, others action + tool + outcome, others action + artifact + business impact. Avoid templated repetition.
 
    [BULLET LENGTH — STRICT]
    - Target ~20–28 words per bullet. Absolute max 32 words.
@@ -160,6 +184,11 @@ Do not add a market title line, tagline, address block, or headshot under the na
 
    [METRICS — CRITICAL]
    - Only about 30–40% of bullets may contain a quantified metric. The remaining 60–70% describe scope, ownership, and qualitative impact. Do not add a number to every bullet — this is the biggest tell of AI-written resumes and must be avoided.
+   - Aim for the 30% floor, not near-zero metrics. With the fixed bullet counts above, target this mix unless the profile truly cannot support it:
+     * Role 1 with 6 bullets: at least 2 metric-based bullets.
+     * Role 2 with 5 bullets: at least 1 metric bullet, preferably 2 when well supported.
+     * Role 3+ with 4 bullets: at least 1 metric bullet.
+   - Prefer metrics tied to a concrete artifact or workflow, not floating numbers. Good: "Built Power BI dashboards tracking 14 claims KPIs." Better than: "Improved reporting by 20%."
    - Vary the metric format across bullets. Do NOT default to "by X%". Rotate through formats and never use the same format twice in a row:
      * Time:          "cut build time from 9 minutes to 3 minutes", "reduced p99 latency 320 ms → 90 ms", "shortened onboarding from 2 weeks to 3 days"
      * Counts:        "20+ microservices", "5,000+ daily active users", "30+ API endpoints"
@@ -168,7 +197,7 @@ Do not add a market title line, tagline, address block, or headshot under the na
      * Ratios/scale:  "99.95% uptime", "supporting 2 regions and 4 data centers"
      * Team size:     "led a team of 6 engineers", "mentored 4 junior developers"
      * Adoption:      "adopted by 8 internal teams", "rolled out across 12 business units"
-   - Do not fabricate numbers. Only add a metric when the candidate profile reasonably supports the scope, or when the metric is a mild, realistic industry norm for that role and company. When in doubt, keep the bullet qualitative.
+   - Do not fabricate numbers. Only add a metric when the candidate profile reasonably supports the scope, or when the metric is a mild, realistic industry norm for that role and company. Use approximate wording when needed ("about", "roughly", "~", "20+", "200+"), but never invent fake precision. When in doubt, keep the bullet qualitative.
 
 4. Education — heading ## Education; use a clean one-line format when possible:
    School | Degree | years | location

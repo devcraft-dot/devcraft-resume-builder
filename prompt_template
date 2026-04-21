@@ -104,16 +104,19 @@ Header
   - Sentence 2: core tools and platforms depth relevant to the job description; name the JD primary platforms by their exact product name when the profile supports them (for example Microsoft Dynamics 365, Power Platform with Power Apps, Power Automate, Power BI, Microsoft Copilot Studio, Java, Spring Boot, AWS); do not hide them behind generic words like "modern tools"
   - Sentence 3: representative value theme such as automation, data governance, scalability, reliability, security, modernization, delivery speed, or team leadership
   - Sentence 4 (optional): cross-functional collaboration, mentorship, end-user support, or delivery track record
-* Bold 4 to 6 of the most critical job-description-aligned keywords or short phrases across the paragraph using **markdown** (tool names, platform names, domain terms)
-* Do not bold more than 6 items; do not bold full sentences
+* Bold AT MOST 2 phrases in the entire Summary, and only the market-facing role title (sentence 1) and at most one primary tool or platform name (sentence 2)
+* Never bold generic phrases such as "business value", "business problems", "actionable insights", "strong foundation", "cross-functional collaboration", "data-driven", "operational efficiency", "process automation", or "AI-powered solutions"
+* When in doubt, leave it plain; over-bolding kills readability
 * Do not include hard numeric metrics in the summary; keep it qualitative, confident, and senior in voice
 * Silently align the summary with a common market-facing title for the job description without printing that title as a separate line
 
 2. Skills
 
-* Include 20 to 30 relevant skills
-* Output as 4 to 8 plain category lines (no hyphen or bullet prefix)
+* Include 18 to 24 relevant skills
+* Output as 5 to 7 plain category lines (no hyphen or bullet prefix)
 * Use this format: `Category: skill 1, skill 2, skill 3`
+* Aim for 3 to 5 skills per category; if one category is noticeably heavier than the rest, split it into two so the lines feel balanced
+* Do not let any single line run past about 90 characters
 * Pick category labels that reflect the job-description domain, for example: AI & Data Management, Microsoft Platform, Development & Automation, Cloud & DevOps, Data & APIs, Frontend Development, Backend Development, Architecture & Engineering, Methodologies, Leadership
 * Bold only the category label; do not bold individual skill entries
 * Order categories by job-description priority: primary stack first, supporting stack next, general tools and methodologies last
@@ -137,9 +140,10 @@ Ordering and company rules:
 
 JD tailoring rules for the 2-3 most recent roles:
 
-* Identify the job description primary platforms, tools, and project type (for example Java + Spring Boot + microservices, or Dynamics 365 + Power Platform + Copilot Studio + Power BI)
+* Identify the job description primary platforms, tools, and project type (for example Java + Spring Boot + microservices, or Dynamics 365 + Power Platform + Copilot Studio + Power BI); internally list those anchors to yourself before writing bullets (do not print the list)
 * Weave those exact product names into actual Experience bullets, not only into Skills; Skills-only mention is not proof of hands-on use
-* Distribution rule: every primary job-description platform or tool must appear in at least one bullet across the 2-3 most recent roles; if the job description lists four anchor tools, cover all four across those recent roles
+* Distribution rule (HARD): every primary job-description platform or tool must appear verbatim in at least one bullet across the 2-3 most recent roles; if the job description lists four anchor tools, cover all four across those recent roles
+* After drafting, silently self-check each anchor tool against the bullets; if any anchor is missing, revise a generic bullet to include it rather than adding an extra bullet (per-role bullet counts are fixed)
 * Give each role a different industry framing based on that company's real-world business (for example Capital One = banking/payments, Cigna = healthcare/claims, NewRez = mortgage/lending, Taazaa = enterprise client services, Alaffia Health = healthcare claims payment integrity, Increase = fintech banking APIs, Adobe = digital media, Shopify = e-commerce); no two roles should describe the same kind of product
 * In each tailored role, reference one concrete, industry-appropriate project or platform name such as "Enterprise Payments Platform", "Claims Adjudication Portal", "Digital Mortgage Origination System", "Merchant Onboarding Service", "Risk and Fraud Scoring Pipeline", or "Dynamics 365 Customer Service Workspace", inferred from that company's actual business and the candidate role
 * Do not invent projects in industries a company is not actually in
@@ -147,30 +151,46 @@ JD tailoring rules for the 2-3 most recent roles:
 
 Bullet style:
 
-* Use 3 to 7 bullets per role depending on relevance and recency; more recent and more relevant roles get more bullets
+* Fixed bullet count per role (hard constraint): 6 bullets for the most recent role, 5 bullets for the second role, 4 bullets for the third and any older role; never fewer, never more
 * Formula: strong action verb + what was built or owned (with a concrete anchor) + specific tool/platform named by its real product name + optional outcome, scope, or business/user impact
 * Every bullet MUST contain at least one concrete anchor: a named tool/platform, a named workflow or subsystem, a named business artifact (dashboard, report, API, service, agent, pipeline), or a named business outcome. No bullet may be purely generic like "provided technical support" or "built dashboards using modern visualization tools"
 * Start every bullet with a strong action verb such as Architected, Built, Led, Designed, Delivered, Implemented, Developed, Migrated, Integrated, Secured, Automated, Modernized, Refactored, Scaled, Optimized, Orchestrated, Spearheaded, Owned, Launched, Configured, Administered, Maintained, Deployed, Monitored
 * Never begin a bullet with "Worked on", "Helped with", "Responsible for", "Assisted in", "Participated in", "Involved in", "Duties included", "Tasks included", or "Contributed to"
 * Every bullet ends with a period
-* Each bullet should usually be 1 to 2 lines in a normal resume
-* Mirror job description language where truthful, but do not keyword-stuff
-* Bold 3 to 5 of the most important job-description-aligned keywords or short phrases per role across its bullets (tool names, platform names, domain terms, one architecture concept)
-* Do not bold generic words like "APIs", "cloud", "services", "solutions", or "data" by themselves, and do not bold full sentences
+
+Bullet length (strict):
+
+* Target about 20 to 28 words per bullet; absolute maximum 32 words
+* Prefer 1 visual resume line; 2 lines only when truly necessary
+* Trim filler such as "that", "which", "in order to", "across the", "throughout the", "various", "multiple"; cut restated ideas
+
+Bullet bolding (strict):
+
+* Bold AT MOST 2 to 3 phrases per role TOTAL across ALL of that role's bullets (not 2 to 3 per bullet); most bullets will have zero bolded phrases
+* Bold only real product names or tightly job-description-aligned technical nouns (for example "Dynamics 365", "Power BI", "Spring Boot", "Copilot Studio", "RESTful APIs", "OAuth2", "PostgreSQL", "CI/CD")
+* Never bold generic nouns such as "APIs", "cloud", "services", "solutions", "data", "workflows", "dashboards", "reporting", "platform", "system", "team", "stakeholders", "business value", "insights", "features", "components"
+* Never bold action verbs, adjectives, outcome phrases, or full sentences
 * Do not bold individual skill entries in Skills (only the category label is bold there)
+* Prefer plain-text bullets when in doubt; the goal is a small number of high-contrast keyword hits per role, not highlighter-style emphasis on every tool word
+
+General:
+
+* Mirror job description language where truthful, but do not keyword-stuff
 * Keep role progression credible and aligned with actual seniority
 * Do not fabricate tools, platforms, domains, responsibilities, or scope
 * For each tailored role, aim for bullet coverage across these dimensions where truthful: what platform/tool was used, what was automated or built, what data process was owned, what admin/support responsibility was owned, what dashboards or reports were delivered, what business problem was solved
 
-Bullet examples (aim for this specificity, stay truthful):
+Bullet examples (aim for this specificity AND length, stay truthful):
 
-* Weak and banned: "Built interactive dashboards and reports using modern visualization tools."
+* Weak and banned (vague, no anchor): "Built interactive dashboards and reports using modern visualization tools."
 * Weak and banned: "Provided comprehensive system administration and technical support."
 * Weak and banned: "Worked on AI-powered solutions for enterprise clients."
-* Strong: "Built operational dashboards in **Power BI** to track data quality, workflow throughput, and exception trends, giving business stakeholders clearer visibility into process health and follow-up actions."
-* Strong: "Maintained and optimized **Dynamics 365** and related enterprise data workflows, troubleshooting user issues, supporting configuration updates, and improving day-to-day system reliability for 200+ internal users."
-* Strong: "Designed and deployed custom agents in **Microsoft Copilot Studio** to triage incoming claims questions, reducing average response time from 2 business days to same-day."
-* Strong: "Automated invoice reconciliation across **Power Apps** and **Power Automate**, eliminating manual export/import steps for finance ops."
+* Over-bolded and banned: "Architected and delivered **AI-powered features** for a **claims adjudication platform**, integrating **clinical rules engines** to automate **payment integrity** review."
+* Strong (about 22 to 27 words, 0 or 1 bold per bullet):
+  - "Built operational dashboards in **Power BI** tracking data quality, workflow throughput, and exception trends for claims ops stakeholders."
+  - "Maintained and optimized **Dynamics 365** and related data workflows, troubleshooting user issues and supporting configuration updates for 200+ internal users."
+  - "Designed and deployed custom agents in **Copilot Studio** to triage claims questions, cutting average response time from 2 business days to same-day."
+  - "Automated invoice reconciliation across Power Apps and Power Automate, eliminating manual export/import steps for the finance operations team."
 
 Metric rules (critical):
 

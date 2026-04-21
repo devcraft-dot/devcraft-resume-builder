@@ -89,18 +89,21 @@ Header — two lines only:
 Do not add a market title line, tagline, address block, or headshot under the name.
 
 1. Summary — heading ## Summary then 3–4 polished sentences written to impress a recruiter and hiring manager at first glance. Target shape (do not label these out loud):
-   - Sentence 1: JD-aligned market title + years of experience (computed per [YEARS OF EXPERIENCE]) + primary specialization. When the JD targets a specific role (e.g., "AI Engineer", "AI & Data Management Engineer", "Java Backend Engineer"), bridge to that language here rather than sticking with a generic title like "Senior Software Engineer". Example: "**AI & Data Management Engineer** with 6+ years of experience designing enterprise AI solutions across fintech and healthtech".
-   - Sentence 2: core tools and platforms depth as they relate to the JD. Name the JD's primary platforms/products by their exact product name when the profile supports them (e.g., **Microsoft Dynamics 365**, **Power Platform (Power Apps, Power Automate, Power BI)**, **Microsoft Copilot Studio**, **Java** and **Spring Boot**, **AWS**, etc.). Do not hide them behind generic words like "modern tools".
+   - Sentence 1: JD-aligned market title + years of experience (computed per [YEARS OF EXPERIENCE]) + primary specialization. When the JD targets a specific role (e.g., "AI Engineer", "AI & Data Management Engineer", "Java Backend Engineer"), bridge to that language here rather than sticking with a generic title like "Senior Software Engineer".
+   - Sentence 2: core tools and platforms depth as they relate to the JD. Name the JD's primary platforms/products by their exact product name when the profile supports them (e.g., Microsoft Dynamics 365, Power Platform with Power Apps, Power Automate, Power BI, Microsoft Copilot Studio, Java and Spring Boot, AWS). Do not hide them behind generic words like "modern tools".
    - Sentence 3: representative value theme — automation, data governance, scalability, reliability, security, modernization, delivery speed.
    - Sentence 4 (optional): cross-functional collaboration, mentorship, end-user support, or delivery track record.
-   Across the paragraph, bold 4–6 of the most critical JD-aligned keywords or short phrases using **markdown** (tech names, platform names, domain terms). Do not bold full sentences or more than 6 items. Do not include hard numeric metrics here; keep the summary qualitative, confident, and senior in voice.
 
-2. Skills — heading ## Skills then 4–8 plain category lines (no hyphen or bullet prefix). Use this exact format on each line:
+   [SUMMARY BOLDING — STRICT]
+   Bold AT MOST 2 phrases in the entire Summary, and only the market-facing role title (sentence 1) and at most one primary tool/platform name (sentence 2). Never bold generic phrases like "business value", "business problems", "actionable insights", "strong foundation", "cross-functional collaboration", "data-driven", "operational efficiency", "process automation", "AI-powered solutions". Over-bolding kills readability; when in doubt, leave it plain. No numeric metrics in the Summary.
+
+2. Skills — heading ## Skills then 5–7 plain category lines (no hyphen or bullet prefix). Use this exact format on each line:
    Category: skill 1, skill 2, skill 3
    - Only the category label is bold. Do not bold individual skill entries.
    - Order categories by JD priority: the JD's primary stack first, supporting stack next, general tools and methodologies last.
    - Within each line, list the most JD-relevant skills first.
-   - Group 20–30 supported skills into concise categories. Pick category names that reflect the JD domain, for example: AI & Data Management, Microsoft Platform, Development & Automation, Cloud & DevOps, Data & APIs, Frontend Development, Backend Development, Architecture & Engineering, Methodologies, Leadership.
+   - Group 18–24 supported skills into concise, visually balanced categories. Pick category names that reflect the JD domain, for example: AI & Data Management, Microsoft Platform, Development & Automation, Cloud & DevOps, Data & APIs, Frontend Development, Backend Development, Architecture & Engineering, Methodologies, Leadership.
+   - Aim for 3–5 skills per category; if one category is obviously heavier than the rest, split it into two. Do not let a single line run past ~90 characters.
    - Use official tool spellings from [TOOL NAME CANONICALIZATION].
    - When the profile mentions an umbrella platform (e.g., "Power Platform"), expand it in Skills to its concrete sub-tools relevant to the JD: "Power Platform (Power Apps, Power Automate, Power BI)". This helps ATS match the individual product names.
    - When an industry-standard term has both a common abbreviation and a full form (e.g., "CI/CD" and "continuous integration", "REST" and "RESTful APIs", "ML" and "machine learning"), you may include both naturally to help ATS keyword matching.
@@ -110,9 +113,9 @@ Do not add a market title line, tagline, address block, or headshot under the na
    List roles in reverse chronological order. Preserve the company names, dates, and locations from the candidate profile exactly; do not rename companies. The job title may be normalized to a JD-aligned market title when it does not overstate seniority. 3–7 hyphen-prefixed bullets per role; more recent/relevant roles get more bullets, older ones fewer.
 
    [JD TAILORING — most recent 2–3 roles]
-   - Identify the JD's primary platforms, tools, and project type (e.g., Java + Spring Boot + microservices, or Dynamics 365 + Power Platform + Copilot Studio, or AWS + Kubernetes + data lakes). These are the resume's anchor keywords.
+   - Identify the JD's primary platforms, tools, and project type (e.g., Java + Spring Boot + microservices, or Dynamics 365 + Power Platform + Copilot Studio, or AWS + Kubernetes + data lakes). These are the resume's anchor keywords. Before you write the bullets, list those anchors to yourself internally (do not print the list in the output).
    - Weave those exact product names into actual Experience bullets, not only into Skills. Skills alone is not proof of hands-on use.
-   - DISTRIBUTION RULE: every primary JD platform/tool must appear in at least one bullet across the 2–3 most recent roles. If the JD lists four anchor tools (e.g., Dynamics 365, Power Platform, Copilot Studio, Power BI), cover all four across those recent roles — do not leave any as a Skills-only mention.
+   - DISTRIBUTION RULE (HARD): every primary JD platform/tool must appear verbatim in at least one bullet across the 2–3 most recent roles. If the JD lists four anchor tools (e.g., Dynamics 365, Power Platform, Copilot Studio, Power BI), cover all four across those recent roles — do not leave any as a Skills-only mention. After drafting, silently self-check: for each anchor tool, does it appear in at least one bullet? If not, revise a bullet to include it (replace a generic bullet rather than adding a new one — keep the fixed per-role bullet count).
    - Give each role a different industry framing based on that company's real-world business (e.g., Capital One → banking/payments, Cigna → healthcare/claims, NewRez → mortgage/lending, Taazaa → enterprise client services, Alaffia Health → healthcare claims/payment integrity, Increase → fintech/banking APIs, Adobe → digital media, Shopify → e-commerce). No two roles should describe the same kind of product.
    - In each tailored role, reference one concrete, industry-appropriate project or platform name such as "Enterprise Payments Platform", "Claims Adjudication Portal", "Digital Mortgage Origination System", "Merchant Onboarding Service", "Risk & Fraud Scoring Pipeline", or "Dynamics 365 Customer Service Workspace" — inferred from that company's actual business and the candidate's role. Do not invent projects in industries the company is not in.
    - If the JD clearly specifies a project type or domain (e.g., "trading platform", "claims adjudication", "e-commerce checkout", "enterprise data governance"), the MOST RECENT role's project framing MUST match that domain.
@@ -122,8 +125,18 @@ Do not add a market title line, tagline, address block, or headshot under the na
    - Every bullet MUST contain at least one concrete anchor: a named tool/platform (Dynamics 365, Power BI, Spring Boot, PostgreSQL, Copilot Studio…), a named workflow or subsystem (claims review, payment reconciliation, onboarding flow, data governance policy…), a named business artifact (dashboard, report, API, service, agent, pipeline), OR a named business outcome (throughput, data quality, compliance, reliability). No bullet may be purely generic like "provided technical support" or "built dashboards using modern visualization tools".
    - Start every bullet with a strong action verb: Architected, Built, Led, Designed, Delivered, Implemented, Developed, Migrated, Integrated, Secured, Automated, Modernized, Refactored, Scaled, Optimized, Orchestrated, Spearheaded, Owned, Launched, Configured, Administered, Maintained, Deployed, Monitored.
    - NEVER begin a bullet with: "Worked on", "Helped with", "Responsible for", "Assisted in", "Participated in", "Involved in", "Duties included", "Tasks included", "Contributed to".
-   - Bold 3–5 of the most important JD-aligned keywords or short phrases per role across its bullets using **markdown** — tool names, platform names, domain terms, one architecture concept. Do not bold generic words like "APIs", "cloud", "services", "solutions", or "data" by themselves. Keep bolding selective; the goal is recruiter-eye-catching emphasis, not highlighter noise.
-   - Each bullet reads like 1–2 normal resume lines, ends with a period, and uses strong ownership language.
+
+   [BULLET LENGTH — STRICT]
+   - Target ~20–28 words per bullet. Absolute max 32 words.
+   - Prefer 1 visual resume line; 2 lines only when truly necessary. Trim filler words ("that", "which", "in order to", "across the", "throughout the", "various", "multiple"). Cut restated ideas.
+
+   [BULLET BOLDING — STRICT]
+   - Bold AT MOST 2–3 phrases per role TOTAL across ALL of that role's bullets — not 2–3 per bullet. Most bullets will have zero bolded phrases.
+   - Only bold real product names or tightly-JD-aligned technical nouns (e.g., "Dynamics 365", "Power BI", "Spring Boot", "Copilot Studio", "RESTful APIs", "OAuth2", "PostgreSQL", "CI/CD").
+   - NEVER bold: generic nouns ("APIs", "cloud", "services", "solutions", "data", "workflows", "dashboards", "reporting", "platform", "system", "team", "stakeholders", "business value", "insights", "features", "components"), action verbs, adjectives, outcome phrases, or full sentences.
+   - Prefer plain-text bullets when in doubt. The goal is a small number of high-contrast keyword hits per role, not highlighter-style emphasis on every tool word.
+
+   - Each bullet ends with a period and uses strong ownership language.
    - For each tailored role, aim for bullet coverage across these dimensions (as truthful):
        • what platform/tool was used (e.g., Dynamics 365, Spring Boot, Power Apps)
        • what was automated or built (e.g., claims review workflow, onboarding pipeline, reporting agent)
@@ -132,16 +145,18 @@ Do not add a market title line, tagline, address block, or headshot under the na
        • what dashboards or reports were delivered (named KPIs or stakeholders)
        • what business problem was solved (compliance, cost, throughput, customer experience)
 
-   [BULLET EXAMPLES — aim for this specificity, stay truthful]
-   Weak (banned):
+   [BULLET EXAMPLES — aim for this specificity and length, stay truthful]
+   Weak (banned — too vague, no anchor):
      - "Built interactive dashboards and reports using modern visualization tools."
      - "Provided comprehensive system administration and technical support."
      - "Worked on AI-powered solutions for enterprise clients."
-   Strong (target quality):
-     - "Built operational dashboards in **Power BI** to track data quality, workflow throughput, and exception trends, giving business stakeholders clearer visibility into process health and follow-up actions."
-     - "Maintained and optimized **Dynamics 365** and related enterprise data workflows, troubleshooting user issues, supporting configuration updates, and improving day-to-day system reliability for 200+ internal users."
-     - "Designed and deployed custom agents in **Microsoft Copilot Studio** to triage incoming claims questions, reducing average response time from 2 business days to same-day."
-     - "Automated invoice reconciliation across **Power Apps** and **Power Automate**, eliminating manual export/import steps for finance ops."
+   Over-bolded (banned — too many bold phrases per role):
+     - "Architected and delivered **AI-powered features** for a **claims adjudication platform**, integrating **clinical rules engines** to automate **payment integrity** review."
+   Strong (target quality, ~22–27 words, 0–1 bold per bullet):
+     - "Built operational dashboards in **Power BI** tracking data quality, workflow throughput, and exception trends for claims ops stakeholders."
+     - "Maintained and optimized **Dynamics 365** and related data workflows, troubleshooting user issues and supporting configuration updates for 200+ internal users."
+     - "Designed and deployed custom agents in **Copilot Studio** to triage claims questions, cutting average response time from 2 business days to same-day."
+     - "Automated invoice reconciliation across Power Apps and Power Automate, eliminating manual export/import steps for the finance operations team."
 
    [METRICS — CRITICAL]
    - Only about 30–40% of bullets may contain a quantified metric. The remaining 60–70% describe scope, ownership, and qualitative impact. Do not add a number to every bullet — this is the biggest tell of AI-written resumes and must be avoided.

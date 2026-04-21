@@ -369,10 +369,60 @@ def _auto_bold_jd_skills(values_str: str, jd_text: str) -> str:
     return ", ".join(out)
 
 
+# Whitelist of tokens we are willing to auto-bold in bullets when they appear
+# in the JD. Everything else stays plain unless the model itself emitted `**`.
+# This is intentionally small and tech-heavy — avoids highlighter-style bolding
+# of generic resume fluff (e.g. "development", "solutions", "data", "features").
+_AUTOBOLD_TECH_TOKENS: set[str] = {
+    "python", "java", "javascript", "typescript", "go", "rust", "kotlin",
+    "scala", "swift", "ruby", "php", "c#", "c++", ".net",
+    "spring boot", "django", "flask", "fastapi", "express", "node.js",
+    "next.js", "nest.js", "rails",
+    "react", "angular", "vue", "svelte",
+    "aws", "azure", "gcp", "google cloud",
+    "docker", "kubernetes", "terraform", "ansible",
+    "ci/cd", "jenkins", "github actions", "gitlab",
+    "postgresql", "mysql", "mongodb", "redis", "elasticsearch", "dynamodb",
+    "rest", "restful apis", "graphql", "grpc", "kafka", "rabbitmq",
+    "oauth", "oauth2", "jwt", "saml", "openid",
+    "microservices", "serverless", "lambda",
+    "tensorflow", "pytorch", "scikit-learn", "langchain", "llm",
+    "microsoft dynamics 365", "dynamics 365",
+    "power platform", "power apps", "power automate", "power bi",
+    "microsoft copilot studio", "copilot studio",
+    "azure functions", "azure devops",
+    "salesforce", "sap", "snowflake", "databricks", "airflow",
+}
+
+
+def _looks_like_tech_token(kw: str) -> bool:
+    """Accept only tokens that are very likely real tech / product names."""
+    if not kw:
+        return False
+    kw_lower = kw.lower().strip()
+    if kw_lower in _AUTOBOLD_TECH_TOKENS:
+        return True
+    # Contains a digit, dot, plus, or hash → likely a product/version token
+    # (Dynamics 365, Node.js, C++, C#, OAuth2, K8s etc.).
+    if re.search(r"[0-9.+#]", kw):
+        return True
+    # Multi-word phrase that contains a known tech token is fine.
+    for tok in _AUTOBOLD_TECH_TOKENS:
+        if tok in kw_lower:
+            return True
+    return False
+
+
 def _bold_first_use_in_bullet(text: str, jd_keywords: list[str], seen: set[str]) -> str:
     for kw in jd_keywords:
         kw_lower = kw.lower()
         if kw_lower in seen or len(kw) < 3:
+            continue
+        # Reduce noise: only auto-bold tokens that look like real tech/product
+        # names. Prevents generic JD words (development, solutions, team, data,
+        # features, workflows, etc.) from being bolded on top of the model's
+        # own emphasis.
+        if not _looks_like_tech_token(kw):
             continue
         pattern = r"(?<!\*)\b(" + re.escape(re.sub(r"\*\*", "", kw)) + r")\b(?!\*)"
         text_plain = re.sub(r"\*\*", "", text)
@@ -520,7 +570,7 @@ def _build_docx(items: list[tuple[str, object]], jd_text: str = "") -> object:
             run.font.size = Pt(12)
 
         elif item_type == "contact":
-            p = _para(space_before=0, space_after=8, align=WD_ALIGN_PARAGRAPH.CENTER)
+            p = _para(space_before=0, space_after=10, align=WD_ALIGN_PARAGRAPH.CENTER)
             _add_md_runs(p, str(content), base_size_pt=10.5)
             if _next_non_empty_type(idx) == "section_header":
                 _add_bottom_rule(p)
@@ -531,7 +581,7 @@ def _build_docx(items: list[tuple[str, object]], jd_text: str = "") -> object:
         elif item_type == "section_header":
             display = str(content).strip().title()
             current_section = display.upper()
-            p = _para(space_before=10, space_after=4)
+            p = _para(space_before=14, space_after=6)
             run = p.add_run(display)
             run.bold = True
             run.font.name = _BODY_FONT
@@ -581,7 +631,7 @@ def _build_docx(items: list[tuple[str, object]], jd_text: str = "") -> object:
                 location = parts[3] if len(parts) > 3 else ""
 
                 # Primary line: company (bold) + ", " + role + right-aligned dates.
-                p1 = _para(space_before=6, space_after=0)
+                p1 = _para(space_before=10, space_after=0)
                 _set_right_tab(p1)
                 _add_plain(p1, company, bold=True, size=11)
                 if role:
@@ -592,7 +642,7 @@ def _build_docx(items: list[tuple[str, object]], jd_text: str = "") -> object:
 
                 # Secondary line: location (plain, small, left-aligned).
                 if location:
-                    p2 = _para(space_before=0, space_after=2)
+                    p2 = _para(space_before=0, space_after=3)
                     _add_plain(p2, location, bold=False, size=10.5)
 
             else:
@@ -621,7 +671,13 @@ def _build_docx(items: list[tuple[str, object]], jd_text: str = "") -> object:
 
         elif item_type == "bullet":
             is_last_bullet = idx in last_bullet_indices
-            p = _para(space_before=0, space_after=6 if is_last_bullet else 0)
+            # Small inter-bullet space (~1.5pt) makes dense bullet blocks easier
+            # to scan without wasting vertical space. A bigger gap closes out
+            # the role cleanly before the next company header.
+            p = _para(
+                space_before=1,
+                space_after=8 if is_last_bullet else 1,
+            )
             p.paragraph_format.left_indent = Inches(0.2)
             p.paragraph_format.first_line_indent = Inches(-0.2)
             run = p.add_run("\u2022 ")
@@ -634,7 +690,7 @@ def _build_docx(items: list[tuple[str, object]], jd_text: str = "") -> object:
 
         elif item_type == "skill":
             label, values, _bulleted = content  # type: ignore[misc]
-            p = _para(space_before=0, space_after=2)
+            p = _para(space_before=0, space_after=3)
             r_label = p.add_run(f"{label}: ")
             r_label.bold = True
             r_label.font.name = _BODY_FONT

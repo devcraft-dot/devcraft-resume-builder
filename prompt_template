@@ -34,6 +34,14 @@ Check the job description before writing.
 * Keep role history credible and aligned with actual seniority and scope
 * Do not quantify every achievement; mix qualitative and quantitative bullets (see Metric Rules below)
 
+[BUZZWORDS & CLICHES — REMOVE OR REPLACE WITH EVIDENCE]
+
+* Do not use vague self-promotional filler that hiring managers treat as empty buzzwords
+* Avoid phrases like "collaborator", "team player", "results-driven", "detail-oriented", "go-getter", "self-starter", "dynamic professional", "innovative thinker", "strategic thinker", "hardworking", "fast learner", "excellent communication skills", "proven track record", "passionate", "motivated professional"
+* Do not use subjective claims unless the resume proves them with concrete work, tools, scope, metrics, or outcomes
+* Show these qualities through Experience bullets instead of naming them directly
+* If a phrase sounds like a LinkedIn headline cliché rather than a recruiter-useful fact, cut it
+
 [YEARS OF EXPERIENCE — COMPUTE FROM THE PROFILE]
 
 * Compute years of experience from the listed roles themselves; do not copy a number the user pasted and do not fabricate
@@ -115,6 +123,10 @@ Header
   - Sentence 2: core tools and platforms depth relevant to the job description and its role family; name the JD primary frameworks, platforms, and products by their exact product name when the profile supports them (for example SwiftUI and UIKit for iOS, Microsoft Dynamics 365, Power Platform with Power Apps, Power Automate, Power BI, Microsoft Copilot Studio, Java, Spring Boot, AWS); do not hide them behind generic words like "modern tools"
   - Sentence 3: representative value theme such as automation, data governance, scalability, reliability, security, modernization, delivery speed, or team leadership
   - Sentence 4 (optional): cross-functional collaboration, mentorship, end-user support, or delivery track record
+* The Summary must earn its space: every sentence should contain either a role-relevant specialization, named tool/platform, domain focus, delivery scope, or concrete business focus
+* Do NOT write empty claims such as "proven track record", "strong collaborator", "excellent communicator", "results-driven engineer", "innovative professional", or "passionate about technology"
+* Do NOT make the Summary read like a generic self-description; it should read like a compressed recruiter pitch grounded in actual experience
+* If a sentence adds no real signal beyond personality or attitude, replace it with a concrete capability or remove it
 * Bold AT MOST 2 phrases in the entire Summary, and only the market-facing role title (sentence 1) and at most one primary tool or platform name (sentence 2)
 * Never bold generic phrases such as "business value", "business problems", "actionable insights", "strong foundation", "cross-functional collaboration", "data-driven", "operational efficiency", "process automation", or "AI-powered solutions"
 * When in doubt, leave it plain; over-bolding kills readability
@@ -137,6 +149,8 @@ Header
 * When the profile mentions an umbrella platform such as Power Platform, expand it to its concrete sub-tools relevant to the JD, for example "Power Platform (Power Apps, Power Automate, Power BI)", so ATS can match the individual product names
 * When an industry-standard term has both a common abbreviation and a full form (for example CI/CD and continuous integration, REST and RESTful APIs, ML and machine learning), you may include both naturally to help ATS matching
 * Include only skills reasonably supported by the candidate profile
+* Skills is for hard skills, platforms, frameworks, languages, tools, certifications, and concrete methodologies; do NOT list vague soft skills or personality traits here
+* Never include buzzword entries such as "collaborator", "team player", "communication", "problem solving", "leadership" without scope, "detail-oriented", "hardworking", or "adaptable" as standalone skills
 
 3. Experience
    For each role, use this format exactly on one heading line:
@@ -183,6 +197,7 @@ Action verb variety (strict):
 * Do not start more than 2 bullets in the entire Experience section with the same action verb
 * Before finalizing, silently scan the first word of every bullet and vary repeated verbs; if "Built" or any other starter appears 3+ times, rewrite later bullets with an equally strong alternative
 * Vary sentence rhythm across bullets; avoid making every bullet follow the exact same cadence
+* Prefer precise verbs over generic starters; when ownership is clear, choose verbs like Architected, Automated, Deployed, Integrated, Optimized, Refactored, Modernized, Orchestrated, Launched, or Scaled instead of weak openers like Used, Worked on, Helped, or Was responsible for
 
 Bullet bolding (strict):
 

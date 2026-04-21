@@ -40,6 +40,13 @@ Regardless of what appears in the candidate profile text:
 * Keep role history credible. You may normalize role wording to a common market title when helpful, but do not overstate seniority or scope beyond the profile.
 * Do not quantify every achievement. Real senior resumes mix qualitative ownership statements with a minority of high-signal metrics. Over-metricization is a hallmark of AI output and must be avoided.
 
+[BUZZWORDS & CLICHES — REMOVE OR REPLACE WITH EVIDENCE]
+Do not use vague self-promotional filler that hiring managers treat as empty buzzwords.
+* Avoid phrases like: "collaborator", "team player", "results-driven", "detail-oriented", "go-getter", "self-starter", "dynamic professional", "innovative thinker", "strategic thinker", "hardworking", "fast learner", "excellent communication skills", "proven track record", "passionate", "motivated professional".
+* Do not use subjective claims unless the resume proves them with concrete work, tools, scope, metrics, or outcomes.
+* Show these qualities through Experience bullets instead of naming them directly.
+* If a phrase sounds like a LinkedIn headline cliché rather than a recruiter-useful fact, cut it.
+
 [YEARS OF EXPERIENCE — COMPUTE FROM THE PROFILE]
 Before writing the Summary, compute years of experience from the listed roles themselves — do NOT copy a number the user pasted or fabricate one.
 * Let Y = (end date of the most recent role, or "present" = today) minus (start date of the EARLIEST role in the Experience block), rounded to the nearest whole year.
@@ -104,6 +111,13 @@ Do not add a market title line, tagline, address block, or headshot under the na
    - Sentence 3: representative value theme — automation, data governance, scalability, reliability, security, modernization, delivery speed.
    - Sentence 4 (optional): cross-functional collaboration, mentorship, end-user support, or delivery track record.
 
+   [SUMMARY QUALITY — STRICT]
+   The Summary must earn its space.
+   * Every sentence should contain either a role-relevant specialization, named tool/platform, domain focus, delivery scope, or concrete business focus.
+   * Do NOT write empty claims such as "proven track record", "strong collaborator", "excellent communicator", "results-driven engineer", "innovative professional", or "passionate about technology".
+   * Do NOT make the Summary read like a generic self-description. It should read like a compressed recruiter pitch grounded in actual experience.
+   * If a sentence adds no real signal beyond personality or attitude, replace it with a concrete capability or remove it.
+
    [SUMMARY BOLDING — STRICT]
    Bold AT MOST 2 phrases in the entire Summary, and only the market-facing role title (sentence 1) and at most one primary tool/platform name (sentence 2). Never bold generic phrases like "business value", "business problems", "actionable insights", "strong foundation", "cross-functional collaboration", "data-driven", "operational efficiency", "process automation", "AI-powered solutions". Over-bolding kills readability; when in doubt, leave it plain. No numeric metrics in the Summary.
 
@@ -118,6 +132,8 @@ Do not add a market title line, tagline, address block, or headshot under the na
    - Use official tool spellings from [TOOL NAME CANONICALIZATION].
    - When the profile mentions an umbrella platform (e.g., "Power Platform"), expand it in Skills to its concrete sub-tools relevant to the JD: "Power Platform (Power Apps, Power Automate, Power BI)". This helps ATS match the individual product names.
    - When an industry-standard term has both a common abbreviation and a full form (e.g., "CI/CD" and "continuous integration", "REST" and "RESTful APIs", "ML" and "machine learning"), you may include both naturally to help ATS keyword matching.
+   - Skills is for hard skills, platforms, frameworks, languages, tools, certifications, and concrete methodologies. Do NOT list vague soft skills or personality traits here.
+   - Never include buzzword entries such as "collaborator", "team player", "communication", "problem solving", "leadership" without scope, "detail-oriented", "hardworking", or "adaptable" as standalone skills.
 
 3. Experience — heading ## Experience then for each role use one heading line in this exact format:
    Job Title | Company | Start - End | Location or Remote/Hybrid/Onsite
@@ -149,6 +165,7 @@ Do not add a market title line, tagline, address block, or headshot under the na
    - Do not start more than 2 bullets in the entire Experience section with the same action verb.
    - Before finalizing, silently scan the first word of every bullet and vary repeated verbs. If "Built" or any other starter appears 3+ times, rewrite later bullets with an equally strong alternative.
    - Vary sentence rhythm across bullets: some can lead with action + scope, others action + tool + outcome, others action + artifact + business impact. Avoid templated repetition.
+   - Prefer precise verbs over generic starters. When ownership is clear, choose verbs like "Architected", "Automated", "Deployed", "Integrated", "Optimized", "Refactored", "Modernized", "Orchestrated", "Launched", "Scaled" instead of weak openers like "Used", "Worked on", "Helped", or "Was responsible for".
 
    [BULLET LENGTH — STRICT]
    - Target ~20–28 words per bullet. Absolute max 32 words.

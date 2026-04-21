@@ -44,6 +44,8 @@ INTERNAL TASKS (perform internally before writing)
 6. Choose the top 3 themes with the strongest honest overlap. These should drive the summary and early bullet order.
 7. Identify the 4-6 most important competency areas in the JD and make sure the resume demonstrates them across Summary, Skills, and Experience when supported by the candidate data.
 8. For each relevant role, identify the strongest evidence across ownership, technical depth, business impact, collaboration, leadership, process improvement, stakeholder support, and scale.
+9. Within each role, prioritize the specific projects or workstreams that best match the target job, even if they were only part of the broader role.
+If a role comes from a different industry, surface the most analogous systems, workflows, controls, integrations, or outcomes that credibly transfer to the target job
 
 KEYWORD EXTRACTION RULES
 - Extract all meaningful keywords explicitly present in the Job Description.
@@ -58,6 +60,11 @@ KEYWORD EXTRACTION RULES
   4. repeated responsibilities
   5. domain, system, or business context
 - If Company Brief is provided, use it only to supplement company context and domain understanding.
+
+ACRONYM AND VARIANT RULES (ATS + recruiter skim)
+- When the JD spells out an acronym or gives both forms, prefer the JD's primary form in Skills and early Experience when truthful.
+- Do not rely on an acronym alone if the JD emphasizes the spelled-out term and the candidate supports it.
+- When the JD repeats a hard skill or stack item, treat repetition as a signal of importance and reflect it naturally in Skills and relevant bullets.
 
 ANTI-AI-STYLE RULES
 - Do not use generic filler such as:
@@ -92,6 +99,7 @@ FORMAT RULES
 - Use section titles exactly: Summary, Skills, Experience, Education.
 - Single-column layout only.
 - No tables, columns, text boxes, icons, emojis, divider lines, graphics, borders, or decorative elements.
+- Prefer plain ASCII punctuation in the resume body (straight quotes, hyphens, normal dashes in ranges as instructed) so downstream tools do not inherit curly quotes or odd symbols.
 - Keep bold styling sparse and readable.
 - Do not bold whole sentences or full bullets.
 - Keep the resume easy to skim in under 10 seconds.
@@ -144,19 +152,24 @@ SKILL EXPANSION RULE
 EXPERIENCE
 - Reverse chronological.
 - Use this exact header format:
-  Role | Company | Mon YYYY - Mon YYYY | Location
-- Most recent and most relevant role: 5-7 bullets when enough supported evidence exists.
-- Other relevant recent roles: 3-5 bullets.
-- Older or less relevant roles: 2-4 bullets.
+  Role | Company | Month YYYY - Month YYYY | Location
+- Use full month names, not abbreviations.
+- Include clear start and end dates for every role.
+- Use 3-10 bullets per role when enough supported evidence exists.
+- When depth is not needed, many strong resumes land closer to 4-6 bullets per role; expand beyond that only when the extra bullets add distinct, non-overlapping proof.
+- Most recent and most relevant role: usually 5-7 bullets.
+- Other relevant recent roles: usually 3-6 bullets.
+- Older or less relevant roles: usually 3-4 bullets unless the available evidence is genuinely thinner.
 - Increase or decrease bullet count based on recency, relevance, and how much evidence is needed to prove fit without making the resume dense.
 - Order bullets by JD relevance first, then proof strength.
 - The first 5-8 bullets across the resume should carry the strongest supported evidence for the target role.
 - Each bullet should contain:
   action + system or problem + method or technology + outcome
 - Use past tense.
-- Keep bullets readable and compact; most should stay within 18-32 words.
+- Keep bullets readable and compact; most should stay within 22-36 words and should usually fill most of one line without becoming dense.
+- Capitalize the first word of each bullet and end each bullet with a period.
+- Use metrics wherever truthful and supported; prefer multiple quantified bullets in recent and relevant roles, but do not force metrics into every bullet. When exact numbers are unavailable, use concrete outcomes instead of vague claims.
 - Prefer multiple quantified bullets in recent roles when the source supports them, but do not force numbers into every role or every bullet.
-- If exact numbers are unavailable, use concrete outcomes instead of vague claims.
 - Spread important supported JD keywords across the Summary, Skills, and especially the early Experience bullets.
 - Hard skills and domain or system keywords should appear in real work context, not as keyword stuffing.
 - Soft skills should appear through evidence:
@@ -169,6 +182,8 @@ EXPERIENCE
 - Do not force every important competency into every role. Spread the evidence across the most relevant roles so the resume remains credible, readable, and distinct.
 - Make each role feel distinct by emphasizing its specific systems, environment, stakeholders, and type of impact.
 - If a recent or highly relevant role is underexplained, expand it with additional truthful bullets that clarify systems, tools, ownership, collaboration, operational context, or measurable impact. Do not sacrifice critical relevance for brevity.
+- If an older role is a materially stronger match than a newer role, give it equal or greater detail.
+- Do not replace strong, job-relevant concrete evidence with more generic engineering phrasing
 
 VERB AND BULLET STYLE RULES
 - Start bullets with strong, specific action verbs.

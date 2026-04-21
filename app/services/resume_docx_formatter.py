@@ -133,23 +133,74 @@ def _sanitize_text(text: str) -> str:
     return s.strip()
 
 
-_FULL_TO_ABBR_MONTH = {
-    "january": "Jan", "february": "Feb", "march": "Mar", "april": "Apr",
-    "may": "May", "june": "Jun", "july": "Jul", "august": "Aug",
-    "september": "Sep", "october": "Oct", "november": "Nov", "december": "Dec",
+_MONTH_ABBR_TO_FULL = {
+    "jan": "January",
+    "feb": "February",
+    "mar": "March",
+    "apr": "April",
+    "may": "May",
+    "jun": "June",
+    "jul": "July",
+    "aug": "August",
+    "sep": "September",
+    "sept": "September",
+    "oct": "October",
+    "nov": "November",
+    "dec": "December",
 }
 _FULL_MONTH_RE = re.compile(
-    r"\b(" + "|".join(_FULL_TO_ABBR_MONTH) + r")\s+(\d{4})\b",
+    r"\b("
+    + "|".join(
+        [
+            "january",
+            "february",
+            "march",
+            "april",
+            "may",
+            "june",
+            "july",
+            "august",
+            "september",
+            "october",
+            "november",
+            "december",
+        ]
+    )
+    + r")\s+(\d{4})\b",
+    re.IGNORECASE,
+)
+_ABBR_MONTH_RE = re.compile(
+    r"\b(" + "|".join(_MONTH_ABBR_TO_FULL) + r")\.?\s+(\d{4})\b",
     re.IGNORECASE,
 )
 
 
 def _normalize_dates(text: str) -> str:
-    """Normalize date formats: full month → 3-letter abbr, hyphen → en dash."""
-    def _abbr(m: re.Match) -> str:
-        return f"{_FULL_TO_ABBR_MONTH[m.group(1).lower()]} {m.group(2)}"
-    s = _FULL_MONTH_RE.sub(_abbr, text)
-    s = re.sub(r"(\w{3,4}\s+\d{4})\s*-\s*(\w{3,}\s+\d{4}|Present)", r"\1 – \2", s)
+    """Normalize dates to full month names and a simple hyphen separator."""
+    def _full(m: re.Match) -> str:
+        return f"{m.group(1).capitalize()} {m.group(2)}"
+
+    def _expand(m: re.Match) -> str:
+        return f"{_MONTH_ABBR_TO_FULL[m.group(1).lower().rstrip('.')]} {m.group(2)}"
+
+    s = _FULL_MONTH_RE.sub(_full, text)
+    s = _ABBR_MONTH_RE.sub(_expand, s)
+    s = re.sub(
+        r"([A-Za-z]+\s+\d{4})\s*[–—-]\s*([A-Za-z]+\s+\d{4}|Present)",
+        r"\1 - \2",
+        s,
+    )
+    return s
+
+
+def _normalize_bullet_text(text: str) -> str:
+    """Normalize bullets to sentence-style casing and punctuation."""
+    s = _sanitize_text(str(text or "").strip())
+    if not s:
+        return s
+    s = re.sub(r"^(\W*)([a-z])", lambda m: m.group(1) + m.group(2).upper(), s, count=1)
+    if not re.search(r'[.!?]["\')\]]*$', s):
+        s += "."
     return s
 
 
@@ -684,7 +735,7 @@ def _build_docx(items: list[tuple[str, object]], jd_text: str = "") -> object:
             run.font.name = _BODY_FONT
             run.font.size = Pt(10.5)
             bullet_text = _bold_first_use_in_bullet(
-                str(content), jd_keywords, content_bold_seen
+                _normalize_bullet_text(str(content)), jd_keywords, content_bold_seen
             )
             _add_md_runs(p, bullet_text, base_size_pt=10.5)
 

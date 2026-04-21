@@ -23,13 +23,16 @@ Check the job description before writing.
 
 [GLOBAL CONSTRAINTS]
 
+* Write like a premium human-authored executive resume from a top CV-building platform; it must not read like generic AI output
+* No hedging, no meta-phrases, no "this candidate", no buzzword salad, no overly symmetric sentence patterns
 * Prefer a common market-facing job title that fits the job description and the candidate profile
 * Keep content truthful and grounded in the profile plus job description
 * Use ATS-friendly plain Markdown only
-* Prioritize important job-description keywords naturally across Summary, Skills, and Experience
-* Treat the primary technology or platform in the job description as the main focus only if it is clearly supported by the candidate profile
+* Prioritize important job-description keywords naturally across Summary, Skills, and Experience, with extra weight on the 2-3 most recent roles
+* Treat the primary technology, platform, and project type in the job description as the main focus only if it is clearly supported by the candidate profile
 * Use exact job-description phrasing when it fits naturally and truthfully, but do not keyword-stuff or force duplicate mentions
 * Keep role history credible and aligned with actual seniority and scope
+* Do not quantify every achievement; mix qualitative and quantitative bullets (see Metric Rules below)
 
 [CANDIDATE PROFILE FORMAT]
 Candidate Name
@@ -69,65 +72,91 @@ Use this exact order:
 
 Header
 
-* Put the candidate name first on its own line
-* Put the common market-facing title on the next line
-* Put one contact line under that using location, phone, email, and LinkedIn separated by pipes
+* Line 1: the candidate name on its own line
+* Line 2: one contact line joined by pipes in this order, omitting any fields missing from the profile: Location | Email | Phone | LinkedIn
+* Do not put a market-facing title, tagline, address block, or headshot under the name
+* Do not put only the candidate location under the name
 * Keep the header clean, centered-looking, and ATS-friendly
-* Do not place only the candidate location directly under the title
-* Add a simple visual break under the contact line when formatting allows
+* Do not include icons, emoji, or any symbols other than the pipe separator on the contact line
+* A simple visual rule under the contact line is allowed when the formatter supports it
 
-1. Market Title
+1. Summary
 
-* Put the Market Title above Summary
-* Make it bold
-* Use a common market-facing title that matches the job description
-* Use Title Case
-* Do not place candidate location by itself under the title
+* Write 3 to 4 polished sentences aimed at impressing a recruiter and hiring manager at first glance
+* Target shape (do not label the parts out loud):
+  - Sentence 1: seniority + years of experience + primary specialization aligned with the job description
+  - Sentence 2: core technology depth and architectural strength relevant to the job description
+  - Sentence 3: representative value theme such as scalability, reliability, security, modernization, delivery speed, or team leadership
+  - Sentence 4 (optional): cross-functional collaboration, mentorship, or delivery track record
+* Bold 4 to 6 of the most critical job-description-aligned keywords or short phrases across the paragraph using **markdown** (tech names, domain terms, architecture concepts)
+* Do not bold more than 6 items; do not bold full sentences
+* Do not include hard numeric metrics in the summary; keep it qualitative, confident, and senior in voice
+* Silently align the summary with a common market-facing title for the job description without printing that title as a separate line
 
-2. Summary
-
-* Write 3 to 4 sentences
-* Keep it clear, professional, concise, and tailored to the job description
-* Reflect the candidate seniority accurately
-* Include the strongest job-aligned qualifications supported by the profile
-* Use exact job description wording only where it fits naturally and truthfully
-
-3. Skills
+2. Skills
 
 * Include 20 to 30 relevant skills
-* Output as 4 to 8 hyphen-prefixed category lines
-* Use this format: `- Category: skill 1, skill 2, skill 3`
+* Output as 4 to 8 plain category lines (no hyphen or bullet prefix)
+* Use this format: `Category: skill 1, skill 2, skill 3`
 * Group related skills under concise labels such as Frontend Development, Backend Development, Cloud and DevOps, Data and APIs, Architecture and Engineering, Methodologies, or Leadership
-* Bold the category label only
-* Prioritize skills based on the job description
-* Put the most relevant supported skills first
+* Bold only the category label; do not bold individual skill entries
+* Order categories by job-description priority: primary stack first, supporting stack next, general tools and methodologies last
+* Within each line, list the most job-description-relevant skills first
+* When an industry-standard term has both a common abbreviation and a full form (for example CI/CD and continuous integration, REST and RESTful APIs, ML and machine learning), you may include both naturally to help ATS matching
 * Include only skills reasonably supported by the candidate profile
 
-4. Experience
+3. Experience
    For each role, use this format exactly on one heading line:
    Job Title | Company Name | Start Date - End Date | Location / Remote / Hybrid / Onsite
 
 Then write hyphen-prefixed bullets.
 
-Bullet rules:
+Ordering and company rules:
 
-* Use 3 to 7 bullets per role depending on relevance and recency
-* More recent and more relevant roles may have more bullets
-* Older or less relevant roles should have fewer bullets
-* Every bullet must end with a period
-* Every bullet must be specific, technically detailed, and recruiter-friendly
-* Each bullet should usually be about 1 to 2 lines in a normal resume
-* Use strong ownership language where appropriate, such as owned, led, primary responsibility, end-to-end, delivered, implemented, designed, optimized, and collaborated
+* List roles in reverse chronological order (most recent first)
+* Preserve the company names, dates, and locations from the candidate profile exactly; do not rename companies
+* The job title may be normalized to a job-description-aligned market title when it does not overstate seniority
+
+JD tailoring rules for the 2-3 most recent roles:
+
+* Identify the job description primary stack and project type (for example Java, Spring Boot, microservices, event-driven, payment processing)
+* Weave those exact terms naturally into the bullets of the 2-3 most recent roles
+* Give each role a different industry framing based on that company's real-world business (for example Capital One = banking/payments, Cigna = healthcare/claims, NewRez = mortgage/lending, Adobe = digital media, Shopify = e-commerce); no two roles should describe the same kind of product
+* In each tailored role, reference one concrete, industry-appropriate project or platform name such as "Enterprise Payments Platform", "Claims Adjudication Portal", "Digital Mortgage Origination System", "Merchant Onboarding Service", or "Risk and Fraud Scoring Pipeline", inferred from that company's actual business and the candidate role
+* Do not invent projects in industries a company is not actually in
+* If the job description specifies a clear project type or domain, the MOST RECENT role's project framing MUST match that domain
+
+Bullet style:
+
+* Use 3 to 7 bullets per role depending on relevance and recency; more recent and more relevant roles get more bullets
+* Formula: strong action verb + what was built or owned + specific technology from job description or profile + optional outcome, scope, or user-facing impact
+* Start every bullet with a strong action verb such as Architected, Built, Led, Designed, Delivered, Implemented, Developed, Migrated, Integrated, Secured, Automated, Modernized, Refactored, Scaled, Optimized, Orchestrated, Spearheaded, Owned, Launched
+* Never begin a bullet with "Worked on", "Helped with", "Responsible for", "Assisted in", "Participated in", "Involved in", "Duties included", "Tasks included", or "Contributed to"
+* Every bullet ends with a period
+* Each bullet should usually be 1 to 2 lines in a normal resume
 * Mirror job description language where truthful, but do not keyword-stuff
-* Bold only the most important keywords or phrases that directly align with the job description
-* Do not bold anything in Skills
-* Focus on impact, systems, architecture, engineering depth, delivery, scalability, reliability, modernization, integration, automation, testing, cloud, APIs, security, data, and collaboration when supported by the candidate profile
-* Do not fabricate metrics
-* Do not fabricate tools, platforms, domains, responsibilities, or scope
-* If the profile clearly supports it, you may use duration signals such as X+ years of experience or used in production
+* Bold 3 to 5 of the most important job-description-aligned keywords or short phrases per role across its bullets (tech names, domain terms, one architecture concept)
+* Do not bold generic words like "APIs", "cloud", or "services" by themselves, and do not bold full sentences
+* Do not bold individual skill entries in Skills (only the category label is bold there)
 * Keep role progression credible and aligned with actual seniority
+* Do not fabricate tools, platforms, domains, responsibilities, or scope
 
-5. Education
+Metric rules (critical):
+
+* Only about 30 to 40 percent of bullets may contain a quantified metric; the rest describe scope, ownership, and qualitative impact
+* Do not add a number to every bullet; over-metricization is the biggest tell of AI-written resumes
+* Vary the metric format across bullets; do NOT default to "by X%"; rotate through these formats and never use the same format twice in a row:
+  - Time: "cut build time from 9 minutes to 3 minutes", "reduced p99 latency 320 ms to 90 ms", "shortened onboarding from 2 weeks to 3 days"
+  - Counts: "20+ microservices", "5,000+ daily active users", "30+ API endpoints"
+  - Money: "$1.2M in annual infrastructure savings", "protected $40M in transaction volume", "saved roughly $5K per month in cloud spend"
+  - Throughput: "10k requests/second sustained", "3x throughput under peak load"
+  - Ratios or scale: "99.95% uptime", "supporting 2 regions and 4 data centers"
+  - Team size: "led a team of 6 engineers", "mentored 4 junior developers"
+  - Adoption: "adopted by 8 internal teams", "rolled out across 12 business units"
+* Do not fabricate numbers; only add a metric when the profile reasonably supports the scope, or when the metric is a mild, realistic industry norm for that role and company
+* When in doubt, keep the bullet qualitative
+
+4. Education
 
 * Include institution, degree, years, and location when available
 * Prefer one clean line such as School | Degree | Years | Location
@@ -136,27 +165,30 @@ Bullet rules:
 [FORMATTING RULES]
 
 * Use a plain ATS-friendly layout
-* Use bold only for section headers, Market Title, skill category labels, and highly relevant job-description-aligned keywords in Experience bullets
+* Use bold only for section headers, skill category labels, and highly relevant job-description-aligned keywords in Experience bullets
+* Do not bold the candidate name or the contact line
 * Do not use tables
 * Do not use columns
-* Do not use icons
+* Do not use icons or emoji anywhere (including the contact line)
 * Do not use decorative symbols
 * Do not use parentheses
 * Do not use brackets
 * Do not add sections that were not requested
 * Keep spacing clean and readable
 * Use blank lines between sections
+* Do not use a hyphen or bullet prefix on Skills lines
 
 [KEYWORD OPTIMIZATION RULES]
 
 * Extract the most important skills, technologies, platforms, responsibilities, and domain terms from the job description
-* Prioritize those terms across Summary, Skills, and Experience
+* Prioritize those terms across Summary, Skills, and Experience, with extra density in the 2 to 3 most recent roles
 * Reuse important terms naturally and truthfully
 * Prefer exact phrasing from the job description when it fits the candidate background
 * Do not force every keyword into every section
 * Do not force duplicate mentions of the same keyword just to increase ATS density
+* Do not bold the same keyword more than twice within a single section
 * Do not add tools or platforms unless they are reasonably supported by the candidate profile
-* Treat the primary technology or platform in the job description as the main focus of the resume only if it aligns with the candidate background
+* Treat the primary technology, platform, and project type in the job description as the main focus of the resume only if it aligns with the candidate background
 * Reduce emphasis on unrelated skills
 
 [COVER LETTER RULES]
@@ -200,7 +232,7 @@ CANDIDATE PROFILE, and APPLICATION QUESTIONS blocks. The model MUST end with the
 section headings (exact spelling) so the server can split outputs:
 
 ## Resume
-… resume Markdown (Market Title line, ## Summary, ## Skills, ## Experience, ## Education) …
+… resume Markdown (name + contact header, ## Summary, ## Skills, ## Experience, ## Education) …
 
 ## Cover Letter
 … paragraphs …

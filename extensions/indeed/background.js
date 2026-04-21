@@ -319,18 +319,38 @@ async function extractMosaicDetailUrls(tabId) {
   }
 }
 
+async function attemptBotAutoSolveOnTab(tabId) {
+  try {
+    const r = await sendToTabRetry(tabId, "attemptBotAutoSolve", {}, 1);
+    return r || { tried: false, clicks: 0 };
+  } catch {
+    return { tried: false, clicks: 0 };
+  }
+}
+
 async function waitForBotClearOnTab(tabId) {
-  const maxMs = DELAYS.BOT_CHECK_MAX_WAIT_MS ?? 30000;
-  const poll = DELAYS.BOT_CHECK_POLL_MS ?? 1000;
+  const maxMs = DELAYS.BOT_CHECK_MAX_WAIT_MS ?? 75000;
+  const poll = DELAYS.BOT_CHECK_POLL_MS ?? 1500;
+  const autoSolveEvery = DELAYS.BOT_CHECK_AUTOSOLVE_EVERY_MS ?? 6000;
   const deadline = Date.now() + maxMs;
   let sawBot = false;
+  let lastAutoSolveAt = 0;
+  let autoSolveAttempts = 0;
+
   while (Date.now() < deadline) {
     const bot = await detectBotOnTab(tabId);
-    if (!bot) return { cleared: true, sawBot };
+    if (!bot) return { cleared: true, sawBot, autoSolveAttempts };
     sawBot = true;
+
+    if (Date.now() - lastAutoSolveAt >= autoSolveEvery) {
+      const outcome = await attemptBotAutoSolveOnTab(tabId);
+      lastAutoSolveAt = Date.now();
+      if (outcome?.tried) autoSolveAttempts += 1;
+    }
+
     await sleep(poll);
   }
-  return { cleared: false, sawBot };
+  return { cleared: false, sawBot, autoSolveAttempts };
 }
 
 async function findApplyTabAfterClick(clickSourceTabId, winId, idsBefore, timeoutMs) {
@@ -863,7 +883,8 @@ async function runLoop() {
         broadcastState();
 
         while (state.running && !state.paused) {
-          if (await detectBotOnTab(searchTabId)) {
+          const searchBotBeforeCollect = await waitForBotClearOnTab(searchTabId);
+          if (!searchBotBeforeCollect.cleared) {
             await pauseForBotCheck(searchTabId, "search results");
             break;
           }
@@ -928,7 +949,8 @@ async function runLoop() {
           }
           await sleep(urlChanged ? DELAYS.AFTER_PAGE_LOAD : Math.max(DELAYS.AFTER_PAGE_LOAD, 5500));
 
-          if (await detectBotOnTab(searchTabId)) {
+          const searchBotAfterPagination = await waitForBotClearOnTab(searchTabId);
+          if (!searchBotAfterPagination.cleared) {
             await pauseForBotCheck(searchTabId, "search results");
             break;
           }

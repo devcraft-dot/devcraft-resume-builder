@@ -14,6 +14,8 @@ const DELAYS = {
   APPLY_NEW_TAB_POLL: 200,
   APPLY_CLICK_NEW_TAB_WAIT: 9000,
   /** Indeed bot / interstitial: poll until clear or cap */
-  BOT_CHECK_MAX_WAIT_MS: 30000,
-  BOT_CHECK_POLL_MS: 1000,
+  BOT_CHECK_MAX_WAIT_MS: 75000,
+  BOT_CHECK_POLL_MS: 1500,
+  /** Interval between best-effort auto-solve nudges during the wait window */
+  BOT_CHECK_AUTOSOLVE_EVERY_MS: 6000,
 };

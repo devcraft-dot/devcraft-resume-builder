@@ -226,48 +226,143 @@ function clickIndeedApplyButton() {
   return { ok: true, reason: "" };
 }
 
-/** Bot / security interstitial on Indeed (captcha, unusual traffic, etc.). */
+/**
+ * Bot / security interstitial on Indeed.
+ *
+ * Detection is intentionally conservative: weak signals (a bare Cloudflare
+ * iframe or a generic phrase) can appear on real pages, so we only return
+ * `bot: true` when we see a *strong* signal, or two independent weak signals
+ * together.
+ */
 function detectBotInterstitial() {
-  const title = (document.title || "").toLowerCase();
+  const title = (document.title || "").trim().toLowerCase();
   const href = (location.href || "").toLowerCase();
-  if (
-    /captcha|robot|verify you|security check|unusual traffic|access denied|interstitial|just a moment/i.test(
-      title,
-    )
-  ) {
-    return { bot: true, kind: "title" };
-  }
-  if (/indeed\.com\/rc\/|interstitial|challenge|captcha/i.test(href)) return { bot: true };
-  if (
-    document.querySelector(
-      [
-        "iframe[src*='captcha']",
-        "iframe[src*='hcaptcha']",
-        "iframe[title*='Cloudflare security challenge']",
-        "iframe[src*='challenges.cloudflare.com']",
-        "script[src*='/cdn-cgi/challenge-platform/']",
-        "script[src*='challenges.cloudflare.com/turnstile']",
-        "input[name='cf-turnstile-response']",
-        "input[name='cf_challenge_response']",
-        "#captcha",
-        ".g-recaptcha",
-        "#cf-box-container",
-      ].join(", "),
-    )
-  ) {
-    return { bot: true, kind: "challenge-widget" };
-  }
+
+  // --- Strong signals: these appear *only* on a real challenge page. ---
+
+  // Indeed's own marker on their static Cloudflare pages.
   if (window.INDEED_CLOUDFLARE_STATIC_PAGE?.PAGE_TYPE) {
     return { bot: true, kind: "indeed-cloudflare-page" };
   }
-  const body = (document.body?.innerText || "").slice(0, 4000).toLowerCase();
-  if (
-    /unusual traffic from your computer network|verify you are human|please complete the security check|additional verification required|troubleshooting cloudflare errors|your ray id|enable javascript and cookies to continue|verifying/i.test(
-      body,
-    )
-  )
-    return { bot: true, kind: "body-copy" };
+  // Cloudflare's challenge platform URL.
+  if (/\/cdn-cgi\/challenge-platform\//i.test(href)) {
+    return { bot: true, kind: "cdn-cgi-url" };
+  }
+  // "Just a moment..." is Cloudflare's exact interstitial title.
+  if (/^just a moment\.?\.?\.?$/.test(title)) {
+    return { bot: true, kind: "title-just-a-moment" };
+  }
+  // Explicit CF challenge form elements in the main document (not an iframe).
+  if (document.querySelector("form#challenge-form, main#challenge-error-title, #challenge-stage")) {
+    return { bot: true, kind: "challenge-form" };
+  }
+
+  // --- Weak signals: need at least two to agree before we trust them. ---
+
+  const weak = [];
+
+  // Short body (under ~1500 chars) + cf challenge text is a strong
+  // combination: the real Indeed page has far more content than that.
+  const bodyText = (document.body?.innerText || "").trim();
+  const shortBody = bodyText.length < 1500;
+  const bodyLc = bodyText.slice(0, 4000).toLowerCase();
+  const bodyCfPhrase =
+    /verify you are human|additional verification required|troubleshooting cloudflare errors|your ray id is|enable javascript and cookies to continue|please complete the security check|checking if the site connection is secure/.test(
+      bodyLc,
+    );
+  if (shortBody && bodyCfPhrase) return { bot: true, kind: "short-body-cf-copy" };
+  if (bodyCfPhrase) weak.push("body-copy");
+  if (shortBody && bodyText.length > 0) weak.push("short-body");
+
+  // A Cloudflare challenge iframe in an otherwise empty-looking page.
+  const cfIframe = document.querySelector(
+    "iframe[src*='challenges.cloudflare.com'], iframe[title*='Cloudflare security challenge' i], iframe[title*='Widget containing a Cloudflare' i]",
+  );
+  if (cfIframe) weak.push("cf-iframe");
+
+  // Title strongly suggesting a challenge (exact-ish match, not substring).
+  if (/^(attention required|access denied|security check|please verify you are a human)/.test(title)) {
+    weak.push("title");
+  }
+
+  if (weak.length >= 2) {
+    return { bot: true, kind: `weak:${weak.join("+")}` };
+  }
   return { bot: false };
+}
+
+/**
+ * Best-effort nudge for Cloudflare Turnstile / interstitial checkboxes.
+ *
+ * Reality check: we can't reach into the Cloudflare iframe (cross-origin + closed
+ * shadow root), and Turnstile rejects untrusted synthetic events. But on the
+ * "managed challenge" path the checkbox often just needs ANY user-shaped
+ * interaction near it before the server-side verdict flips. So we try:
+ *   1. Scroll the widget into view.
+ *   2. Dispatch pointer / mouse events at the center of the visible widget area.
+ * This does NOT guarantee the challenge passes; the real fix is still manual.
+ */
+function attemptBotAutoSolve() {
+  const results = { tried: false, clicks: 0, reason: "" };
+  const candidates = [];
+
+  document
+    .querySelectorAll(
+      [
+        "iframe[title*='Cloudflare security challenge']",
+        "iframe[src*='challenges.cloudflare.com']",
+        "#cf-box-container",
+        "#cf-chl-widget-7rsqt",
+        "[id^='cf-chl-widget-']",
+        ".cf-turnstile",
+        "div[data-sitekey]",
+      ].join(", "),
+    )
+    .forEach((el) => candidates.push(el));
+
+  if (!candidates.length) {
+    results.reason = "no-widget";
+    return results;
+  }
+
+  for (const el of candidates) {
+    try {
+      el.scrollIntoView({ block: "center", inline: "center" });
+    } catch {
+      /* */
+    }
+    const rect = el.getBoundingClientRect();
+    if (rect.width < 10 || rect.height < 10) continue;
+
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const init = {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      clientX: cx,
+      clientY: cy,
+      button: 0,
+      buttons: 1,
+      view: window,
+    };
+
+    try {
+      el.dispatchEvent(new PointerEvent("pointerover", init));
+      el.dispatchEvent(new PointerEvent("pointermove", init));
+      el.dispatchEvent(new PointerEvent("pointerdown", init));
+      el.dispatchEvent(new MouseEvent("mousedown", init));
+      el.dispatchEvent(new PointerEvent("pointerup", init));
+      el.dispatchEvent(new MouseEvent("mouseup", init));
+      el.dispatchEvent(new MouseEvent("click", init));
+      results.clicks += 1;
+      results.tried = true;
+    } catch (e) {
+      results.reason = String(e?.message || e);
+    }
+  }
+
+  return results;
 }
 
 /**
@@ -384,6 +479,9 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       break;
     case "detectBotInterstitial":
       sendResponse(detectBotInterstitial());
+      break;
+    case "attemptBotAutoSolve":
+      sendResponse(attemptBotAutoSolve());
       break;
     case "hasNextPage":
       sendResponse({ has: hasNextPage() });

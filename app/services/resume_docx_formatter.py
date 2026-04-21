@@ -212,7 +212,20 @@ def _parse_resume(text: str) -> list[tuple[str, object]]:
             if not name_found:
                 result.append(("name", _clean_line(stripped)))
                 name_found = True
-            elif not title_found and "@" not in stripped and not re.search(r"\(\d{3}\)", stripped):
+                continue
+            # Treat as contact when the line clearly contains contact fields
+            # (pipes, email, phone, or a URL). Otherwise treat it as an optional
+            # title line, which is kept for backward compatibility.
+            looks_like_contact = (
+                "|" in stripped
+                or "@" in stripped
+                or re.search(r"\d{3}[-.\s]?\d{3}[-.\s]?\d{4}", stripped)
+                or "linkedin" in stripped.lower()
+                or stripped.lower().startswith(("http://", "https://"))
+            )
+            if looks_like_contact:
+                result.append(("contact", stripped))
+            elif not title_found:
                 result.append(("title", _clean_line(stripped)))
                 title_found = True
             else:
@@ -487,11 +500,13 @@ def _build_docx(items: list[tuple[str, object]], jd_text: str = "") -> object:
             continue
 
         elif item_type == "section_header":
-            p = _para(space_before=10, space_after=6)
-            run = p.add_run(str(content).upper())
+            display = str(content).strip().title()
+            p = _para(space_before=10, space_after=4)
+            run = p.add_run(display)
             run.bold = True
             run.font.name = _BODY_FONT
             run.font.size = Pt(12)
+            _add_bottom_rule(p)
 
         elif item_type == "job_title":
             raw = re.sub(r"\*\*", "", str(content)).strip()
@@ -551,20 +566,17 @@ def _build_docx(items: list[tuple[str, object]], jd_text: str = "") -> object:
             _add_md_runs(p, bullet_text, base_size_pt=10.5)
 
         elif item_type == "skill":
-            label, values, bulleted = content  # type: ignore[misc]
-            p = _para(space_before=0, space_after=1)
-            if bulleted:
-                p.paragraph_format.left_indent = Inches(0.2)
-                p.paragraph_format.first_line_indent = Inches(-0.2)
-                bullet_run = p.add_run("\u2022 ")
-                bullet_run.font.name = _BODY_FONT
-                bullet_run.font.size = Pt(10.5)
+            label, values, _bulleted = content  # type: ignore[misc]
+            p = _para(space_before=0, space_after=2)
             r_label = p.add_run(f"{label}: ")
             r_label.bold = True
             r_label.font.name = _BODY_FONT
             r_label.font.size = Pt(10.5)
-            highlighted = _auto_bold_jd_skills(str(values), jd_text)
-            _add_md_runs(p, highlighted, base_size_pt=10.5)
+            # Skill items stay plain (no per-item bolding); only the
+            # category label above is bold. This matches the CV-platform
+            # style and avoids highlighter-style noise in Skills.
+            plain_values = re.sub(r"\*\*([^*]+)\*\*", r"\1", str(values))
+            _add_md_runs(p, plain_values, base_size_pt=10.5)
 
         elif item_type == "body":
             p = _para(space_before=0, space_after=0)

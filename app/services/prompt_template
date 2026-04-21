@@ -91,9 +91,7 @@ Communication/Collaboration: advised, briefed, campaigned, collaborated, compose
 ==================================================
 WEAK VERBS TO AVOID
 ==================================================
-helped, assisted, supported, facilitated, participated, responsible for, managed (unless leading people), oversaw, worked on, did, made, used, got, looked, took, kept, had, said, handled, led (unless directing a team)
-
-Avoid vague or low-information verbs unless they are the most accurate wording for the role and context.
+Prefer specific, high-information action verbs. Avoid vague verbs when a more precise verb fits naturally. Use the most accurate wording for the role and context.
 
 ==================================================
 OUTPUT FORMAT
@@ -137,6 +135,7 @@ Rules for application-question answers:
 - Answer only when questions are actually provided
 - Use only information supported by the candidate data and job description
 - Use the style requested by the question or form. If no style is specified, prefer concise professional prose and use only supported facts.
+- First-person wording is allowed in application-question answers when it better matches the form or prompt.
 - For select or multiple-choice questions, use only one of the provided option wordings
 - For short-text questions, answer directly in 1-4 concise professional sentences
 - Do not add placeholders, brackets, notes, or explanations
@@ -152,13 +151,13 @@ FINAL CHECK (verify before returning)
 - If the summary includes a metric, it is truthful, specific, and naturally supported.
 - The summary is concise, targeted, and specific.
 - Multiple bullets show quantified impact where supported, especially in recent roles.
-- Every summary claim backed by a bullet.
+- Every summary claim should be supported by the candidate's experience and reflected somewhere in the resume body.
 - Skills section has hard skills only.
 - No repeated phrases across bullets (vary language: metric formats, action verbs, sentence structures).
 - Resume layout uses white space; no dense text blocks.
 - Resume sounds like a real human, not AI.
 - The strongest JD keywords are mirrored naturally across Summary, Skills, and Experience.
-- Seniority appropriate (junior = no leading or mentoring; senior = architecture or mentoring).
+- Keep scope and ownership seniority-appropriate. Do not exaggerate leadership, architecture, or mentoring beyond what the candidate data supports.
 - Standard headings are used.
 - No tables, graphics, icons, text boxes, or decorative formatting appear in the resume body.
 - If application questions are provided, answers appear under a `## Application Questions` heading.

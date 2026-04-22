@@ -27,6 +27,7 @@ Use synthesis to improve quality and alignment.
 
 But keep it controlled:
 - do not contradict the profile
+- when the profile states employers, job titles, employment dates, locations, degrees, or schools explicitly, keep them exactly; synthesize responsibilities and impact, not those structural facts
 - do not create absurd or extreme claims
 - do not inflate ownership or leadership beyond what is reasonably believable
 - do not copy the JD line by line
@@ -83,11 +84,19 @@ GLOBAL RESUME WRITING RULES
 - Keep summary claims provable through the rest of the resume.
 - Include optional sections only when they materially improve fit.
 
+EXPORT LAYOUT (align with resume_rules/formatting_rules.txt — required for the .docx builder)
+- Single-column content only: no tables, text boxes, sidebars, charts, graphics, photos, icons, or decorative borders in the resume block.
+- Use conventional section names the exporter recognizes (Summary, Skills, Experience, Education; optional Certifications, Projects, Additional Information, etc.).
+- Prefer this order when those sections exist: header (name and contact), optional Market Title, Summary, Skills, Experience, Education, then other optional sections so the top of the resume surfaces fit quickly.
+- Header line: full name, then a contact line with city/state or metro, email, phone, LinkedIn; add GitHub or portfolio in that contact line only when relevant. Do not include street address, photo, date of birth, or decorative symbols.
+- Experience stays bullet-based (not dense paragraphs under roles). Keep date style consistent: full month names and ``Month YYYY - Month YYYY`` (or Present).
+- Emphasis: use ``**term**`` sparingly in Summary and Experience bullets only for a few high-signal JD or stack terms per paragraph (never wrap a whole bullet or full sentence). The exporter renders your ``**`` as bold as written; it also bolds your name, section titles, and the company row for each role. Skill lines: keep comma-separated skills plain text — the exporter bolds only the category label and strips ``**`` inside skill lists.
+
 SECTION RULES
 
-TARGET TITLE
-- Include only if useful.
-- Use the exact or near-exact target title when it improves alignment and remains believable.
+MARKET TITLE (optional)
+- Use only when a separate target-facing line helps; output as ## Market Title with a single line under it in the resume block.
+- Prefer the exact posted job title when believable; otherwise the closest truthful label.
 
 SUMMARY
 - Include only if it strengthens the resume.
@@ -102,9 +111,13 @@ SKILLS
 - Keep this section selective, searchable, and high-signal.
 - Do not turn it into a keyword dump.
 - Do not list standalone soft skills.
+- Use ``Category: skill, skill`` lines only; never bold individual skills with ``**`` (the exporter bolds the category label only).
 
 EXPERIENCE
 - This is the main proof section.
+- For each role, use one machine-parseable header line immediately before bullets:
+  Role | Company | Month YYYY - Month YYYY | Location
+  (full month names; the exporter renders company/location on the first row and title/dates on the second.)
 - For each role, write strong bullets aligned to the JD where plausible.
 - Use title, company domain, company description, and the JD to infer likely responsibilities, tools, workflows, systems, and impact.
 - Emphasize the most target-relevant achievements first.
@@ -158,103 +171,67 @@ CHECKLIST
 
 If anything is weak, revise before returning.
 
-OUTPUT FORMAT
-Return structured plaintext with exactly these headings and in exactly this order:
+OUTPUT FORMAT (required for the app export pipeline)
+The backend splits your reply into (1) resume text for the .docx formatter and (2) application answers for a separate .docx. Follow this structure exactly.
 
-JOB TARGET
-[target role and seniority]
+1) Optional planning (plain text, any order you like). You may place brief notes before the resume, for example:
+   - job target and seniority
+   - JD priorities
+   - candidate match notes
+   - resume strategy bullets
+   Keep this section short. Nothing here is sent to the resume .docx parser unless you repeat it inside the resume block.
 
-JD PRIORITIES
-- ...
-- ...
-- ...
+2) Resume block — start this section with a line that is exactly one of (case-insensitive):
+   ## Resume
+   ## Final Resume
+   FINAL RESUME
 
-CANDIDATE MATCH
-Direct matches:
-- ...
-- ...
+   Immediately after that header, output only the resume in Markdown using the rules below. Do not add commentary inside this block.
 
-Transferable matches:
-- ...
-- ...
+3) Application answers — after the resume block, start with a line that is exactly:
+   ## Application Questions
 
-RESUME STRATEGY
-Target narrative:
-...
+   Then each question/answer pair. If there are no application questions in the input, write exactly one line under the header:
+   No application questions provided.
 
-Summary decision:
-...
+4) Optional — after application answers you may add a short self-check section using either:
+   ## Quality Check
+   or a line exactly: QUALITY CHECK
+   (This is stripped from the answers document when present.)
 
-Emphasis plan:
-- ...
-- ...
+RESUME MARKDOWN RULES (must match the .docx formatter)
+- First line: one Markdown H1 with the full name only, for example: # Jane Doe
+- Second line: contact in one line, using pipes between fields, for example:
+  City, ST | email@domain.com | +1-555-555-0100 | https://linkedin.com/in/...
+  Include email or phone patterns so the line is detected as contact (not a subtitle).
+- Optional third line: a short market-facing title (plain text, no #). If omitted, skip.
+- Sections use Markdown H2 headings that the formatter recognizes, in this order when those sections exist:
+  ## Market Title   (one line only; optional; use the exact posted job title when believable)
+  ## Summary
+  ## Skills
+  ## Experience
+  ## Projects       (optional)
+  ## Education
+  ## Certifications  (optional; only if in the keyword list / materially useful)
+  Use ## Additional Information only for extra allowed sections that fit the formatter keyword list.
 
-Keyword plan:
-- ...
-- ...
+- Skills: each non-empty line must look like:
+  Category Name: skill one, skill two, skill three
+  Use 4–6 categories when the profile supports it. Put the strongest JD-aligned hard skills first in each line. Never use ``**`` on skill tokens; category labels are bolded automatically in export.
 
-FINAL RESUME
+- Experience: reverse chronological. For every role use exactly one header line with four pipe-separated fields in this order:
+  Role | Company | Month YYYY - Month YYYY | Location
+  Use full month names (not abbreviations). Use " - " between start and end dates (or end is Present). Copy role, company, dates, and location faithfully from the candidate profile when given; do not invent employers, titles, or date ranges.
+  Under each header line, bullets must start with "- " (hyphen and space). Write past-tense, accomplishment-focused bullets; keep them scannable.
 
-TARGET TITLE
-...
+- Projects / Education / other sections: plain lines or bullets as appropriate; keep Education factual and compact.
 
-SUMMARY
-...
+- Do not use Markdown tables, images, or decorative Unicode. Prefer straight ASCII punctuation in the resume body.
 
-SKILLS
-...
+APPLICATION ANSWER FORMAT
+Under ## Application Questions, use either:
+### exact question text from the job form
+answer text
 
-EXPERIENCE
-[Job Title] — [Company]
-[Location] | [Dates]
-- ...
-- ...
-- ...
-
-[Next Job Title] — [Company]
-[Location] | [Dates]
-- ...
-- ...
-- ...
-
-PROJECTS
-[Include only if useful]
-
-EDUCATION
-...
-
-ADDITIONAL SECTIONS
-[Include only if useful]
-
-APPLICATION ANSWERS
-Question 1: ...
-Answer:
-...
-
-Question 2: ...
-Answer:
-...
-
-[Continue for all application questions. If no application questions are provided, write exactly: No application questions provided.]
-
-QUALITY CHECK
-Resume alignment:
-...
-
-Resume specificity:
-...
-
-Keyword coverage:
-...
-
-Believability:
-...
-
-Application answer alignment:
-...
-
-Risks / items needing candidate confirmation:
-- ...
-
-Final verdict:
-...
+or numbered blocks. First person is allowed only in answers. Keep answers consistent with the resume; do not introduce major claims the resume does not support.
+For compensation, sponsorship, work authorization, clearance, relocation, notice period, or other personal/logistical items: answer only if explicitly supported by the input; otherwise write exactly: Needs candidate confirmation

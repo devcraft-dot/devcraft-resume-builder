@@ -84,8 +84,6 @@ Consistency helps ATS extraction and makes recruiter review faster.
 Use one date style throughout the document, such as:
 
 Month Year – Month Year
-Mon YYYY – Mon YYYY
-MM/YYYY – MM/YYYY
 
 Do not mix date styles. Consistency improves readability and reduces parsing mistakes.
 

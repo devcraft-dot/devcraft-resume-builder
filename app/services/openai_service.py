@@ -135,6 +135,16 @@ _ANSWERS_SECTION_RE = re.compile(
     re.IGNORECASE | re.MULTILINE,
 )
 
+_APPLICATION_ANSWERS_RE = re.compile(
+    r"^#{1,3}\s*Application\s+Answers\s*$|^APPLICATION\s+ANSWERS\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+_QUALITY_CHECK_RE = re.compile(
+    r"^#{1,3}\s*Quality\s+Check\s*$|^QUALITY\s+CHECK\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+
 
 def _strip_outer_code_fence(text: str) -> str:
     t = str(text or "").strip()
@@ -151,14 +161,48 @@ def _strip_outer_code_fence(text: str) -> str:
 
 def _split_resume_and_answers(raw: str) -> tuple[str, str]:
     text = str(raw or "").strip()
-    match = _ANSWERS_SECTION_RE.search(text)
-    if not match:
+    best: re.Match[str] | None = None
+    for pat in (_ANSWERS_SECTION_RE, _APPLICATION_ANSWERS_RE):
+        m = pat.search(text)
+        if m and (best is None or m.start() < best.start()):
+            best = m
+    if not best:
         return text, ""
-    return text[: match.start()].strip(), text[match.start() :].strip()
+    return text[: best.start()].strip(), text[best.start() :].strip()
+
+
+def _trim_trailing_meta_from_app_block(app: str) -> str:
+    """Strip optional post-Q&A sections (quality checklist) from the answers buffer."""
+    s = str(app or "").strip()
+    if not s:
+        return s
+    m = _QUALITY_CHECK_RE.search(s)
+    if m:
+        s = s[: m.start()].strip()
+    return s
 
 
 _RESUME_HEADER_RE = re.compile(r"^##\s*Resume\s*$", re.IGNORECASE | re.MULTILINE)
+_RESUME_START_ALTERNATES = (
+    re.compile(r"^#{1,3}\s*Final\s+Resume\s*$", re.IGNORECASE | re.MULTILINE),
+    re.compile(r"^FINAL\s+RESUME\s*$", re.IGNORECASE | re.MULTILINE),
+)
 _COVER_HEADER_RE = re.compile(r"^##\s*Cover\s+Letter\s*$", re.IGNORECASE | re.MULTILINE)
+
+
+def _find_resume_header_match(text: str) -> re.Match[str] | None:
+    """Earliest ## Resume / ## Final Resume / FINAL RESUME line."""
+    candidates: list[re.Match[str]] = []
+    m0 = _RESUME_HEADER_RE.search(text)
+    if m0:
+        candidates.append(m0)
+    for pat in _RESUME_START_ALTERNATES:
+        m = pat.search(text)
+        if m:
+            candidates.append(m)
+    if not candidates:
+        return None
+    return min(candidates, key=lambda m: m.start())
 
 
 def _parse_model_sections(raw: str) -> tuple[str, str, str]:
@@ -171,9 +215,10 @@ def _parse_model_sections(raw: str) -> tuple[str, str, str]:
     if low.startswith("cannot generate due to"):
         return text.strip(), "", ""
 
-    r_m = _RESUME_HEADER_RE.search(text)
+    r_m = _find_resume_header_match(text)
     if not r_m:
         resume_part, app_part = _split_resume_and_answers(text)
+        app_part = _trim_trailing_meta_from_app_block(app_part)
         return resume_part, "", app_part
 
     pos = r_m.end()
@@ -181,6 +226,8 @@ def _parse_model_sections(raw: str) -> tuple[str, str, str]:
     for m in _COVER_HEADER_RE.finditer(text, pos):
         next_headers.append((m.start(), m.end(), "cover"))
     for m in _ANSWERS_SECTION_RE.finditer(text, pos):
+        next_headers.append((m.start(), m.end(), "app"))
+    for m in _APPLICATION_ANSWERS_RE.finditer(text, pos):
         next_headers.append((m.start(), m.end(), "app"))
     next_headers.sort(key=lambda x: x[0])
     first = next_headers[0] if next_headers else None
@@ -195,7 +242,11 @@ def _parse_model_sections(raw: str) -> tuple[str, str, str]:
     if first[2] == "cover":
         c_end = first[1]
         rest = text[c_end:].strip()
-        second = _ANSWERS_SECTION_RE.search(rest)
+        second = None
+        for pat in (_ANSWERS_SECTION_RE, _APPLICATION_ANSWERS_RE):
+            sm = pat.search(rest)
+            if sm and (second is None or sm.start() < second.start()):
+                second = sm
         if second:
             cover_body = rest[: second.start()].strip()
             app_body = rest[second.end() :].strip()
@@ -205,6 +256,7 @@ def _parse_model_sections(raw: str) -> tuple[str, str, str]:
     elif first[2] == "app":
         app_body = text[first[1] :].strip()
 
+    app_body = _trim_trailing_meta_from_app_block(app_body)
     return resume_body, cover_body, app_body
 
 

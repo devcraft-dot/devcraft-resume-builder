@@ -48,6 +48,7 @@ Identify:
 - expected ownership level
 - likely ATS keywords
 - likely recruiter screening priorities
+- the industry or vertical implied by the JD (e.g. financial services, healthcare, retail tech)—for same-industry vocabulary, see INDUSTRY AND DOMAIN VOCABULARY below
 
 STEP 2: Analyze the candidate profile
 Identify:
@@ -98,17 +99,33 @@ If exact figures are not in the profile, prefer honest scope language (team size
 
 Each strong bullet should read as: specific action + what you built or changed + how you measured or observed the result (one of the formats above). Task-only lines (“responsible for X”) without an outcome should be rewritten or cut.
 
-ACTION VERBS (strength and repetition)
-- Open bullets with strong, specific verbs that match the work (built, shipped, automated, reduced, migrated, diagnosed, designed, implemented, optimized, launched, standardized, refactored, scaled, led, owned, defined, negotiated, audited, etc.). Match the verb category to the achievement: delivery vs leadership vs process improvement vs analysis.
-- Avoid weak or vague openers unless they are the only accurate choice: responsible for, helped with, worked on, involved in, assisted with, participated in, dealt with, handled (as a generic opener).
+BULLET LINE INTEGRITY (prevents “weak role” scoring from broken bullets)
+- Each experience bullet is exactly one Markdown line starting with ``- `` followed by one complete thought (one sentence or one tight compound sentence). Never break a claim across two bullet lines.
+- Never end a bullet mid-clause and continue on the next line as a new bullet (e.g. ending with “an estimated” and starting the next line with “• 30%” is invalid). Put the full number, percentage, or outcome on the same line as the verb and object it belongs to.
+- Do not start a bullet with a dangling fragment (a lone number, “30%.”, “by 30%”, or a subordinate clause with no main clause).
+- If you use “estimated” or “approximately” for a figure, keep the figure on that same line and ensure the sentence is grammatical and finished.
+
+ACTION VERBS (strength, repetition, and overused “safe” verbs)
+- Prefer verbs that name the actual work first: architected, designed, implemented, shipped, deployed, automated, migrated, optimized, reduced, hardened, diagnosed, standardized, refactored, scaled, defined, owned, delivered, launched, integrated, instrumented, load-tested, etc. Match the verb to the achievement (build vs improve vs lead delivery vs analyze).
+- Treat “Led”, “Collaborated”, and “Mentored” as easy to overuse: they are acceptable when true, but they often produce weak roles if the rest of the line is generic. When you use them, pack the line with concrete nouns (platform, rules engine, policy model, sprint commitment, onboarding) and a crisp outcome; otherwise swap to a more specific verb (e.g. Led architecture → Architected and delivered…).
+- Avoid weak or vague openers unless they are the only accurate choice: responsible for, helped with, worked on, involved in, assisted with, participated in, dealt with, handled (as a generic opener), supported efforts to, contributed to (without owning a deliverable).
+- “Collaborated with X to Y” should not repeat across multiple bullets or roles; at most once per role unless collaboration is the headline outcome—prefer leading with what shipped or changed, then naming partners in the same line if needed.
+- “Mentored” bullets must include a concrete result when plausible (ramp time, defect trend, review turnaround, standards adopted)—not only “best practices” with vague “improved quality”.
 - Vary verbs across the whole resume: do not start more than two bullets with the same opening verb unless unavoidable. Track mentally across all roles; adjacent bullets should not echo the same opener.
 - Avoid repeating the same stock phrase (“developed and maintained”, “collaborated cross-functionally”) across multiple roles; rephrase with concrete nouns (system, pipeline, API, workflow, incident class).
 
-WEAK ROLES (experience depth)
+WEAK ROLES (experience depth and rewrite bar)
 Roles that read as title + company + task list without outcomes drag scores down. For each role, especially the most recent and the most JD-relevant:
 - Give enough bullets to show ownership, systems, and impact; thin roles should be expanded with truthful detail (stack, constraints, stakeholders) or tightened if they are filler.
 - If a role is highly relevant to the JD, it must not be the shortest block on the page unless the tenure was very short.
 - Older or less relevant roles can stay shorter, but each should still include at least one outcome- or scope-forward line where possible, not only duties.
+- Anti-patterns that read as weak roles (rewrite before returning): (1) multiple bullets that only describe coordination or mentoring with no measurable or concrete outcome; (2) architecture/delivery bullets that omit what shipped or what metric moved; (3) “aligned with Agile” without a delivery signal (predictability, throughput, scope delivered, cycle time) when context supports it; (4) any bullet split across lines or ending without a completed claim.
+
+INDUSTRY AND DOMAIN VOCABULARY (same industry as the JD, not only JD copy-paste)
+- Beyond repeating exact phrases from the JD, weave truthful vocabulary from the same industry or product context so the resume reads like an insider in that vertical. Infer sector from the JD and employer (e.g. financial services, insurance, health tech, e-commerce, manufacturing, public sector).
+- Use industry terms only when they fit the candidate’s real clients, employers, products, or tech context (e.g. financial services client → payments, settlement, risk controls, policy rules, audit trail—only if the work plausibly touches those). Do not invent employers or regulated claims.
+- Place natural industry terms in Experience bullets and Skills (as real tools/domains), not as a keyword list in the Summary.
+- Still prioritize exact JD hard skills where the candidate supports them; add adjacent industry-standard terms to show breadth, not to fabricate depth.
 
 SUMMARY (optional but high leverage when used)
 - Omit the Summary if it would only repeat the job title or restate generic strengths.
@@ -142,14 +159,14 @@ SUMMARY
 
 SKILLS
 - Include only the most relevant hard skills, tools, systems, platforms, engineering concepts, and domain terms.
-- Derive them from the profile, company context, and JD.
+- Derive them from the profile, company context, and JD; add a modest amount of same-industry vocabulary where it reflects real exposure (see INDUSTRY AND DOMAIN VOCABULARY).
 - Keep this section selective, searchable, and high-signal.
 - Do not turn it into a keyword dump.
 - Do not list standalone soft skills.
 - Use ``Category: skill, skill`` lines only; never bold individual skills with ``**`` (the exporter bolds the category label only).
 
 EXPERIENCE
-- This is the main proof section. Follow IMPACT / METRICS, ACTION VERBS, and WEAK ROLES guidance above.
+- This is the main proof section. Follow BULLET LINE INTEGRITY, IMPACT / METRICS, ACTION VERBS, WEAK ROLES, and INDUSTRY AND DOMAIN VOCABULARY guidance above.
 - For each role, use one machine-parseable header line immediately before bullets:
   Role | Company | Month YYYY - Month YYYY | Location
   (full month names; the exporter renders company/location on the first row and title/dates on the second.)
@@ -190,14 +207,16 @@ APPLICATION ANSWER RULES
   - otherwise write exactly: Needs candidate confirmation
 
 STEP 6: Audit and improve before returning
+Before final output, re-scan Experience: (1) every ``- `` line is one full sentence with metrics on the same line; (2) no role relies on three generic coordination/mentoring bullets without a delivery or metric line; (3) industry-appropriate terms appear where truthful.
 
 CHECKLIST
 - Is the resume strongly aligned to the JD?
-- Are the most important keywords included naturally?
+- Are the most important keywords included naturally, plus believable same-industry vocabulary (not only JD string matches)?
 - Are the strongest relevant roles emphasized correctly (no “weak roles”: thin, task-only JD-relevant blocks)?
+- Is every experience bullet one complete line with no split clauses or dangling metrics?
 - Are the bullets contribution-focused with clear outcomes, not duty-only lines?
 - Do metrics use varied formats (not mostly “by X%”)?
-- Are opening verbs strong, accurate, and varied (no repetition fatigue)?
+- Are opening verbs strong, accurate, and varied—especially avoiding a wall of “Led / Collaborated / Mentored” without concrete delivery nouns and outcomes?
 - Does each role feel distinct?
 - Are summary claims supported, and is the Summary omitted or truly additive?
 - Are buzzwords and clichés absent from Summary and bullets?
@@ -261,7 +280,7 @@ RESUME MARKDOWN RULES (must match the .docx formatter)
 - Experience: reverse chronological. For every role use exactly one header line with four pipe-separated fields in this order:
   Role | Company | Month YYYY - Month YYYY | Location
   Use full month names (not abbreviations). Use " - " between start and end dates (or end is Present). Copy role, company, dates, and location faithfully from the candidate profile when given; do not invent employers, titles, or date ranges.
-  Under each header line, bullets must start with "- " (hyphen and space). Write past-tense, accomplishment-focused bullets; keep them scannable.
+  Under each header line, bullets must start with "- " (hyphen and space). Each bullet is a single complete line (see BULLET LINE INTEGRITY). Write past-tense, accomplishment-focused bullets; keep them scannable.
 
 - Projects / Education / other sections: plain lines or bullets as appropriate; keep Education factual and compact.
 

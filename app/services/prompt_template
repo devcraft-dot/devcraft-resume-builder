@@ -96,6 +96,7 @@ Use several of these formats when the profile or context supports them (never in
 - Timelines and milestones: shipped in X weeks, promoted within X months, delivered ahead of schedule, zero-downtime migration over a defined window, on-time delivery under a deadline.
 
 If exact figures are not in the profile, prefer honest scope language (team size, environment complexity, criticality) or one defensible estimate framed as approximate only when appropriate; otherwise omit the number and still state the outcome clearly.
+- Never use placeholder metrics (e.g. ``XX%``, ``TBD``, ``[insert metric]``). Either write a truthful number from the profile/context or omit the percentage and describe the outcome qualitatively.
 
 Each strong bullet should read as: specific action + what you built or changed + how you measured or observed the result (one of the formats above). Task-only lines (“responsible for X”) without an outcome should be rewritten or cut.
 
@@ -119,7 +120,14 @@ Roles that read as title + company + task list without outcomes drag scores down
 - Give enough bullets to show ownership, systems, and impact; thin roles should be expanded with truthful detail (stack, constraints, stakeholders) or tightened if they are filler.
 - If a role is highly relevant to the JD, it must not be the shortest block on the page unless the tenure was very short.
 - Older or less relevant roles can stay shorter, but each should still include at least one outcome- or scope-forward line where possible, not only duties.
-- Anti-patterns that read as weak roles (rewrite before returning): (1) multiple bullets that only describe coordination or mentoring with no measurable or concrete outcome; (2) architecture/delivery bullets that omit what shipped or what metric moved; (3) “aligned with Agile” without a delivery signal (predictability, throughput, scope delivered, cycle time) when context supports it; (4) any bullet split across lines or ending without a completed claim.
+- Anti-patterns that read as weak roles (rewrite before returning): (1) multiple bullets that only describe coordination or mentoring with no measurable or concrete outcome; (2) architecture/delivery bullets that omit what shipped or what metric moved; (3) “aligned with Agile” without a delivery signal (predictability, throughput, scope delivered, cycle time) when context supports it; (4) any bullet split across lines or ending without a completed claim; (5) a strong role where every bullet is internally focused (refactors, docs) with no line on user, operator, or business impact when the domain clearly has one (e.g. health/claims/fintech: throughput, review time, error rate, admin self-service, audit visibility).
+- Stronger role pattern (when truthful): mix **delivery** bullets (what you built, stack, scale) with at least one bullet that states **downstream impact** for the people who use the system—clinical teams, claims reviewers, finance ops, merchants, etc.—using metrics or concrete scope from the profile. Reorder so impact is not buried under documentation-only bullets unless docs were the main deliverable.
+- For admin- or rules-driven UIs: where plausible, state outcomes such as fewer manual steps, faster configuration cycles, fewer engineering tickets, or reduced time-to-change for business users—only with supported evidence.
+
+INDUSTRY STANDARDS (what hiring managers expect to see for this kind of role)
+- Mentally compare each role block to a **strong hire** in the same function and industry: hiring managers expect evidence of **business or user outcomes**, not only that you used a modern stack. Internal quality work (refactors, docs, tests) matters, but JD-relevant roles should also show how work moved operational metrics, customer/operator experience, risk, reliability, or throughput when the context allows.
+- For product-facing engineering (dashboards, workflows, rules engines): expect language that connects features to **who** benefited and **what** got faster, cheaper, safer, or more accurate—not only “built a component”.
+- Calibrate depth to seniority: mid/senior roles should show scope (systems owned, constraints, multi-team) and at least one crisp outcome line per important role when the profile can support it.
 
 INDUSTRY AND DOMAIN VOCABULARY (same industry as the JD, not only JD copy-paste)
 - Beyond repeating exact phrases from the JD, weave truthful vocabulary from the same industry or product context so the resume reads like an insider in that vertical. Infer sector from the JD and employer (e.g. financial services, insurance, health tech, e-commerce, manufacturing, public sector).
@@ -127,9 +135,14 @@ INDUSTRY AND DOMAIN VOCABULARY (same industry as the JD, not only JD copy-paste)
 - Place natural industry terms in Experience bullets and Skills (as real tools/domains), not as a keyword list in the Summary.
 - Still prioritize exact JD hard skills where the candidate supports them; add adjacent industry-standard terms to show breadth, not to fabricate depth.
 
+ANALYTICAL AND PROBLEM-SOLVING (show in bullets—do not label)
+- Analytical strength means **visible** in Experience: how you framed a problem, narrowed scope, validated with data, chose among tradeoffs, debugged a complex failure mode, or improved a metric after measurement. Use verbs such as diagnosed, root-caused, modeled, instrumented, benchmarked, triaged, narrowed, validated, optimized based on findings—when accurate.
+- Do not waste Summary or bullet space on empty phrases like “strong analytical and problem-solving skills.” Prove analysis through one concrete example or metric per role where possible.
+
 SUMMARY (optional but high leverage when used)
 - Omit the Summary if it would only repeat the job title or restate generic strengths.
 - When included: two or three short lines maximum; every line should be provable later in Experience or Skills. Lead with domain + stack + level, then one line of strongest evidence (systems shipped, scale, or measurable wins from the profile).
+- Include your **single strongest provable metric or scale signal** (the outcome you would be most proud to discuss in an interview)—throughput, latency improvement, defect reduction, revenue/cost impact, users served, data volume, cycle time, etc.—in the Summary when the profile supports it; repeat or expand it in Experience, not only in the Summary.
 - Zero buzzwords; no filler adjectives. Prefer nouns and verbs tied to the JD.
 
 BUZZWORDS AND CLICHÉS TO AVOID
@@ -150,7 +163,7 @@ MARKET TITLE (optional)
 - Prefer the exact posted job title when believable; otherwise the closest truthful label.
 
 SUMMARY
-- Follow IMPACT / BUZZWORDS rules above; see SUMMARY (optional but high leverage) in the global rules.
+- Follow IMPACT / BUZZWORDS / SUMMARY (optional but high leverage) rules above—including one flagship provable metric or scale line when available.
 - Include only if it strengthens the resume.
 - Keep it concise and tailored.
 - Present the candidate as a strong fit for the target role.
@@ -175,7 +188,7 @@ EXPERIENCE
 - Emphasize the most target-relevant achievements first.
 - Use strong, varied action verbs; avoid weak openers and repetition (see ACTION VERBS section).
 - Mix metric types across bullets (money, %, time saved, scale, timelines)—not only percentages.
-- Show meaningful engineering work, product contribution, system thinking, workflow improvement, integrations, reliability, performance, platform work, automation, delivery, or cross-functional execution where context supports it.
+- Show meaningful engineering work, product contribution, system thinking, workflow improvement, integrations, reliability, performance, platform work, automation, delivery, or cross-functional execution where context supports it. Apply INDUSTRY STANDARDS: tie important roles to operator, customer, or business outcomes where truthful (see WEAK ROLES).
 - If direct domain match exists, align more directly to the JD’s workflows and products.
 - If direct domain match is weaker, emphasize transferable systems, APIs, automation, operational processes, compliance-oriented workflows, data-heavy systems, transaction-like processes, or platform capabilities as appropriate.
 - Keep bullets concise and impactful.
@@ -207,7 +220,7 @@ APPLICATION ANSWER RULES
   - otherwise write exactly: Needs candidate confirmation
 
 STEP 6: Audit and improve before returning
-Before final output, re-scan Experience: (1) every ``- `` line is one full sentence with metrics on the same line; (2) no role relies on three generic coordination/mentoring bullets without a delivery or metric line; (3) industry-appropriate terms appear where truthful.
+Before final output, re-scan Experience: (1) every ``- `` line is one full sentence with metrics on the same line; (2) no role relies on three generic coordination/mentoring bullets without a delivery or metric line; (3) industry-appropriate terms appear where truthful; (4) JD-relevant roles are not “all internal engineering” with zero user/business outcome lines when context allows; (5) no placeholder metrics. Re-scan Summary: if present, it includes the strongest provable metric or scale signal when the profile has one.
 
 CHECKLIST
 - Is the resume strongly aligned to the JD?
@@ -218,7 +231,8 @@ CHECKLIST
 - Do metrics use varied formats (not mostly “by X%”)?
 - Are opening verbs strong, accurate, and varied—especially avoiding a wall of “Led / Collaborated / Mentored” without concrete delivery nouns and outcomes?
 - Does each role feel distinct?
-- Are summary claims supported, and is the Summary omitted or truly additive?
+- Are summary claims supported, and does the Summary (if present) surface the strongest provable metric or scale signal when one exists in the profile?
+- Does at least one important role show analytical/problem-solving depth through concrete actions, not a label?
 - Are buzzwords and clichés absent from Summary and bullets?
 - Are there any generic or repetitive bullets?
 - Is the skills section selective rather than bloated?

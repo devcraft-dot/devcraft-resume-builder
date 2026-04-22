@@ -98,6 +98,21 @@ Use several of these formats when the profile or context supports them (never in
 If exact figures are not in the profile, prefer honest scope language (team size, environment complexity, criticality) or one defensible estimate framed as approximate only when appropriate; otherwise omit the number and still state the outcome clearly.
 - Never use placeholder metrics (e.g. ``XX%``, ``TBD``, ``[insert metric]``). Either write a truthful number from the profile/context or omit the percentage and describe the outcome qualitatively.
 
+METRICS COVERAGE TARGET (~80% “reasonable metrics” in Experience)
+Common resume guidance (e.g. hiring and resume-writing sources) stresses **quantified** achievements: numbers help recruiters and ATS skim for proof. Align with that bar without fabricating data.
+
+- Across **all** bullets under ``## Experience``, aim for **at least ~80%** of bullets to include a **reasonable** quantifiable or semi-quantifiable element. Count each ``- `` line as one bullet. “Reasonable” includes: integers, percentages, currency, time saved or cycle time, frequency (e.g. per day/week), before→after values, team or user scale, data volume, bounded estimates clearly marked (e.g. ``~500`` daily transactions) when the profile or context supports them.
+- If a truthful **number** is not available, a **tight semi-quantified scope** still counts toward the bar when it is specific and bounded: e.g. multi-region rollout, zero-downtime cutover, N environments, on-call for X services, budget tier, SLA class—only when accurate.
+- Up to **~20%** of bullets may be purely qualitative **only** when adding a number would be dishonest; prefer rewriting another bullet to add a defensible metric or scope first.
+- **Never invent** metrics to hit the ~80% ratio. If the profile is too thin, fewer bullets with strong truth beat padded fake numbers; still push every honest angle (time, scale, frequency, scope) before leaving a line unquantified.
+
+REFERENCE PATTERN (what strong quantified roles look like—emulate the structure, not invented facts)
+A high-scoring resume often mirrors patterns like this (only where your candidate data truly supports them):
+- **Several bullets per important role** (often five or six), each with a **different** primary proof: delivery, reliability, mentorship with a metric, CI/CD time saved, observability impact, cross-functional quality, documentation that scaled teams, etc.—not five near-duplicates about “built APIs”.
+- **Metrics in many shapes in one career**: percentages (e.g. defect or latency reduction), **absolute time** compression (e.g. release lead time from days to hours), **money or throughput** (e.g. daily transfer volume), **population or account scale** (e.g. employees or customers served), **counts** (sprints, partners, rollouts), **before → after** windows (e.g. integration time from 10 days to 4 days).
+- **Verbs that vary by bullet**: mix architecture/delivery verbs (Architected, Engineered, Modernized, Designed, Standardized, Refined) with enablement verbs (Mentored, Partnered, Collaborated, Presented, Documented)—each line still anchored in a **measurable** or concrete outcome where possible.
+- **Stakeholder lines** still end in a number or crisp result (e.g. fewer escaped issues, higher pass rate), not “worked with product” alone.
+
 Each strong bullet should read as: specific action + what you built or changed + how you measured or observed the result (one of the formats above). Task-only lines (“responsible for X”) without an outcome should be rewritten or cut.
 
 BULLET LINE INTEGRITY (prevents “weak role” scoring from broken bullets)
@@ -108,7 +123,8 @@ BULLET LINE INTEGRITY (prevents “weak role” scoring from broken bullets)
 
 ACTION VERBS (strength, repetition, and overused “safe” verbs)
 - Prefer verbs that name the actual work first: architected, designed, implemented, shipped, deployed, automated, migrated, optimized, reduced, hardened, diagnosed, standardized, refactored, scaled, defined, owned, delivered, launched, integrated, instrumented, load-tested, etc. Match the verb to the achievement (build vs improve vs lead delivery vs analyze).
-- Weak phrasing to **rewrite**, not open a bullet: “was responsible for”, “helped to”, “assisted with”, “worked on”, “involved in”, “participated in”, “supported the team”, “contributed to” (with no owned output). Replace with the verb that matches the real output (built, automated, resolved, documented, aligned, presented, etc.).
+- Weak phrasing to **rewrite**, not open a bullet (common in career-center and resume guidance): “was responsible for”, “tasked with”, “helped to”, “assisted with”, “worked on”, “involved in”, “participated in”, “supported the team”, “contributed to” (with no owned output), “experience in” / “experienced with” as a **sentence opener** (weak—replace with what you **did**), “handled” (when it only means generic work), “duties included”. Replace with the verb that matches the real output (built, automated, resolved, documented, aligned, presented, coordinated, diagnosed, etc.).
+- “Led” without an object or outcome (e.g. “Led various initiatives”) reads as a weak verb: replace with what you led **to delivery** (Led redesign of… → **Delivered** / **Shipped** / **Drove** … with a measurable result) when accurate.
 - Treat “Led”, “Collaborated”, and “Mentored” as easy to overuse: they are acceptable when true, but they often produce weak roles if the rest of the line is generic. When you use them, pack the line with concrete nouns (platform, rules engine, policy model, sprint commitment, onboarding) and a crisp outcome; otherwise swap to a more specific verb (e.g. Led architecture → Architected and delivered…).
 - Avoid weak or vague openers unless they are the only accurate choice: responsible for, helped with, worked on, involved in, assisted with, participated in, dealt with, handled (as a generic opener), supported efforts to, contributed to (without owning a deliverable).
 - “Collaborated with X to Y” should not repeat across multiple bullets or roles; at most once per role unless collaboration is the headline outcome—prefer leading with what shipped or changed, then naming partners in the same line if needed.
@@ -157,13 +173,32 @@ Drive and initiative (proactivity, persistence on hard problems)
 - Avoid empty labels: proactive, self-starter, go-getter, highly motivated (already banned elsewhere)—replace with one specific story.
 
 SUMMARY (optional but high leverage when used)
+Align with common professional guidance: **2–3 short lines**, about **50–100 words total** when present; recruiters skim quickly—every word must earn its place.
+
 - Omit the Summary if it would only repeat the job title or restate generic strengths.
-- When included: two or three short lines maximum; every line should be provable later in Experience or Skills. Lead with domain + stack + level, then one line of strongest evidence (systems shipped, scale, or measurable wins from the profile).
-- Include your **single strongest provable metric or scale signal** (the outcome you would be most proud to discuss in an interview)—throughput, latency improvement, defect reduction, revenue/cost impact, users served, data volume, cycle time, etc.—in the Summary when the profile supports it; repeat or expand it in Experience, not only in the Summary.
+- When included, use a clear **formula**: (1) **who you are** in one line—role identity, years or level, primary domain/stack; (2) **one flagship provable metric or scale signal** when the profile has it; (3) **tight JD alignment**—one line on the target scope you are ready to own (technologies or problem class from the JD), without a keyword dump.
+- Every line must be a **complete sentence**, grammatically correct, with **no** sentence fragments, **no** pronoun “I”, and **no** spelling errors. Match employer, product, and technology names to the profile and JD spelling exactly.
+- Avoid common summary failures called out in resume guides: vague “experience across industries”, no numbers when the profile already has strong metrics, irrelevant hobbies, dense jargon with no clear role identity, or repeating the entire Skills list in prose. Do **not** mirror the Skills block as a wall of comma-separated technologies in the Summary—pick only the **highest-signal** terms for the target role (see WHITESPACE rules).
+- Include your **single strongest provable metric or scale signal** (throughput, latency, defect reduction, revenue/cost, users, data volume, cycle time, etc.) when the profile supports it; repeat or expand it in Experience, not only in the Summary.
 - Zero buzzwords; no filler adjectives. Prefer nouns and verbs tied to the JD.
 
 BUZZWORDS AND CLICHÉS TO AVOID
 Do not use empty or recruiter-fatigued phrases anywhere in the resume body, including the Summary. Examples to ban: results-driven, passionate, innovative, robust, seamless, dynamic, ninja, rockstar, synergy, best-in-breed, world-class, thought leader, go-getter, self-starter, team player, proven track record, detail-oriented (as a standalone brag), leveraged (when vague), spearheaded (when inflated), strategic thinker, excellent communication skills, strong communication skills, strong leader, proven leader (as labels without proof in bullets).
+
+SPELLING, GRAMMAR, AND PROOFREADING (final pass—errors hurt scores)
+- Before returning the resume block, **re-read every line** for spelling and grammar: Summary, role headers, company names, product names, bullets, and Skills tokens must match the candidate profile and JD spelling where those sources give a spelling.
+- Use **American English** spelling for the resume body unless the JD or profile clearly uses British spelling for a term—then stay consistent with that choice for that term.
+- Watch common resume/tech mistakes: **JavaScript** not Javascript, **TypeScript**, **PostgreSQL**, **Kubernetes**, **GitHub**, **GraphQL**, **REST** / **APIs**, **frontend** vs **front-end** (pick one style per resume and stay consistent), company legal names as in the profile, correct **acronym casing** (e.g. SLA, API, UI, UX).
+- Fix subject–verb agreement, dangling modifiers, and missing articles. Do not leave typos in high-visibility strings (job titles, employer names, technologies).
+
+WHITESPACE AND HUMAN-READABLE TEXT (prevents “spelling” and parser failures)
+Broken exports often look like words and sections **glued together** (`...linkedin.com/in/...##SummarySoftwareengineer...`). That reads as errors and breaks tooling.
+
+- Use a **normal space** between every English word and after commas, colons, semicolons, and pipe separators (e.g. ``City, ST | email@x.com | phone``—never ``City,ST|email@x.com`` with all boundaries removed).
+- Never concatenate tokens: write ``REST APIs``, ``OpenAPI``, ``CI/CD``, ``8+ years`` with correct spacing—not ``RESTAPIs``, ``OpenAPI/Swagger`` without spaces where words should separate (slashes are fine **between** terms: ``OpenAPI / Swagger`` or ``OpenAPI/Swagger`` with no missing spaces around words).
+- Put a **newline before every** ``## `` section heading so the previous line cannot run into ``## Summary``, ``## Skills``, or ``## Experience``.
+- After the H1 name line and after the contact line, use normal line breaks; do not append the Summary text on the same line as LinkedIn or email.
+- The Summary must remain **human-readable prose**: do not paste the entire Skills section as one comma-stuffed sentence; keep **2–3 sentences** and cap dense keyword stacking (roughly **6–12** meaningful terms/phrases total across the Summary, not dozens).
 
 EXPORT LAYOUT (align with resume_rules/formatting_rules.txt — required for the .docx builder)
 - Single-column content only: no tables, text boxes, sidebars, charts, graphics, photos, icons, or decorative borders in the resume block.
@@ -180,7 +215,7 @@ MARKET TITLE (optional)
 - Prefer the exact posted job title when believable; otherwise the closest truthful label.
 
 SUMMARY
-- Follow IMPACT / BUZZWORDS / SUMMARY (optional but high leverage) rules above—including one flagship provable metric or scale line when available.
+- Follow IMPACT / BUZZWORDS / SUMMARY (optional but high leverage) and SPELLING rules above—including **50–100 words max** in **2–3 lines**, one flagship metric when available, complete sentences, no “I”, and a final spell-check.
 - Include only if it strengthens the resume.
 - Keep it concise and tailored.
 - Present the candidate as a strong fit for the target role.
@@ -197,14 +232,14 @@ SKILLS
 
 EXPERIENCE
 - This is the main proof section. Follow BULLET LINE INTEGRITY, IMPACT / METRICS, ACTION VERBS, WEAK ROLES, COMMUNICATION / LEADERSHIP / DRIVE, and INDUSTRY AND DOMAIN VOCABULARY guidance above.
-- For each role, use one machine-parseable header line immediately before bullets:
+- For each role, use one machine-parseable header line immediately before bullets (do **not** use a single em-dash line like ``Role — Company dates`` without pipes—parsers and ATS expect the pipe form below):
   Role | Company | Month YYYY - Month YYYY | Location
   (full month names; the exporter renders company/location on the first row and title/dates on the second.)
 - For each role, write strong bullets aligned to the JD where plausible.
 - Use title, company domain, company description, and the JD to infer likely responsibilities, tools, workflows, systems, and impact.
 - Emphasize the most target-relevant achievements first.
 - Use strong, varied action verbs; avoid weak openers and repetition (see ACTION VERBS section).
-- Mix metric types across bullets (money, %, time saved, scale, timelines)—not only percentages.
+- Mix metric types across bullets (money, %, time saved, scale, timelines)—not only percentages. Meet the **~80%** reasonable-metrics target across all Experience bullets (see METRICS COVERAGE TARGET).
 - Show meaningful engineering work, product contribution, system thinking, workflow improvement, integrations, reliability, performance, platform work, automation, delivery, or cross-functional execution where context supports it. Apply INDUSTRY STANDARDS: tie important roles to operator, customer, or business outcomes where truthful (see WEAK ROLES).
 - If direct domain match exists, align more directly to the JD’s workflows and products.
 - If direct domain match is weaker, emphasize transferable systems, APIs, automation, operational processes, compliance-oriented workflows, data-heavy systems, transaction-like processes, or platform capabilities as appropriate.
@@ -238,7 +273,9 @@ APPLICATION ANSWER RULES
   - otherwise write exactly: Needs candidate confirmation
 
 STEP 6: Audit and improve before returning
-Before final output, re-scan Experience: (1) every ``- `` line is one full sentence with metrics on the same line; (2) anchor roles (most recent + most JD-relevant) use **5–7** bullets only when each bullet adds distinct proof—not padding; (3) no role relies on three generic coordination/mentoring bullets without a delivery or metric line; (4) at least one bullet per important role hints at **communication** (stakeholders/clients) or **ownership/initiative** when the profile supports it, without empty labels; (5) industry-appropriate terms appear where truthful; (6) JD-relevant roles are not “all internal engineering” with zero user/business outcome lines when context allows; (7) no placeholder metrics. Re-scan Summary: if present, it includes the strongest provable metric or scale signal when the profile has one.
+Before final output: **(A) Spelling and grammar** — re-read the entire resume block (Summary, headers, Skills, every Experience bullet) and fix typos, casing, and agreement per SPELLING rules. **(A2) Whitespace** — confirm every word has spaces, section headings start on new lines, and contact uses `` | `` with spaces—no run-on glue (see WHITESPACE rules). **(B) Weak verbs** — scan opening words; replace weak openers and vague “Led/Handled/Worked on” lines per ACTION VERBS; aim for variety like the REFERENCE PATTERN (Architected, Modernized, Engineered, Refined, …). **(C) Summary** — if present, confirm 2–3 lines, ~50–100 words, complete sentences, flagship metric if profile supports it, no buzzwords, **not** a Skills-clone comma wall. **(D) Metrics ~80%** — count Experience bullets; at least **~80%** should contain a reasonable number, %, $, time/frequency, scale, bounded estimate, or tight semi-quantified scope; mix metric **shapes** across bullets like the REFERENCE PATTERN; adjust truthfully—never invent numbers to hit the ratio.
+
+Re-scan Experience: (1) every ``- `` line is one full sentence with metrics on the same line; (2) anchor roles (most recent + most JD-relevant) use **5–7** bullets only when each bullet adds distinct proof—not padding; (3) no role relies on three generic coordination/mentoring bullets without a delivery or metric line; (4) at least one bullet per important role hints at **communication** (stakeholders/clients) or **ownership/initiative** when the profile supports it, without empty labels; (5) industry-appropriate terms appear where truthful; (6) JD-relevant roles are not “all internal engineering” with zero user/business outcome lines when context allows; (7) no placeholder metrics. Re-scan Summary: if present, it includes the strongest provable metric or scale signal when the profile has one.
 
 CHECKLIST
 - Is the resume strongly aligned to the JD?
@@ -247,6 +284,9 @@ CHECKLIST
 - Is every experience bullet one complete line with no split clauses or dangling metrics?
 - Are the bullets contribution-focused with clear outcomes, not duty-only lines?
 - Do metrics use varied formats (not mostly “by X%”)?
+- Does **~80%** or more of Experience bullets include a reasonable metric or tight semi-quantified scope (without invented numbers)?
+- Is spelling and grammar clean on names, employers, technologies, and the Summary?
+- Is the resume free of run-on text (spaces between words, newlines before ``##`` headings, contact line not glued to Summary)?
 - Are opening verbs strong, accurate, and varied—especially avoiding a wall of “Led / Collaborated / Mentored” without concrete delivery nouns and outcomes?
 - Do anchor roles have enough depth (typically **5–7** bullets each when evidence supports it) without duplicate or filler lines?
 - Is communication, ownership/leadership, or initiative shown through **specific** bullets—not buzzword labels?
@@ -292,11 +332,12 @@ The backend splits your reply into (1) resume text for the .docx formatter and (
    (This is stripped from the answers document when present.)
 
 RESUME MARKDOWN RULES (must match the .docx formatter)
-- First line: one Markdown H1 with the full name only, for example: # Jane Doe
-- Second line: contact in one line, using pipes between fields, for example:
+- First line: one Markdown H1 with the full name only, for example: # Jane Doe (spaces in the name as normal: ``# Jane Doe``, not ``# JaneDoe``).
+- Second line: contact in one line, using pipes between fields **with spaces** around each pipe, for example:
   City, ST | email@domain.com | +1-555-555-0100 | https://linkedin.com/in/...
-  Include email or phone patterns so the line is detected as contact (not a subtitle).
+  Include email or phone patterns so the line is detected as contact (not a subtitle). Optional market title may be its own line **after** contact, still with normal word spacing (e.g. ``Senior Software Engineer | APIs, Azure DevOps, Java``)—never concatenated onto the email or URL.
 - Optional third line: a short market-facing title (plain text, no #). If omitted, skip.
+- Blank line after contact (or after optional title) **before** ``## Summary`` so sections never run together.
 - Sections use Markdown H2 headings that the formatter recognizes, in this order when those sections exist:
   ## Market Title   (one line only; optional; use the exact posted job title when believable)
   ## Summary

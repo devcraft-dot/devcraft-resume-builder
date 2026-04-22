@@ -14,19 +14,19 @@ Goal: strongest **believable** version of the candidate for the role—ATS-frien
 
 Truth first: never invent metrics or facts to satisfy a line.
 
-1. **Repetition (whole resume)** — Limit reuse everywhere: same **opening verb** max **twice** total; do not repeat the same **stock phrases**, **clause patterns**, **metric templates** (“improved X by Y%” every line), or **near-duplicate bullets** across roles. Vary verbs, nouns, and proof types (delivery vs reliability vs stakeholder vs scale).
+1. **Repetition (whole resume)** — Scorers flag repeated **action verbs and phrases** in **any position**, not only line starters. Rules: (a) Same **opening** verb: max **twice** in the entire `## Experience` block. (b) Same **main action verb** (same word or tight inflection: develop/developed/developing) used as the core action: max **twice** across **all** experience bullets—count **every** occurrence, including mid-sentence (“…, **built** APIs…”); rephrase with a different verb, noun-led phrasing, or merge ideas. (c) Do not echo the same **stock phrases**, **clause tails**, **metric templates**, or **near-duplicate bullets** across roles. Vary proof types (delivery vs reliability vs stakeholder vs scale).
 
-2. **Spelling** — Zero errors on name, employers, schools, cities, products, tech names; match profile/JD spelling. American English unless a proper noun dictates otherwise.
+2. **Spelling** — Careless typos tank impact: zero errors on name, employers, schools, cities, products, tech names; match profile/JD spelling. American English unless a proper noun dictates otherwise.
 
 3. **Dates** — Every role: `Role | Company | Month YYYY - Month YYYY | Location` with full month names; consistent style; education dates aligned.
 
-4. **Leadership** — Show via bullets: owned delivery, direction, releases, mentoring with an outcome, on-call ownership—not labels (“strong leader”).
+4. **Leadership** — Employers need proof you can **own a project**, **coordinate or manage team scope**, and **take responsibility** for outcomes—show it in bullets (owned delivery, defined direction, coordinated releases, mentored with a measurable effect, on-call ownership)—never empty “strong leader” labels.
 
-5. **Weak roles** — JD-relevant roles are not thin task lists. Anchor roles (most recent + most JD-relevant): **5–7** bullets only when each adds **distinct** proof; mix delivery, metric, stakeholder, initiative. At least one truthful line on user/operator/business impact when the domain allows.
+5. **Weak roles** — Fix thin blocks that drag the score: JD-relevant roles are not vague task lists. Tell a **stronger story** per role—anchor roles (most recent + most JD-relevant): **5–7** bullets only when each adds **distinct** proof; mix delivery, metric, stakeholder, initiative. At least one truthful line on user/operator/business impact when the domain allows.
 
 6. **Buzzwords** — No empty hype or label brags; prove with facts. (Examples: **Buzzword ban** under Writing rules.)
 
-7. **Readability** — Space between every word; newline before each `##` heading; contact uses ` | ` with spaces; Summary = **2–3 sentences**, not a keyword blob; each experience bullet = **one** complete line.
+7. **Readability** — Screeners skim fast: normal spaces; newline before each `##` heading; contact uses ` | ` with spaces; Summary = **2–3 sentences**, not a keyword blob; each experience bullet = **one** complete scannable line.
 
 8. **Sections** — Drop redundant Objective (if Summary covers it), “References available”, empty hobbies, useless “Additional”. Optional sections only if they raise fit.
 
@@ -34,17 +34,23 @@ Truth first: never invent metrics or facts to satisfy a line.
 
 10. **Industry bar** — Read like a strong hire in this function: outcomes (throughput, reliability, risk, operator UX) plus stack; truthful same-industry terms where supported—not JD line-copy.
 
-11. **Summary** — Optional; include only if additive. If present: **~50–100 words**, **2–3 lines**, one flagship **provable** metric when the profile has it, complete sentences, no “I”, no Skills-list pasted into prose.
+11. **Summary** — Optional—include only if it **adds** a clear story JD screeners do not already get from titles and bullets. If present: **~50–100 words**, **2–3 lines**, one flagship **provable** metric when the profile has it, complete sentences, no Skills-list pasted into prose, effective and tight; obey **19** (no pronouns).
 
-12. **Weak verbs** — Do not open with: responsible for, worked on, tasked with, assisted with, involved in, vague “handled”, “experience in” as a crutch. **Led** needs **what** + **result**.
+12. **Weak verbs** — Swap weak openers for strong, specific verbs: not responsible for / worked on / tasked with / assisted with / involved in / vague “handled” / “experience in” as a crutch. **Led** must name **what** + **measurable result**.
 
-13. **Drive** — Show unprompted fixes, persistence through hard incidents/migrations—never “highly motivated” alone.
+13. **Drive and initiative** — Show **proactivity**, self-directed follow-through, and **persistence on hard problems** (unprompted improvements, gnarly incidents to root cause, migrations under constraints)—never “self-starter” / “highly motivated” as filler.
 
-14. **Growth** — Show progression: scope, systems, ownership, promotions from profile, harder problems over time.
+14. **Growth** — Show HR upward trajectory: broader scope, larger systems, more ownership, promotions or title steps from the profile, harder problems solved over time—not flat repetition of the same scope level.
 
-15. **Analytical** — Show diagnose, measure, tradeoff, validation in bullets—never “strong analytical skills” alone.
+15. **Analytical and problem-solving** — Show **breaking down** complex problems, **evaluating** tradeoffs or data, and **landing** a solution in bullets (diagnosed, modeled, benchmarked, validated)—never a generic “strong analytical skills” line.
 
-16. **Communication** — Show who you aligned with, specs, clients, presentations—with an artifact or outcome—never “excellent communicator” alone.
+16. **Communication** — Prove you can communicate with **who the job requires**—stakeholders, teammates, clients—via concrete work (requirements alignment, specs/RFCs, tradeoff reviews, rollouts)—never “excellent communicator” without proof.
+
+17. **Bullet depth (length)** — Each bullet one line, but **substantive**: not a 4–6 word stub; not a long run-on. Aim for **one tight accomplishment** (context + action + outcome, often with a metric)—typically **~12–32 words** when content supports it; trim noise, keep the line scannable.
+
+18. **Filler words** — Cut words that add no signal: very, really, quite, various, multiple, extensive, successfully (redundant), “in order to”, “was able to”, “helped to” (when you can name the deliverable instead).
+
+19. **Personal pronouns** — In the **resume block** (Summary, Experience, Projects, etc.): **no** I, me, my, we, us, our—use implied subject and past-tense accomplishment style. (First person stays OK in **application answers** unless the question forbids it.)
 
 ---
 
@@ -66,7 +72,7 @@ Do not: contradict the profile; change stated employers, titles, dates, location
 
 **Resume** — Follow markdown rules below + section rules. **Answers** — Tailored, consistent with resume; first person unless asked otherwise. Unsupported logistics (comp, visa, etc.) → exactly: `Needs candidate confirmation`.
 
-**Final pass** — Re-scan the draft against the **non-negotiable bar** (1–16) only; fix failures without padding lies.
+**Final pass** — Re-scan the draft against the **non-negotiable bar** (1–19) only; fix failures without padding lies.
 
 ---
 
@@ -76,7 +82,9 @@ Do not: contradict the profile; change stated employers, titles, dates, location
 
 **Metrics** — Prefer money, %, time saved, frequency, scale, before→after, milestones—whatever the profile supports. If no number, use specific bounded scope (regions, services on-call, SLA class) only when true. One bullet = one line; **never** split a metric onto the next bullet.
 
-**Verbs** — Specific verbs matched to work (shipped, automated, diagnosed, migrated, hardened, …). “Collaborated / Mentored / Led”: use sparingly; pack concrete nouns + outcome; at most one generic “collaborated with…” style line per role unless collaboration **is** the win.
+**Verbs** — Specific verbs matched to work (shipped, automated, diagnosed, migrated, hardened, …). “Collaborated / Mentored / Led”: use sparingly; pack concrete nouns + outcome; at most one generic “collaborated with…” style line per role unless collaboration **is** the win. **Repetition sweep:** after drafting, search the Experience block for your most-used verb **anywhere** in each line (not only the first word); replace excess repeats per bar **1(b)**.
+
+**Concision** — Apply bar **17–19**: tight bullet depth, strip filler words, zero pronouns in resume prose.
 
 **Soft skills** — Leadership, communication, analysis, initiative appear only as **what you did with whom and what changed**—never skill labels without proof.
 

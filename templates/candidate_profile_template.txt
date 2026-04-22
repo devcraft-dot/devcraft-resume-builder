@@ -1,19 +1,19 @@
-Your Name
-City, ST | 555-555-5555 | you@example.com | linkedin.com/in/yourname
-
-Work Authorization: US Citizen
-Total Experience: 10 years
-Current Seniority: Senior Software Engineer
+Cheuk Chan
+Homestead, FL | 352-723-2015 | cheukchan9503@outlook.com | linkedin.com/in/cheuk-chan-85a036404/
 
 Experience
-Senior Software Engineer | Acme Corp | Jan 2021 - Present | Remote
-Notes: Payments APIs on AWS; small team lead.
 
-Software Engineer | Beta LLC | Jun 2017 - Dec 2020 | Austin, TX
+Senior Software Engineer | Taazaa Inc | May 2025 - March 2026 | Remote
+Taazaa is a custom software and product engineering company building digital products for business clients across industries.
+Likely focus: full-stack product delivery, client-facing applications, integrations, and business workflow systems.
+
+Software Engineer | Alaffia Health | January 2023 - April 2025 | Remote
+Alaffia Health is a healthtech company building AI-powered claims review and payment integrity software for health plans, focused on reducing waste and improving claims operations.
+Likely focus: claims workflows, review systems, operational accuracy, auditability, and AI-assisted software.
+
+Full Stack Engineer | Increase | April 2020 - December 2022 | Remote
+Increase is a fintech infrastructure company providing banking and payments APIs for businesses to move money, store funds, and handle reconciliation workflows.
+Likely focus: payment workflows, financial APIs, money movement systems, reconciliation, and operational tooling.
 
 Education
-State University | BS Computer Science | 2011-2015 | City, ST
-
-Optional
-Certifications: AWS SA Associate
-Core Skills: Python, TypeScript, PostgreSQL, Docker, Kubernetes
+University of Florida | Bachelor's Degree, Computer Science | 2016-2019 | Gainesville, FL

@@ -1,0 +1,23 @@
+I am preparing sparse candidate profile input for resume generation.
+
+For the company below, write exactly 2 short lines:
+
+1. A one-sentence company description with:
+- domain
+- main product / workflow / business function
+- main customer or user type if clear
+
+2. A one-sentence likely-work-context line starting with:
+Likely focus:
+This should describe the most plausible systems, workflows, product areas, and operational concerns someone in an engineering role there might have touched.
+
+Rules:
+- Short and high-signal
+- No tech stack
+- No metrics
+- No hype
+- No culture/benefits language
+- No extra explanation
+- Broad but useful for resume inference
+
+Company: [COMPANY NAME]

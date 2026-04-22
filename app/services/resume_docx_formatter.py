@@ -435,27 +435,47 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
             #   Line 1:  **Company**                          **Location**
             #   Line 2:  Title                                Dates
             # Education: School | Degree | Years | Location  ->
-            #   Line 1:  **School**, Degree - Location               Years
+            #   Line 1:  **School**                           **Location**
+            #   Line 2:  Degree                               Years
             if is_education and len(parts) >= 3:
                 school = parts[0]
                 degree = parts[1] if len(parts) > 1 else ""
                 years = parts[2] if len(parts) > 2 else ""
                 location = parts[3] if len(parts) > 3 else ""
-                right_side = years
 
-                p = _para(space_before=4, space_after=2)
-                _set_right_tab(p)
-                _add_plain(p, school, bold=True, size=11)
-                detail_bits = []
-                if degree:
-                    detail_bits.append(degree)
+                # Line 1: School (bold, dark) | Location (bold, dark, right).
+                p1 = _para(space_before=10, space_after=0)
+                _set_right_tab(p1)
+                _add_plain(p1, school, bold=True, size=11, color=_EXP_COLOR_PRIMARY)
                 if location:
-                    detail_bits.append(location)
-                if detail_bits:
-                    _add_plain(p, ", " + " - ".join(detail_bits), bold=False, size=10.5)
-                if right_side:
-                    _add_plain(p, "\t", bold=False, size=10.5)
-                    _add_plain(p, right_side, bold=False, size=10.5)
+                    _add_plain(p1, "\t", bold=False, size=11, color=_EXP_COLOR_PRIMARY)
+                    _add_plain(
+                        p1, location, bold=True, size=11, color=_EXP_COLOR_PRIMARY
+                    )
+
+                # Line 2: Degree (regular, slate) | Years (regular, slate, right).
+                if degree or years:
+                    p2 = _para(space_before=0, space_after=3)
+                    _set_right_tab(p2)
+                    if degree:
+                        _add_plain(
+                            p2,
+                            degree,
+                            bold=False,
+                            size=11,
+                            color=_EXP_COLOR_SECONDARY,
+                        )
+                    if years:
+                        _add_plain(
+                            p2, "\t", bold=False, size=11, color=_EXP_COLOR_SECONDARY
+                        )
+                        _add_plain(
+                            p2,
+                            years,
+                            bold=False,
+                            size=11,
+                            color=_EXP_COLOR_SECONDARY,
+                        )
 
             elif not is_education and len(parts) >= 3:
                 role = parts[0]

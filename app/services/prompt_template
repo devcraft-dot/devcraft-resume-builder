@@ -94,6 +94,56 @@ ANTI-BUZZWORD AND ANTI-WEAK-WRITING RULES
 - Prefer strong, specific action verbs matched to the work.
 - Remove filler phrases such as: in order to, various, several, numerous, successfully, effectively, worked closely with, key player in, instrumental in, and similar padding unless the wording adds real meaning.
 - Avoid repeating the same action verb, phrase pattern, or bullet structure too often across roles.
+- Avoid weak abstract nouns such as: solutions, features, initiatives, efforts, priorities, responsibilities, tasks, activities, projects, deliverables unless the line also names the real system, workflow, or technical object.
+
+EXPERIENCE BULLET WRITING STANDARD
+Every experience bullet must be specific enough that it could not fit almost any software job unchanged.
+
+Each bullet should contain:
+- a strong past-tense action verb
+- a concrete object such as a system, API, workflow, pipeline, service, dataset, dashboard, integration, control, platform, process, or document
+- enough context to show why the work mattered
+
+Each bullet should include at least 2 of these 4 elements:
+1. what was built, changed, improved, tested, diagnosed, automated, or supported
+2. technical method, architecture, or system context
+3. business, operational, user, or workflow context
+4. result, effect, or concrete reason it mattered
+
+Prefer bullets built from these patterns:
+- action + system/workflow + technical context + result
+- action + problem/context + method + effect
+- action + artifact/output + stakeholder/workflow context + impact
+
+Do not write bullets that are only:
+- collaboration
+- process participation
+- vague ownership
+- generic delivery language
+
+A collaboration bullet is allowed only if it also states what shipped, changed, or improved.
+A process bullet is allowed only if it also names the system, output, or technical result.
+
+Prefer concrete nouns such as:
+- payment workflows
+- claims review pipelines
+- reconciliation processes
+- tenant-isolated data access
+- operational dashboards
+- API integrations
+- background jobs
+- deployment runbooks
+- audit trails
+- reporting pipelines
+over vague nouns such as:
+- solutions
+- initiatives
+- capabilities
+- efforts
+- improvements
+- business needs
+
+If a bullet sounds generic, rewrite it to make the system, workflow, or artifact more concrete.
 
 RESUME QUALITY STANDARDS
 - Tell one clear target story.
@@ -113,14 +163,16 @@ SECTION RULES
 Summary
 - Default: omit unless it adds real value.
 - If included, keep it to 2–3 sentences.
+- You may wrap a few credible JD-aligned keywords or one flagship metric in `**...**` for bold in export (see **JD KEYWORD HIGHLIGHTING** above); keep the prose readable.
 - Make it specific, targeted, and provable.
 - Use it to strengthen positioning for the target role, especially when the JD is specialized.
 - It may reflect important soft-skill signals from the JD, but only in concrete, professional language rather than vague trait labels.
-- No pronouns, buzzwords, trait labels, or technology comma-walls.
+- No pronouns, buzzwords, trait labels, technology comma-walls, or career-objective language.
 - Remove it if it repeats the Experience section.
 
 Skills
 - Include relevant hard skills, tools, systems, platforms, domain terms, and supporting technical concepts.
+- List skills as plain comma-separated tokens after each category label—**do not** wrap skill tokens in `**...**` (export treats Skills differently; use bold highlights in Summary and Experience bullets instead).
 - Prioritize skills that are both likely for the candidate and important for the target role.
 - Include the most important JD technical keywords when they can be represented credibly.
 - Include related supporting technical skills when they strengthen the role fit and make the profile feel more complete.
@@ -128,6 +180,7 @@ Skills
 - Do not force equal numbers of skills per category.
 - Do not turn it into a keyword dump.
 - Do not create a soft-skills list.
+- Exclude weak or defensive labels such as adjacent, exposure, familiar with, knowledge of, or similar low-confidence wording unless absolutely necessary.
 
 Experience
 - This is the main proof section.
@@ -141,6 +194,15 @@ Experience
 - Prefer believable specificity over vague filler.
 - Avoid forcing metrics into every role or every bullet.
 - Do not include company descriptions under the roles in the final resume.
+- Avoid bullets that could apply equally well to almost any software engineer.
+
+JD KEYWORD HIGHLIGHTING (Markdown `**bold**` for export)
+- The resume exports to .docx through a formatter that turns `**spans**` into **real bold** in normal prose and bullets.
+- Use Markdown bold spans (`**like this**`) only in `## Summary` prose and in `## Experience` bullet lines (`- ...`). That is how important JD keywords, credible stack terms, and flagship numbers get highlighted for screeners.
+- **Do not** use `**` in: the `#` name line, contact line, `Role | Company | ...` header rows (headers are styled separately), `## Skills` category lines (skill values must stay plain; the exporter strips `**` there anyway), `## Education`, Projects, or other sections unless you have a strong reason.
+- **Sparingly:** across the whole Summary, about **2–5** bold spans total; in Experience, about **0–2** bold spans per bullet and **not** on every bullet. Bold **must-have JD** tools, systems, domains, or **one** flagship metric (e.g. `**$2.1M**`, `**99.95% availability**`) when truthful—never decorate filler words.
+- Wrap **whole terms only**: `**Kubernetes**`, `**TypeScript**`, `**HIPAA-aligned access controls**`. Do **not** bold entire sentences or a full bullet. Do **not** put `*` characters inside a bold span (no nested or broken `**`).
+- Still obey anti-buzzword rules: never bold trait clichés (e.g. `**team player**`).
 
 Education
 - Keep concise and factual.
@@ -216,6 +278,7 @@ Before returning the final answer, check the resume against all of the following
 - Teamwork: show collaboration through delivery with other functions, not through labels.
 - ATS coverage: make sure the most important JD technical keywords appear naturally and credibly.
 - Soft-skill coverage: make sure the JD’s important soft-skill signals are reflected through evidence, not generic labels.
+- Bullet strength: remove any bullet that is mostly process, mostly collaboration, or mostly generic delivery language.
 - Resume/application consistency: make sure application answers do not exceed the resume’s claims.
 - Unsupported logistics: mark unsupported personal/logistical answers exactly as:
 Needs candidate confirmation

@@ -67,7 +67,7 @@ JD COVERAGE
 FIELD-STANDARD SKILLS RULE
 - The Skills section must include not only JD keywords, but also closely related field-standard skills that hiring managers expect for the target field.
 - Include credible adjacent hard skills, platforms, engineering concepts, and domain concepts that strengthen fit.
-- Target roughly 20-30 total skills when credible.
+- Target roughly 20–30 total skills when credible.
 - Do not add filler, weak, or unrelated skills.
 
 DEEP JD THEMES
@@ -89,7 +89,7 @@ STRONG VERB RULES
   accelerated, achieved, aligned, architected, authored, automated, built, coded, codified, configured, connected, consolidated, constructed, debugged, defined, delivered, deployed, designed, diagnosed, directed, documented, drove, enabled, engineered, established, evaluated, executed, expanded, expedited, formalized, generated, guided, improved, implemented, increased, integrated, instrumented, introduced, launched, led, maintained, matched, migrated, modeled, modernized, optimized, orchestrated, produced, reduced, redesigned, refined, refactored, resolved, restored, secured, shaped, shipped, simplified, stabilized, standardized, strengthened, streamlined, supervised, tested, transformed, tuned, upgraded, validated, wrote
 - Use the most specific verb family for the action:
   architecture/design: architected, designed, modeled, shaped, reworked
-  implementation/build: engineered, implemented, built, developed, created
+  implementation/build: engineered, implemented, built, created
   performance: tuned, optimized, accelerated, reduced, stabilized
   reliability/incidents: resolved, restored, stabilized, mitigated, diagnosed
   integration/data movement: integrated, connected, consolidated, migrated, matched
@@ -158,9 +158,9 @@ WEAK ROLE RULES
 - Each strong role should show a mix of system/workflow ownership, technical depth, business/operational context, reliability/testing/performance/documentation, stakeholder/delivery context, and outcome/effect.
 
 ROLE DEPTH
-- Most relevant recent role: usually 5-7 bullets if supported
-- Other relevant roles: usually 4-6 bullets
-- Older or less relevant roles: usually 3-5 bullets
+- Most relevant recent role: usually 5–7 bullets if supported
+- Other relevant roles: usually 4–6 bullets
+- Older or less relevant roles: usually 3–5 bullets
 - Short tenure roles may be shorter
 - Relevance matters more than recency
 
@@ -168,13 +168,30 @@ SECTION RULES
 
 Summary
 - Always include a summary.
-- Use 2-3 sentences.
+- Use 2–3 sentences.
 - Sentence 1: define the candidate’s role identity, seniority, and strongest domain/system alignment for the JD.
 - Sentence 2: include the single strongest measurable result, scale signal, or quantified scope in the resume.
 - Sentence 3 optional: highlight one or two important JD-aligned capabilities, systems, workflows, deep themes, or leadership signals.
 - Front-load important ATS keywords naturally.
 - No buzzwords, pronouns, or career-objective language.
 - The summary must not reuse the exact phrase or sentence pattern of any Experience bullet. It may reference the same achievement, but must paraphrase it at a higher level.
+
+SUMMARY MOST-PROUD-RESULT RULE
+- The summary must include exactly one standout measurable result or quantified scope signal that reads like the candidate’s most impressive proof point for the target role.
+- This result should be the strongest believable metric in the resume, not just a generic improvement statement.
+- Prefer the result that best combines:
+  1. relevance to the JD
+  2. measurable impact
+  3. scale or complexity
+  4. credibility from the profile and inferred context
+- Good examples:
+  - reduced release defects by roughly 20% across concurrent projects
+  - improved reconciliation efficiency by about 20% across payment and claims workflows
+  - supported millions of claims records in daily healthcare operations
+  - handled 10K+ daily transactions in production financial systems
+- The summary result must not reuse the exact wording of any Experience bullet.
+- Rewrite it at a higher level so it sounds like a headline achievement, not a copied bullet.
+- If multiple strong metrics exist, choose the one most aligned to the JD’s core fit signals.
 
 Skills
 - Group skills into clear, ATS-friendly categories.

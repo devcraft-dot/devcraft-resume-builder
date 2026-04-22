@@ -17,132 +17,108 @@ Goal:
 Create the strongest believable version of the candidate for the target role.
 Optimize for ATS match first, then human readability and credibility.
 
-CORE FACT RULES
+CORE FACTS
 - Never change or invent employers, job titles, dates, schools, degrees, locations, or contact details.
-- Never invent exact metrics, certifications, clearance, work authorization, compensation, or other hard facts not supported by the input.
+- Never invent exact certifications, clearance, work authorization, compensation, or other hard facts not supported by the input.
 - Do not print company descriptions or likely-focus lines in the final resume.
 
-CONTROLLED INFERENCE RULES
-- The profile may be sparse, so you must reconstruct the strongest believable experience from the candidate’s title, seniority, company description, likely focus, company domain, career progression, and the target JD.
+CONTROLLED INFERENCE
+- The profile may be sparse.
+- Reconstruct the strongest believable experience from the candidate’s title, seniority, company description, likely focus, company domain, career progression, and the JD.
 - Infer likely responsibilities, systems, workflows, product areas, engineering scope, stakeholder context, operational concerns, supporting technical concepts, and adjacent tools when they plausibly fit.
-- Use inference to make the resume stronger, more specific, and more ATS-relevant.
 - Keep inference believable, domain-consistent, and seniority-consistent.
 - Prefer workflow and system specificity before exact tool specificity unless the tool is strongly implied.
 - If a detail feels too exact, too flashy, too senior, or too dependent on insider knowledge, broaden it.
-- Do not invent exact facts or make every role mirror the JD.
+- Do not make every role mirror the JD.
 
-JOB FIT RULE
+JD INTENT MODELING
+- Do not tailor by keyword extraction alone.
+- First determine:
+  1. role archetype
+  2. seniority level
+  3. primary system layer
+  4. core technical themes
+  5. workflow or business themes
+  6. primary proof expectations
+  7. what strong evidence looks like for this exact role
+- Then separate JD requirements into:
+  - Tier 1: core fit signals
+  - Tier 2: supporting signals
+  - Tier 3: surface ATS signals
+- Emphasize Tier 1 first, Tier 2 second, Tier 3 third.
+
+JOB FIT
 - Determine the true job family from the JD body, not just the title.
 - If the JD is outside the candidate’s plausible target family, do not force a fake direct match.
-- In that case, emphasize the strongest transferable overlap and keep the positioning adjacent and believable.
+- Emphasize the strongest transferable overlap and keep the positioning adjacent and believable.
 
-ATS RULES
-- Identify the JD’s must-have technical keywords, preferred technical keywords, domain terms, workflow terms, deep engineering themes, and soft-skill signals.
-- Cover the most important technical keywords naturally across Summary, Skills, and Experience when they can be represented credibly.
-- Include related supporting technical skills when they strengthen fit.
-- Reflect soft-skill signals through evidence in bullets, not through soft-skill lists.
-- Do not keyword-stuff.
-- Use exact JD wording when helpful, but do not paste JD phrasing into the resume.
+JD COVERAGE
+- Extract important JD terms across:
+  1. technologies and tools
+  2. architecture and engineering concepts
+  3. workflow and domain terms
+  4. soft-skill and leadership signals
+  5. company, platform, and environment terms
+- The final resume must cover the important credible terms from all 5 groups.
+- Use exact JD wording when helpful for ATS, but do not paste JD phrasing into the resume.
+- If an exact JD term is central to screening and credibly representable, include the exact wording even if a synonym already appears.
+- If a JD term is too specific to claim directly, include the closest credible adjacent concept instead of omitting it.
 
-DEEP JD THEME RULES
-- Do not only extract explicit tools and frameworks from the JD.
-- Also extract deeper engineering themes such as:
-  - architecture patterns
-  - system design concepts
-  - integration models
-  - data patterns
-  - infrastructure patterns
-  - security patterns
-  - testing and quality patterns
-  - operational and platform themes
-- Important examples include:
-  - domain-driven design
-  - cloud architecture patterns
-  - event-driven systems
-  - service discovery
-  - API gateway
-  - distributed tracing
-  - data warehousing
-  - data lakes or lakehouse concepts
-  - observability
-  - access control
-  - workflow automation
-  - auditability
-  - scalability
-  - reliability engineering
-  - performance optimization
-- Reflect important deep JD themes naturally across Summary, Skills, and Experience when they are credibly inferable.
-- If a deep JD theme is important but too specific to claim directly, represent the closest credible adjacent concept instead of ignoring it.
+FIELD-STANDARD SKILLS RULE
+- The Skills section must include not only JD keywords, but also closely related field-standard skills that hiring managers expect for the target field.
+- Include credible adjacent hard skills, platforms, engineering concepts, and domain concepts that strengthen fit.
+- Target roughly 20-30 total skills when credible.
+- Do not add filler, weak, or unrelated skills.
 
-ANTI-WEAK-WRITING RULES
-- Do not use buzzwords or vague self-praise such as results-driven, proactive, dynamic, passionate, team player, problem-solver, excellent communicator, detail-oriented, self-starter, hard-working, proven track record.
+DEEP JD THEMES
+- Capture deeper themes such as architecture patterns, system design, integration models, data patterns, infrastructure patterns, security patterns, testing and quality themes, and operational/platform themes.
+- Reflect important deep themes naturally across Summary, Skills, and Experience when credibly inferable.
+
+ANTI-BUZZWORD AND FILLER RULES
+- Do not use vague self-praise, cliché trait language, or generic filler.
+- Avoid these phrases unless immediately made concrete:
+  results-driven, proactive, dynamic, passionate, team player, problem-solver, excellent communicator, detail-oriented, self-starter, hard-working, proven track record, customer-focused, fast-paced environment, innovative, motivated, dedicated, thought leader, synergy, best-in-class, world-class, robust, seamless, cutting-edge, overall, various, several, numerous, key, critical, significant, impactful, enhanced end-user experience, improved overall efficiency, supported business needs, operational readiness, customer-focused delivery, reliability-sensitive environment
 - Do not create a soft-skills list.
-- Do not use weak bullet openers such as Responsible for, Worked on, Helped with, Assisted with, Involved in, Participated in, Supported, Tasked with.
-- Also avoid weak or low-signal verbs unless the bullet clearly names the concrete system, artifact, and result:
-  - used
-  - did
-  - made
-  - handled
-  - dealt with
-  - worked
-  - helped
-  - assisted
-  - supported
-  - participated
-  - contributed
-  - involved
-  - performed
-  - carried out
-  - served
-  - acted
-  - oversaw
-  - managed
-  - monitored
-  - maintained
-  - created
-  - developed
-  - utilized
-  - leveraged
-  - facilitated
-  - addressed
-  - processed
-  - conducted
-  - reviewed
-  - provided
-  - delivered
-  - worked closely with
-  - collaborated with
-  - partnered with
-  - communicated with
-  unless the bullet also states what changed, shipped, improved, or was decided.
-- Avoid filler words and weak abstract nouns such as solutions, initiatives, efforts, responsibilities, tasks, deliverables unless the bullet also names the real system, workflow, or artifact.
-- Avoid repeated verbs, repeated phrasing, and near-duplicate bullets.
-- Prefer stronger verbs that match the actual work, such as:
-  - architected
-  - automated
-  - built
-  - designed
-  - developed
-  - engineered
-  - established
-  - implemented
-  - integrated
-  - launched
-  - modeled
-  - optimized
-  - orchestrated
-  - refactored
-  - resolved
-  - secured
-  - standardized
-  - streamlined
-  - tested
-  - tuned
-  - validated
-  - wrote
+- Avoid filler nouns such as solutions, initiatives, efforts, responsibilities, tasks, deliverables unless the bullet also names the real system, workflow, or artifact.
 
-BULLET WRITING RULES
-Every bullet must be specific enough that it could not fit almost any software job unchanged.
+STRONG VERB RULES
+- Every bullet must begin with the most precise believable strong action verb available.
+- Do not default to generic verbs if a more specific verb fits better.
+- No opening verb should appear more than 2 times across the resume unless it is clearly the best exact choice.
+- Prefer verbs from this bank when appropriate:
+  accelerated, achieved, aligned, architected, authored, automated, built, coded, codified, configured, connected, consolidated, constructed, debugged, defined, delivered, deployed, designed, diagnosed, directed, documented, drove, enabled, engineered, established, evaluated, executed, expanded, expedited, formalized, generated, guided, improved, implemented, increased, integrated, instrumented, introduced, launched, led, maintained, matched, migrated, modeled, modernized, optimized, orchestrated, produced, reduced, redesigned, refined, refactored, resolved, restored, secured, shaped, shipped, simplified, stabilized, standardized, strengthened, streamlined, supervised, tested, transformed, tuned, upgraded, validated, wrote
+- Use the most specific verb family for the action:
+  architecture/design: architected, designed, modeled, shaped, reworked
+  implementation/build: engineered, implemented, built, developed, created
+  performance: tuned, optimized, accelerated, reduced, stabilized
+  reliability/incidents: resolved, restored, stabilized, mitigated, diagnosed
+  integration/data movement: integrated, connected, consolidated, migrated, matched
+  process/quality: standardized, formalized, codified, strengthened, tightened
+  documentation: authored, documented, codified, wrote
+  testing/verification: validated, tested, expanded, instrumented
+
+PHRASE REPETITION RULES
+- Repetition is mainly about repeated action verbs and repeated phrase patterns.
+- Do not repeat the same phrase fragment or sentence template across bullets unless unavoidable.
+- If a phrase appears more than once, rewrite later bullets with different wording.
+- Especially avoid repeating fragments like:
+  manual review effort, analyst review time, by about, coding standards, source control management, full software development lifecycle, thousands of daily, customer-facing, production support, cross-functional teams, issue resolution, release coordination
+- Vary how impact is expressed.
+- Vary how scope is expressed.
+
+PHRASE VARIATION EXAMPLES
+- Instead of repeating "manual review effort by about 20%", vary with:
+  cut analyst review time by roughly 20%, reduced repetitive review steps by about 20%, lowered reconciliation workload for operations teams, removed manual checks across multi-system processes
+- Instead of repeating "coding standards, source control management", vary with:
+  formalized review, version-control, and test practices, tightened code-review and repository workflows, standardized release and quality controls
+- Instead of repeating "full software development lifecycle", vary with:
+  design through incident response, design/implementation/testing/deployment/support, end-to-end delivery across build/release/production support
+- Instead of repeating "thousands of daily financial", vary with:
+  daily payment and reporting activity at production scale, high-volume transaction processing, recurring money-movement activity across production systems
+
+BULLET RULES
+Every bullet should follow this structure as closely as possible:
+Action + Object + Context + Result
 
 Each bullet must include:
 - a strong past-tense action verb
@@ -155,119 +131,69 @@ Each bullet should include at least 2 of these:
 3. business, user, operational, or workflow context
 4. result, effect, or concrete reason it mattered
 
-Do not write bullets that are only:
-- collaboration
-- process participation
-- vague ownership
-- generic delivery language
+Do not keep bullets that are only collaboration, process participation, vague ownership, or generic delivery language.
 
-A collaboration bullet is allowed only if it also states what changed, shipped, improved, or was decided.
+BULLET STRENGTHENING
+- Do not stop at merely acceptable bullets.
+- Rewrite each bullet until it is strong, concrete, and high-signal without inventing facts.
+- Strengthen weak bullets by improving verb precision, system/workflow specificity, ownership clarity, technical method, and operational or business effect.
+- If a bullet still sounds generic after drafting, rewrite it again.
 
-BULLET STRENGTHENING RULES
-- Do not stop at a merely acceptable bullet. Rewrite each bullet until it is as strong, concrete, and high-signal as possible without inventing facts.
-- Upgrade weak-but-acceptable bullets by:
-  - replacing generic verbs with sharper believable verbs
-  - replacing generic nouns with concrete systems, workflows, artifacts, or outputs
-  - replacing vague outcomes with concrete operational, technical, or business effects
-  - using stronger ownership language when believable
-  - preferring mechanism + effect over vague success language
-- If exact metrics are not supported, strengthen bullets with concrete non-numeric impact such as:
-  - reduced manual effort
-  - improved reliability
-  - increased auditability
-  - shortened feedback loops
-  - improved deployment consistency
-  - reduced production defects
-  - improved developer productivity
-  - increased visibility into system health
-  - improved data quality
-  - reduced operational friction
-  - enabled faster iteration
-  - improved maintainability
-  - strengthened access control
-  - improved workflow accuracy
-- Do not use fake placeholders such as XX%, TBD, or similar.
-- Do not force numeric metrics where the evidence does not support them.
+METRICS AND QUANTIFICATION
+- Quantification is required whenever credible.
+- Target about 80% of Experience bullets with one of: exact metric, conservative inferred metric, bounded numeric scope, concrete time, count, or scale indicator.
+- Absolute minimum: 5 quantified bullets across the resume.
+- Vary metric style. Do not rely only on percentages.
+- Acceptable metric formats: percentage change, time saved, counts of systems/integrations/workflows/services/dashboards, data or transaction volume, user or stakeholder scope, delivery speed, incident reduction, release cadence, schedule impact.
+- Use exact metrics if provided.
+- If exact metrics are not provided, infer modest, believable numbers from seniority, domain, likely workflow scale, system type, project scope, and JD context.
+- Prefer modest numbers over dramatic numbers.
+- Do not invent extreme or flashy numbers.
+- If no safe number is possible, use bounded scale or concrete operational effect instead.
 
-DEEP THEME COVERAGE IN EXPERIENCE
-- When the JD emphasizes architecture, platform, data, or operational themes, some bullets must reflect those themes through concrete work.
-- Do not limit Experience bullets to tools and delivery alone.
-- Show relevant design or operational themes such as:
-  - modular service design
-  - event-driven processing
-  - integration boundaries
-  - data lineage
-  - auditability
-  - scalability
-  - observability
-  - access control
-  - workflow orchestration
-  - operational reliability
-when they are credibly inferable from the profile and useful for the JD.
-
-WEAK ROLE STRENGTHENING RULES
+WEAK ROLE RULES
 - Treat weak roles as a priority revision target.
-- If a role feels thin, generic, or lower-signal than it should be, strengthen it before returning the final resume.
-- Strengthen weak roles by adding:
-  - clearer system or workflow scope
-  - more concrete technical objects
-  - more specific business or operational context
-  - stronger ownership framing when believable
-  - clearer operational or business effect
-- Do not strengthen a role by inserting fake metrics or unsupported scale.
-- When metrics are unavailable, improve the bullet using:
-  - scope
-  - complexity
-  - workflow impact
-  - operational effect
-  - reliability / maintainability / visibility / auditability / efficiency gains
-- A weak role should not remain mostly generic if the company context and JD allow stronger believable inference.
+- If a role feels thin, broad, generic, or interchangeable, rewrite it before returning.
 - The most relevant recent role should usually feel like the strongest role on the resume.
+- Each strong role should show a mix of system/workflow ownership, technical depth, business/operational context, reliability/testing/performance/documentation, stakeholder/delivery context, and outcome/effect.
 
-ROLE DEPTH RULES
-- Most relevant recent role: usually 5–7 bullets if supported
-- Other relevant roles: usually 4–6 bullets
-- Older or less relevant roles: usually 3–5 bullets
+ROLE DEPTH
+- Most relevant recent role: usually 5-7 bullets if supported
+- Other relevant roles: usually 4-6 bullets
+- Older or less relevant roles: usually 3-5 bullets
 - Short tenure roles may be shorter
 - Relevance matters more than recency
-- No important JD-relevant role should feel thinner than a less relevant role
 
 SECTION RULES
 
 Summary
 - Always include a summary.
-- Use 2–3 sentences.
-- Make it specific, targeted, and provable.
-- Sentence 1: define the candidate’s role identity, seniority, and strongest domain or system alignment for the JD.
-- Sentence 2: include the strongest measurable achievement, scale signal, or concrete scope supported or credibly inferable from the candidate profile and JD context.
-- Sentence 3 optional: highlight one or two important JD-aligned capabilities, systems, workflows, or deep engineering themes.
+- Use 2-3 sentences.
+- Sentence 1: define the candidate’s role identity, seniority, and strongest domain/system alignment for the JD.
+- Sentence 2: include the single strongest measurable result, scale signal, or quantified scope in the resume.
+- Sentence 3 optional: highlight one or two important JD-aligned capabilities, systems, workflows, deep themes, or leadership signals.
 - Front-load important ATS keywords naturally.
 - No buzzwords, pronouns, or career-objective language.
-- Do not repeat Experience bullets too closely.
-- If exact metrics are not supported, use concrete scope or operational impact instead of fake numbers.
+- The summary must not reuse the exact phrase or sentence pattern of any Experience bullet. It may reference the same achievement, but must paraphrase it at a higher level.
 
 Skills
-- Include relevant hard skills, tools, systems, platforms, domain terms, and supporting technical concepts.
-- Include important JD keywords when credible.
-- Include supporting related skills when useful.
-- Include important architecture, platform, data, integration, and system-design concepts when they are central to the JD and credibly inferable, not only named tools.
-- Keep the section selective and natural.
-- No equal-size category forcing.
+- Group skills into clear, ATS-friendly categories.
+- Use category names that fit the role, such as Programming Languages, Cloud & Infrastructure, Databases & Data, APIs & Integration, Architecture & Distributed Systems, Testing, Quality & SDLC, Domain Expertise.
+- Keep categories parallel, concrete, and easy to scan.
+- Avoid vague category names like Tools & Methods, Other, Miscellaneous, Core Competencies unless the JD clearly supports them.
+- Do not use too many categories.
+- Do not force equal numbers per category.
+- Each category should feel natural and useful.
+- Include relevant hard skills, major JD terms, deep engineering themes, supporting technical concepts, and field-standard adjacent skills.
 - No soft-skills list.
-- Do not overload the section with every possible inferred tool.
-- Prefer the most plausible and most useful skills for ATS and human readers.
+- Do not include weak filler skills. Keep only searchable, role-relevant hard skills and concepts.
 
 Experience
-- This is the main proof section.
 - Lead with the most target-relevant bullets.
 - Make each role distinct.
-- Show leadership, teamwork, communication, analytical ability, initiative, and ownership only through concrete work and outcomes.
-- Avoid generic bullets that could fit any engineer.
+- Show leadership, communication, customer focus, teamwork, judgment, reliability, initiative, and ownership through concrete work and outcomes.
 - Use controlled inference to make bullets stronger, but keep them believable.
-- Rewrite weak-but-acceptable bullets into stronger, more concrete bullets before returning the final result.
-- Prefer bullets that show system/workflow ownership, technical method, and operational or business effect.
-- If a bullet can be made sharper without inventing facts, rewrite it.
-- Do not include company descriptions under the roles in the final resume.
+- Do not include company descriptions under the roles.
 
 Education
 - Keep concise and factual.
@@ -281,29 +207,27 @@ Needs candidate confirmation
 
 WORKFLOW
 1. Identify the true job family and what strong performance looks like.
-2. Extract the JD’s key technical keywords, workflow themes, deep engineering themes, and soft-skill signals.
+2. Extract the JD keyword groups and deep themes.
 3. Determine the candidate’s strongest direct and transferable matches.
 4. Use controlled inference to reconstruct the most believable high-value experience from the sparse profile.
-5. Plan role emphasis, bullet depth, keyword placement, deep-theme coverage, and soft-skill evidence.
+5. Plan role emphasis, grouped skills, keyword placement, deep-theme coverage, soft-skill evidence, and metric placement.
 6. Write the resume.
 7. Write application answers if provided.
 8. Revise before returning.
 
 FINAL CHECK
-Before returning, fix anything that is:
-- generic
-- repetitive
-- buzzword-heavy
-- weak-verb driven
-- thin on important roles
-- missing major JD keywords
-- missing important deep JD themes
-- unnatural in the Skills section
-- unsupported in the summary
-- over-inferred beyond believable evidence
-- inconsistent with the application answers
-- merely acceptable but still weak, generic, or low-impact at the bullet level
-- driven by generic or overused verbs when a more precise verb would make the bullet stronger
+Before returning, confirm:
+- no repeated opener or repeated phrase fragment appears too often
+- no stock phrase cluster is reused mechanically
+- strong verbs are varied across bullets
+- the summary is factual, not promotional
+- the summary does not repeat the exact wording of a bullet-level achievement
+- at least 5 quantified bullets are present
+- metric styles are varied
+- skills are grouped into clear ATS-friendly categories
+- the skills section contains strong role-relevant and adjacent field-standard skills
+- the most relevant recent role is the strongest role
+- major JD terms and deep themes are covered naturally
 
 OUTPUT FORMAT
 
@@ -324,6 +248,3 @@ Role | Company | Month YYYY - Month YYYY | Location
 
 ## Application Questions
 [Q/A pairs or exactly: No application questions provided.]
-
-## Quality Check
-[optional]

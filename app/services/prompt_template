@@ -84,13 +84,47 @@ GLOBAL RESUME WRITING RULES
 - Keep summary claims provable through the rest of the resume.
 - Include optional sections only when they materially improve fit.
 
+IMPACT, METRICS, AND QUANTIFICATION (avoid “everything is a %”)
+Recruiters and resume scorers reward proof in many shapes. Across the Summary and Experience bullets, deliberately mix truthful, concrete numbers and scope signals. Do not lean on a single pattern such as “improved X by Y%” in every bullet.
+
+Use several of these formats when the profile or context supports them (never invent numbers):
+- Money or commercial impact: revenue influenced, cost reduced, budget owned, savings delivered, deal size, ARR/MRR context, pricing or margin where appropriate.
+- Relative change: increased or reduced a metric by a percentage; lift in conversion, retention, error rate, latency, or similar KPIs.
+- Time and throughput: hours or days saved per week, cycle time cut, release frequency, MTTR/MTBF, lead time to production, SLA improvements, faster delivery windows.
+- Scale and volume: users, customers, tenants, transactions, requests, records, data points, messages, seats, markets, regions, departments or teams coordinated, codebase or service footprint.
+- Timelines and milestones: shipped in X weeks, promoted within X months, delivered ahead of schedule, zero-downtime migration over a defined window, on-time delivery under a deadline.
+
+If exact figures are not in the profile, prefer honest scope language (team size, environment complexity, criticality) or one defensible estimate framed as approximate only when appropriate; otherwise omit the number and still state the outcome clearly.
+
+Each strong bullet should read as: specific action + what you built or changed + how you measured or observed the result (one of the formats above). Task-only lines (“responsible for X”) without an outcome should be rewritten or cut.
+
+ACTION VERBS (strength and repetition)
+- Open bullets with strong, specific verbs that match the work (built, shipped, automated, reduced, migrated, diagnosed, designed, implemented, optimized, launched, standardized, refactored, scaled, led, owned, defined, negotiated, audited, etc.). Match the verb category to the achievement: delivery vs leadership vs process improvement vs analysis.
+- Avoid weak or vague openers unless they are the only accurate choice: responsible for, helped with, worked on, involved in, assisted with, participated in, dealt with, handled (as a generic opener).
+- Vary verbs across the whole resume: do not start more than two bullets with the same opening verb unless unavoidable. Track mentally across all roles; adjacent bullets should not echo the same opener.
+- Avoid repeating the same stock phrase (“developed and maintained”, “collaborated cross-functionally”) across multiple roles; rephrase with concrete nouns (system, pipeline, API, workflow, incident class).
+
+WEAK ROLES (experience depth)
+Roles that read as title + company + task list without outcomes drag scores down. For each role, especially the most recent and the most JD-relevant:
+- Give enough bullets to show ownership, systems, and impact; thin roles should be expanded with truthful detail (stack, constraints, stakeholders) or tightened if they are filler.
+- If a role is highly relevant to the JD, it must not be the shortest block on the page unless the tenure was very short.
+- Older or less relevant roles can stay shorter, but each should still include at least one outcome- or scope-forward line where possible, not only duties.
+
+SUMMARY (optional but high leverage when used)
+- Omit the Summary if it would only repeat the job title or restate generic strengths.
+- When included: two or three short lines maximum; every line should be provable later in Experience or Skills. Lead with domain + stack + level, then one line of strongest evidence (systems shipped, scale, or measurable wins from the profile).
+- Zero buzzwords; no filler adjectives. Prefer nouns and verbs tied to the JD.
+
+BUZZWORDS AND CLICHÉS TO AVOID
+Do not use empty or recruiter-fatigued phrases anywhere in the resume body, including the Summary. Examples to ban: results-driven, passionate, innovative, robust, seamless, dynamic, ninja, rockstar, synergy, best-in-breed, world-class, thought leader, go-getter, self-starter, team player, proven track record, detail-oriented (as a standalone brag), leveraged (when vague), spearheaded (when inflated), strategic thinker, excellent communication skills (without proof in bullets).
+
 EXPORT LAYOUT (align with resume_rules/formatting_rules.txt — required for the .docx builder)
 - Single-column content only: no tables, text boxes, sidebars, charts, graphics, photos, icons, or decorative borders in the resume block.
 - Use conventional section names the exporter recognizes (Summary, Skills, Experience, Education; optional Certifications, Projects, Additional Information, etc.).
 - Prefer this order when those sections exist: header (name and contact), optional Market Title, Summary, Skills, Experience, Education, then other optional sections so the top of the resume surfaces fit quickly.
 - Header line: full name, then a contact line with city/state or metro, email, phone, LinkedIn; add GitHub or portfolio in that contact line only when relevant. Do not include street address, photo, date of birth, or decorative symbols.
 - Experience stays bullet-based (not dense paragraphs under roles). Keep date style consistent: full month names and ``Month YYYY - Month YYYY`` (or Present).
-- Emphasis: use ``**term**`` sparingly in Summary and Experience bullets only for a few high-signal JD or stack terms per paragraph (never wrap a whole bullet or full sentence). The exporter renders your ``**`` as bold as written; it also bolds your name, section titles, and the company row for each role. Skill lines: keep comma-separated skills plain text — the exporter bolds only the category label and strips ``**`` inside skill lists.
+- Emphasis: use ``**term**`` sparingly in Summary and Experience bullets for high-signal JD or stack terms and, when helpful, the core outcome or number (e.g. ``**$500K in first-quarter profit**``, ``**10 hours per week**``)—never wrap a whole bullet or full sentence. The exporter renders your ``**`` as bold as written; it also bolds your name, section titles, and the company row for each role. Skill lines: keep comma-separated skills plain text — the exporter bolds only the category label and strips ``**`` inside skill lists.
 
 SECTION RULES
 
@@ -99,6 +133,7 @@ MARKET TITLE (optional)
 - Prefer the exact posted job title when believable; otherwise the closest truthful label.
 
 SUMMARY
+- Follow IMPACT / BUZZWORDS rules above; see SUMMARY (optional but high leverage) in the global rules.
 - Include only if it strengthens the resume.
 - Keep it concise and tailored.
 - Present the candidate as a strong fit for the target role.
@@ -114,19 +149,20 @@ SKILLS
 - Use ``Category: skill, skill`` lines only; never bold individual skills with ``**`` (the exporter bolds the category label only).
 
 EXPERIENCE
-- This is the main proof section.
+- This is the main proof section. Follow IMPACT / METRICS, ACTION VERBS, and WEAK ROLES guidance above.
 - For each role, use one machine-parseable header line immediately before bullets:
   Role | Company | Month YYYY - Month YYYY | Location
   (full month names; the exporter renders company/location on the first row and title/dates on the second.)
 - For each role, write strong bullets aligned to the JD where plausible.
 - Use title, company domain, company description, and the JD to infer likely responsibilities, tools, workflows, systems, and impact.
 - Emphasize the most target-relevant achievements first.
-- Use strong action verbs.
+- Use strong, varied action verbs; avoid weak openers and repetition (see ACTION VERBS section).
+- Mix metric types across bullets (money, %, time saved, scale, timelines)—not only percentages.
 - Show meaningful engineering work, product contribution, system thinking, workflow improvement, integrations, reliability, performance, platform work, automation, delivery, or cross-functional execution where context supports it.
 - If direct domain match exists, align more directly to the JD’s workflows and products.
 - If direct domain match is weaker, emphasize transferable systems, APIs, automation, operational processes, compliance-oriented workflows, data-heavy systems, transaction-like processes, or platform capabilities as appropriate.
 - Keep bullets concise and impactful.
-- Avoid repetitive bullet structures across roles.
+- Avoid repetitive bullet structures across roles; each role should feel distinct in systems and outcomes.
 
 PROJECTS
 - Include only if useful and believable.
@@ -158,10 +194,13 @@ STEP 6: Audit and improve before returning
 CHECKLIST
 - Is the resume strongly aligned to the JD?
 - Are the most important keywords included naturally?
-- Are the strongest relevant roles emphasized correctly?
-- Are the bullets contribution-focused rather than duty-focused?
+- Are the strongest relevant roles emphasized correctly (no “weak roles”: thin, task-only JD-relevant blocks)?
+- Are the bullets contribution-focused with clear outcomes, not duty-only lines?
+- Do metrics use varied formats (not mostly “by X%”)?
+- Are opening verbs strong, accurate, and varied (no repetition fatigue)?
 - Does each role feel distinct?
-- Are summary claims supported?
+- Are summary claims supported, and is the Summary omitted or truly additive?
+- Are buzzwords and clichés absent from Summary and bullets?
 - Are there any generic or repetitive bullets?
 - Is the skills section selective rather than bloated?
 - Are inferred details believable for the title, domain, and seniority?

@@ -78,8 +78,68 @@ ANTI-WEAK-WRITING RULES
 - Do not use buzzwords or vague self-praise such as results-driven, proactive, dynamic, passionate, team player, problem-solver, excellent communicator, detail-oriented, self-starter, hard-working, proven track record.
 - Do not create a soft-skills list.
 - Do not use weak bullet openers such as Responsible for, Worked on, Helped with, Assisted with, Involved in, Participated in, Supported, Tasked with.
+- Also avoid weak or low-signal verbs unless the bullet clearly names the concrete system, artifact, and result:
+  - used
+  - did
+  - made
+  - handled
+  - dealt with
+  - worked
+  - helped
+  - assisted
+  - supported
+  - participated
+  - contributed
+  - involved
+  - performed
+  - carried out
+  - served
+  - acted
+  - oversaw
+  - managed
+  - monitored
+  - maintained
+  - created
+  - developed
+  - utilized
+  - leveraged
+  - facilitated
+  - addressed
+  - processed
+  - conducted
+  - reviewed
+  - provided
+  - delivered
+  - worked closely with
+  - collaborated with
+  - partnered with
+  - communicated with
+  unless the bullet also states what changed, shipped, improved, or was decided.
 - Avoid filler words and weak abstract nouns such as solutions, initiatives, efforts, responsibilities, tasks, deliverables unless the bullet also names the real system, workflow, or artifact.
 - Avoid repeated verbs, repeated phrasing, and near-duplicate bullets.
+- Prefer stronger verbs that match the actual work, such as:
+  - architected
+  - automated
+  - built
+  - designed
+  - developed
+  - engineered
+  - established
+  - implemented
+  - integrated
+  - launched
+  - modeled
+  - optimized
+  - orchestrated
+  - refactored
+  - resolved
+  - secured
+  - standardized
+  - streamlined
+  - tested
+  - tuned
+  - validated
+  - wrote
 
 BULLET WRITING RULES
 Every bullet must be specific enough that it could not fit almost any software job unchanged.
@@ -103,6 +163,32 @@ Do not write bullets that are only:
 
 A collaboration bullet is allowed only if it also states what changed, shipped, improved, or was decided.
 
+BULLET STRENGTHENING RULES
+- Do not stop at a merely acceptable bullet. Rewrite each bullet until it is as strong, concrete, and high-signal as possible without inventing facts.
+- Upgrade weak-but-acceptable bullets by:
+  - replacing generic verbs with sharper believable verbs
+  - replacing generic nouns with concrete systems, workflows, artifacts, or outputs
+  - replacing vague outcomes with concrete operational, technical, or business effects
+  - using stronger ownership language when believable
+  - preferring mechanism + effect over vague success language
+- If exact metrics are not supported, strengthen bullets with concrete non-numeric impact such as:
+  - reduced manual effort
+  - improved reliability
+  - increased auditability
+  - shortened feedback loops
+  - improved deployment consistency
+  - reduced production defects
+  - improved developer productivity
+  - increased visibility into system health
+  - improved data quality
+  - reduced operational friction
+  - enabled faster iteration
+  - improved maintainability
+  - strengthened access control
+  - improved workflow accuracy
+- Do not use fake placeholders such as XX%, TBD, or similar.
+- Do not force numeric metrics where the evidence does not support them.
+
 DEEP THEME COVERAGE IN EXPERIENCE
 - When the JD emphasizes architecture, platform, data, or operational themes, some bullets must reflect those themes through concrete work.
 - Do not limit Experience bullets to tools and delivery alone.
@@ -118,6 +204,25 @@ DEEP THEME COVERAGE IN EXPERIENCE
   - workflow orchestration
   - operational reliability
 when they are credibly inferable from the profile and useful for the JD.
+
+WEAK ROLE STRENGTHENING RULES
+- Treat weak roles as a priority revision target.
+- If a role feels thin, generic, or lower-signal than it should be, strengthen it before returning the final resume.
+- Strengthen weak roles by adding:
+  - clearer system or workflow scope
+  - more concrete technical objects
+  - more specific business or operational context
+  - stronger ownership framing when believable
+  - clearer operational or business effect
+- Do not strengthen a role by inserting fake metrics or unsupported scale.
+- When metrics are unavailable, improve the bullet using:
+  - scope
+  - complexity
+  - workflow impact
+  - operational effect
+  - reliability / maintainability / visibility / auditability / efficiency gains
+- A weak role should not remain mostly generic if the company context and JD allow stronger believable inference.
+- The most relevant recent role should usually feel like the strongest role on the resume.
 
 ROLE DEPTH RULES
 - Most relevant recent role: usually 5–7 bullets if supported
@@ -159,6 +264,10 @@ Experience
 - Show leadership, teamwork, communication, analytical ability, initiative, and ownership only through concrete work and outcomes.
 - Avoid generic bullets that could fit any engineer.
 - Use controlled inference to make bullets stronger, but keep them believable.
+- Rewrite weak-but-acceptable bullets into stronger, more concrete bullets before returning the final result.
+- Prefer bullets that show system/workflow ownership, technical method, and operational or business effect.
+- If a bullet can be made sharper without inventing facts, rewrite it.
+- Do not include company descriptions under the roles in the final resume.
 
 Education
 - Keep concise and factual.
@@ -167,7 +276,7 @@ Application Answers
 - Keep answers aligned with the resume.
 - Do not introduce major claims the resume does not support.
 - Use first person unless the question requires otherwise.
-- For unsupported personal or logistical questions such as compensation, sponsorship, work authorization, relocation, clearance, or notice period, write exactly:
+- For unsupported personal/logistical questions such as compensation, sponsorship, work authorization, relocation, clearance, or notice period, write exactly:
 Needs candidate confirmation
 
 WORKFLOW
@@ -193,6 +302,8 @@ Before returning, fix anything that is:
 - unsupported in the summary
 - over-inferred beyond believable evidence
 - inconsistent with the application answers
+- merely acceptable but still weak, generic, or low-impact at the bullet level
+- driven by generic or overused verbs when a more precise verb would make the bullet stronger
 
 OUTPUT FORMAT
 

@@ -510,9 +510,13 @@ def _build_docx(items: list[tuple[str, object]], jd_text: str = "") -> object:
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
-    from docx.shared import Inches, Pt
+    from docx.shared import Inches, Pt, RGBColor
 
     doc = Document()
+
+    # Experience header rows (match recruiter-style split: company/location then title/dates).
+    _EXP_COLOR_PRIMARY = RGBColor(0x26, 0x26, 0x26)
+    _EXP_COLOR_SECONDARY = RGBColor(0x4A, 0x5E, 0x72)
 
     for section in doc.sections:
         section.top_margin = Inches(0.75)
@@ -594,11 +598,20 @@ def _build_docx(items: list[tuple[str, object]], jd_text: str = "") -> object:
         tabs_el.append(tab_el)
         pPr.append(tabs_el)
 
-    def _add_plain(paragraph, text: str, *, bold: bool = False, size: float = 10.5) -> None:
+    def _add_plain(
+        paragraph,
+        text: str,
+        *,
+        bold: bool = False,
+        size: float = 10.5,
+        color=None,
+    ) -> None:
         run = paragraph.add_run(text)
         run.bold = bold
         run.font.name = _BODY_FONT
         run.font.size = Pt(size)
+        if color is not None:
+            run.font.color.rgb = color
 
     current_section = ""
 
@@ -650,8 +663,8 @@ def _build_docx(items: list[tuple[str, object]], jd_text: str = "") -> object:
             is_education = "EDUCATION" in current_section
 
             # Experience: Role | Company | Dates | Location  ->
-            #   Line 1:  **Company**, Role                           Dates
-            #   Line 2:  Location
+            #   Line 1:  **Company**                          **Location**
+            #   Line 2:  Title                                Dates
             # Education: School | Degree | Years | Location  ->
             #   Line 1:  **School**, Degree - Location               Years
             if is_education and len(parts) >= 3:
@@ -681,20 +694,39 @@ def _build_docx(items: list[tuple[str, object]], jd_text: str = "") -> object:
                 dates = parts[2] if len(parts) > 2 else ""
                 location = parts[3] if len(parts) > 3 else ""
 
-                # Primary line: company (bold) + ", " + role + right-aligned dates.
+                # Line 1: Company (bold, dark) | Location (bold, dark, right).
                 p1 = _para(space_before=10, space_after=0)
                 _set_right_tab(p1)
-                _add_plain(p1, company, bold=True, size=11)
-                if role:
-                    _add_plain(p1, ", " + role, bold=False, size=11)
-                if dates:
-                    _add_plain(p1, "\t", bold=False, size=10.5)
-                    _add_plain(p1, dates, bold=False, size=10.5)
-
-                # Secondary line: location (plain, small, left-aligned).
+                _add_plain(p1, company, bold=True, size=11, color=_EXP_COLOR_PRIMARY)
                 if location:
+                    _add_plain(p1, "\t", bold=False, size=11, color=_EXP_COLOR_PRIMARY)
+                    _add_plain(
+                        p1, location, bold=True, size=11, color=_EXP_COLOR_PRIMARY
+                    )
+
+                # Line 2: Title (regular, slate) | Dates (regular, slate, right).
+                if role or dates:
                     p2 = _para(space_before=0, space_after=3)
-                    _add_plain(p2, location, bold=False, size=10.5)
+                    _set_right_tab(p2)
+                    if role:
+                        _add_plain(
+                            p2,
+                            role,
+                            bold=False,
+                            size=11,
+                            color=_EXP_COLOR_SECONDARY,
+                        )
+                    if dates:
+                        _add_plain(
+                            p2, "\t", bold=False, size=11, color=_EXP_COLOR_SECONDARY
+                        )
+                        _add_plain(
+                            p2,
+                            dates,
+                            bold=False,
+                            size=11,
+                            color=_EXP_COLOR_SECONDARY,
+                        )
 
             else:
                 # Fallback for oddly shaped lines (em-dash, 2 parts, etc.).

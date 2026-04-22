@@ -1,0 +1,108 @@
+Resume Content Writing Rules for ATS and HR Reading
+1. Tell the truth, always
+
+Never invent employers, titles, dates, tools, metrics, certifications, projects, responsibilities, or results. If a hard requirement is missing, do not fake it. Position the candidate using the strongest truthful adjacent evidence. This is the most important rule.
+
+2. Tailor by proof, not by copying the job description
+
+Do not rewrite the job description into resume language. First identify the role’s real screening criteria, then select the candidate’s strongest matching evidence. Use job-description terms only when they are accurate and supported by the candidate’s background.
+
+3. Write for both ATS matching and human trust
+
+A strong resume must contain relevant keywords, but keywords alone are not enough. The content must also sound credible, specific, and evidence-based to a recruiter or hiring manager. Optimize for match and believability at the same time.
+
+4. Put the strongest relevant evidence first
+
+The top portion of the resume should answer quickly: who this person is, why they are relevant, and what their strongest evidence is. The summary, core skills, and earliest bullets should reflect the best match for the target role.
+
+5. Use a short, targeted summary only when it adds value
+
+A summary should usually be 2–4 concise sentences. It should state the candidate’s relevant professional identity, supported years of experience when useful, strongest domain or stack, and one concrete impact area. Do not use a summary if it only repeats obvious information or adds generic filler.
+
+6. Use the target title carefully and truthfully
+
+Use the target role title near the top only when it is accurate or closely aligned. If the candidate has not held that exact title, use the closest truthful identity. Never inflate the title just to improve ATS matching.
+
+7. Make every major claim provable
+
+If the summary or skills suggest leadership, architecture, security, scale, ownership, performance, or domain expertise, the experience section must prove it. Do not make claims that the bullets cannot support.
+
+8. Use the Skills section for searchable hard skills
+
+The Skills section should be concise, grouped, and limited to real, evidence-backed hard skills. Include important tools, technologies, platforms, methods, and domain terms that are relevant to the target role. Use exact job-description wording where it is truthful and helpful.
+
+9. Prioritize hard skills, tools, and domain language over vague soft skills
+
+Recruiters and ATS generally care more about supported hard skills and relevant domain terms than abstract traits. Do not fill the Skills section with standalone items like communication, teamwork, or leadership. Show those through experience instead.
+
+10. Write bullets as accomplishments, not job duties
+
+Each bullet should show what the candidate built, improved, solved, delivered, automated, migrated, analyzed, tested, or owned. Do not default to task lists or responsibility statements. A strong pattern is: action + scope/problem + method/tool + result.
+
+11. Start bullets with strong, accurate action verbs
+
+Begin bullets with verbs such as built, designed, implemented, optimized, automated, reduced, integrated, deployed, analyzed, tested, migrated, or improved. Use verbs like led, owned, directed, or drove only when the candidate truly had that level of responsibility.
+
+12. Quantify impact whenever truthful and meaningful
+
+Use numbers when they improve credibility and show business or operational value. Good examples include revenue, cost savings, time saved, defect reduction, latency improvement, throughput, uptime, adoption, customer count, ticket reduction, or project scale. Do not force numbers into weak or artificial claims.
+
+13. Use concrete outcomes when exact numbers are unavailable
+
+If exact metrics are not available, use specific real-world outcomes such as faster release cycles, fewer incidents, improved reliability, lower support burden, better maintainability, higher user completion, cleaner reporting, or smoother operations. Specific outcomes are better than vague claims.
+
+14. Give more space to the most relevant evidence
+
+Do not assume the newest role should automatically receive the most detail. If an older role is a stronger match for the target job, give it equal or greater weight. Relevance matters more than recency when proving fit.
+
+15. Make each role distinct
+
+Different roles should not sound interchangeable. Emphasize the specific systems, technologies, stakeholders, constraints, business context, and outcomes of each one. The resume should tell a real progression, not repeat the same bullet pattern across multiple jobs.
+
+16. Strengthen or reduce weak content
+
+Any role, project, or section that is vague, repetitive, or generic should either be improved with concrete evidence or reduced so it does not weaken the document. Do not leave placeholder content that adds no proof of fit.
+
+17. Show seniority and ownership at the right level
+
+The wording should match the candidate’s true level. Junior candidates should not sound artificially executive, and senior candidates should not read like task-only contributors. Show ownership, independence, complexity, decision-making, mentoring, or coordination only when supported.
+
+18. Show leadership through evidence, not labels
+
+Leadership is not limited to people management. It can include ownership of systems, cross-functional coordination, mentoring, process improvement, architectural decisions, technical direction, or initiative. Demonstrate leadership through specific examples rather than claiming it abstractly.
+
+19. For career changers or cross-industry candidates, emphasize transferable proof
+
+When the prior industry differs from the target role, highlight the most transferable systems, workflows, controls, tools, integrations, stakeholders, and outcomes. Focus on what maps credibly to the target job rather than overemphasizing the industry difference.
+
+20. Use projects, certifications, awards, and similar sections only when they strengthen fit
+
+Optional sections should be included only when they improve relevance, credibility, or keyword coverage. For students and early-career candidates, strong projects can substitute for lighter work history when they are relevant and specific. Do not add filler sections just to make the resume look fuller.
+
+21. Make projects prove readiness, not just interest
+
+If projects are included, they should show relevant tools, complexity, ownership, data, users, deliverables, or measurable results. A project section should reinforce employability, not read like a hobby list.
+
+22. Remove low-value or diluted content
+
+Cut vague claims, buzzwords, clichés, irrelevant old details, weak summaries, unsupported tools, and generic responsibilities. Every line should earn its place by improving fit, proof, clarity, or searchability.
+
+23. Replace buzzwords with evidence
+
+Avoid phrases like results-driven, dynamic, innovative, proactive, team player, detail-oriented, or proven track record. These rarely help ATS and usually weaken HR credibility. Replace them with specific achievements, scope, or outcomes.
+
+24. Use natural keyword coverage, not keyword stuffing
+
+Include relevant keywords enough to support searchability, but do not repeat them unnaturally or stack long lists without proof. ATS matching improves when important terms appear in real context, especially in experience, skills, and project content.
+
+25. Keep language concise, specific, and concrete
+
+Prefer precise wording over broad claims. Use direct language that clearly shows what the candidate did and why it mattered. Specific content is easier for recruiters to trust and easier for ATS to classify correctly.
+
+26. Make the resume support one clear target narrative
+
+A strong resume should make the reader quickly understand what role the candidate fits and why. The summary, skills, experience, and optional sections should all reinforce the same target direction instead of pulling in different directions.
+
+27. Proofread for meaning, not just grammar
+
+Proofreading is not only about spelling and punctuation. Check that every claim is clear, every bullet says something meaningful, and every section supports the target role. Weak phrasing, ambiguity, and inconsistency reduce both ATS value and recruiter confidence.

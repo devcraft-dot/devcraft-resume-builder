@@ -1,0 +1,143 @@
+1. Use a simple single-column layout
+
+A single-column, left-aligned layout is the safest default for ATS parsing and recruiter scanning. Avoid multi-column layouts for core resume content because they can disrupt extraction and reading flow.
+
+2. Use standard section headings
+
+Use clear, conventional headings such as:
+
+Summary
+Skills
+Experience or Work Experience
+Education
+Optional: Certifications, Projects, Awards, Volunteer Experience, Publications, Additional Information
+
+Standard headings help ATS systems categorize information correctly and help recruiters skim faster.
+
+3. Use a standard section order
+
+For most experienced candidates, the safest order is:
+
+Header
+Summary
+Skills
+Experience
+Education
+Optional sections only if relevant
+
+This order helps both ATS extraction and human scan speed by surfacing the strongest match early. Harvard also recommends listing headings in order of importance.
+
+4. Keep the header plain, complete, and in the main body
+
+Include:
+
+full name
+email
+phone
+city and state or metro area
+LinkedIn
+GitHub or portfolio if relevant
+
+Do not include a street address, photo, date of birth, marital status, or decorative icons. Keep critical contact details out of headers and footers where parsing may be less reliable.
+
+5. Save the file as a text-based PDF or DOCX unless the employer specifies otherwise
+
+Use a text-based file, not a scanned or image-only resume. PDF and DOCX are both widely accepted and usually safe; follow the employer’s instructions if a format is requested. Greenhouse officially accepts PDF, DOC, DOCX, RTF, and TXT.
+
+6. Use readable, standard fonts
+
+Use common fonts such as Arial, Calibri, Times New Roman, Georgia, Tahoma, or similar standard fonts. Avoid unusual downloaded fonts that may not render consistently across systems.
+
+7. Keep font sizes and spacing readable
+
+A safe body text range is usually about 10–12 pt, with larger headings. Use enough white space and consistent spacing to keep the resume easy to skim. Dense text reduces readability even when the content is strong.
+
+8. Avoid ATS-unfriendly layout elements
+
+Do not use:
+
+tables
+text boxes
+sidebars
+charts
+graphics
+photos
+decorative icons
+decorative borders
+important content placed in headers or footers
+
+These elements can interfere with parsing or reduce readability.
+
+9. Keep role headers consistent
+
+For each role, include the same core items in the same order:
+
+job title
+company name
+location
+dates
+
+Consistency helps ATS extraction and makes recruiter review faster.
+
+10. Format dates clearly and consistently
+
+Use one date style throughout the document, such as:
+
+Month Year – Month Year
+Mon YYYY – Mon YYYY
+MM/YYYY – MM/YYYY
+
+Do not mix date styles. Consistency improves readability and reduces parsing mistakes.
+
+11. Use reverse chronological order for experience
+
+List roles from most recent to oldest. This remains the safest default for both ATS interpretation and recruiter reading. Older roles can be shorter, but they should still be clearly structured.
+
+12. Use bullets for experience, not dense paragraphs
+
+Bullets are easier to scan and better for separating achievements. Keep bullets compact and readable. Paragraph-heavy experience sections are harder for both humans and systems to process.
+
+13. Use bold sparingly and purposefully
+
+Bold is best reserved for:
+
+your name
+section headings
+sometimes job titles or company names
+
+Do not bold entire sentences or whole bullets. Use emphasis to guide the eye, not to decorate. Harvard recommends consistent use of bold and other emphasis.
+
+14. Keep punctuation, capitalization, and style consistent
+
+Be consistent in:
+
+bullet style
+capitalization
+abbreviations
+date separators
+title/company presentation
+use of periods at the end of bullets
+
+Consistency improves professionalism and reduces distraction for recruiters.
+
+15. Use standard bullets and characters
+
+Use simple bullet symbols and standard punctuation. Avoid unusual symbols, special characters, and decorative separators that may not parse cleanly.
+
+16. Keep length appropriate to experience
+
+General guideline:
+
+early career: usually 1 page
+mid-career: 1–2 pages
+senior candidates: 2 pages if needed
+
+Do not add filler to reach a page target. Relevance matters more than length.
+
+17. Make the top portion easy to scan quickly
+
+The top portion should surface the candidate’s identity, strongest skills, and most relevant evidence quickly. This helps recruiter skim speed and makes important terms visible early in the document.
+
+18. Review ATS autofill after upload
+
+Even a well-formatted resume can parse imperfectly. After uploading, check the application form for errors in contact fields, titles, dates, employers, and education before submitting. Parsing errors still happen in real workflows.

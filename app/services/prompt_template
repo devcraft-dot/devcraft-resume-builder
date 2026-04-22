@@ -108,6 +108,7 @@ BULLET LINE INTEGRITY (prevents “weak role” scoring from broken bullets)
 
 ACTION VERBS (strength, repetition, and overused “safe” verbs)
 - Prefer verbs that name the actual work first: architected, designed, implemented, shipped, deployed, automated, migrated, optimized, reduced, hardened, diagnosed, standardized, refactored, scaled, defined, owned, delivered, launched, integrated, instrumented, load-tested, etc. Match the verb to the achievement (build vs improve vs lead delivery vs analyze).
+- Weak phrasing to **rewrite**, not open a bullet: “was responsible for”, “helped to”, “assisted with”, “worked on”, “involved in”, “participated in”, “supported the team”, “contributed to” (with no owned output). Replace with the verb that matches the real output (built, automated, resolved, documented, aligned, presented, etc.).
 - Treat “Led”, “Collaborated”, and “Mentored” as easy to overuse: they are acceptable when true, but they often produce weak roles if the rest of the line is generic. When you use them, pack the line with concrete nouns (platform, rules engine, policy model, sprint commitment, onboarding) and a crisp outcome; otherwise swap to a more specific verb (e.g. Led architecture → Architected and delivered…).
 - Avoid weak or vague openers unless they are the only accurate choice: responsible for, helped with, worked on, involved in, assisted with, participated in, dealt with, handled (as a generic opener), supported efforts to, contributed to (without owning a deliverable).
 - “Collaborated with X to Y” should not repeat across multiple bullets or roles; at most once per role unless collaboration is the headline outcome—prefer leading with what shipped or changed, then naming partners in the same line if needed.
@@ -118,6 +119,7 @@ ACTION VERBS (strength, repetition, and overused “safe” verbs)
 WEAK ROLES (experience depth and rewrite bar)
 Roles that read as title + company + task list without outcomes drag scores down. For each role, especially the most recent and the most JD-relevant:
 - Give enough bullets to show ownership, systems, and impact; thin roles should be expanded with truthful detail (stack, constraints, stakeholders) or tightened if they are filler.
+- **Bullet count (fixes thin “weak roles”):** for the **most recent** role and for each **most JD-relevant** role, aim for **5–7 bullets** when the profile has enough **distinct** accomplishments to support them (delivery, impact, communication with stakeholders, ownership/initiative, reliability, or collaboration—each bullet one proof). Other strong recent roles: often **4–6** bullets. Older or shorter-tenure roles: **3–5** when evidence exists. Do **not** pad with near-duplicate or vague bullets to hit a number; if evidence is thin, fewer stronger bullets beat seven weak ones.
 - If a role is highly relevant to the JD, it must not be the shortest block on the page unless the tenure was very short.
 - Older or less relevant roles can stay shorter, but each should still include at least one outcome- or scope-forward line where possible, not only duties.
 - Anti-patterns that read as weak roles (rewrite before returning): (1) multiple bullets that only describe coordination or mentoring with no measurable or concrete outcome; (2) architecture/delivery bullets that omit what shipped or what metric moved; (3) “aligned with Agile” without a delivery signal (predictability, throughput, scope delivered, cycle time) when context supports it; (4) any bullet split across lines or ending without a completed claim; (5) a strong role where every bullet is internally focused (refactors, docs) with no line on user, operator, or business impact when the domain clearly has one (e.g. health/claims/fintech: throughput, review time, error rate, admin self-service, audit visibility).
@@ -139,6 +141,21 @@ ANALYTICAL AND PROBLEM-SOLVING (show in bullets—do not label)
 - Analytical strength means **visible** in Experience: how you framed a problem, narrowed scope, validated with data, chose among tradeoffs, debugged a complex failure mode, or improved a metric after measurement. Use verbs such as diagnosed, root-caused, modeled, instrumented, benchmarked, triaged, narrowed, validated, optimized based on findings—when accurate.
 - Do not waste Summary or bullet space on empty phrases like “strong analytical and problem-solving skills.” Prove analysis through one concrete example or metric per role where possible.
 
+COMMUNICATION, LEADERSHIP, AND DRIVE (show in Experience—do not label)
+Scorers and employers infer these from **what you did with whom** and **what shipped**. Do not add a “Skills: Communication” line or Summary claims like “excellent communicator” or “strong leader” without proof.
+
+Communication (with stakeholders, teammates, clients)
+- Prove it with bullets: aligned with product or business on requirements, clarified scope with ambiguous stakeholders, presented tradeoffs to leadership, partnered with support or success on rollout, wrote specs or RFCs that others built from, facilitated incident review, interfaced with clients or vendors on integration—only what the profile supports.
+- Prefer verbs such as aligned, clarified, presented, negotiated, documented, facilitated, partnered with (once per role if used)—paired with a concrete artifact or decision outcome.
+
+Leadership (ownership, responsibility, multi-person scope)
+- Prove with outcomes: owned end-to-end delivery, defined technical direction for a feature area, coordinated releases across teams, mentored with measurable effect, ran technical interviews, owned on-call or incident response for a service, drove adoption of a standard—when true for the candidate level.
+- Distinguish **technical ownership** from people management unless the profile shows direct reports or formal lead title.
+
+Drive and initiative (proactivity, persistence on hard problems)
+- Prove with bullets: proposed and implemented an improvement that was not assigned, reduced recurring pain (toil, incidents, manual steps), followed a gnarly production issue to root cause and permanent fix, pushed a quality or security initiative across the finish line, persisted through a constrained migration or deadline—when plausible from context.
+- Avoid empty labels: proactive, self-starter, go-getter, highly motivated (already banned elsewhere)—replace with one specific story.
+
 SUMMARY (optional but high leverage when used)
 - Omit the Summary if it would only repeat the job title or restate generic strengths.
 - When included: two or three short lines maximum; every line should be provable later in Experience or Skills. Lead with domain + stack + level, then one line of strongest evidence (systems shipped, scale, or measurable wins from the profile).
@@ -146,7 +163,7 @@ SUMMARY (optional but high leverage when used)
 - Zero buzzwords; no filler adjectives. Prefer nouns and verbs tied to the JD.
 
 BUZZWORDS AND CLICHÉS TO AVOID
-Do not use empty or recruiter-fatigued phrases anywhere in the resume body, including the Summary. Examples to ban: results-driven, passionate, innovative, robust, seamless, dynamic, ninja, rockstar, synergy, best-in-breed, world-class, thought leader, go-getter, self-starter, team player, proven track record, detail-oriented (as a standalone brag), leveraged (when vague), spearheaded (when inflated), strategic thinker, excellent communication skills (without proof in bullets).
+Do not use empty or recruiter-fatigued phrases anywhere in the resume body, including the Summary. Examples to ban: results-driven, passionate, innovative, robust, seamless, dynamic, ninja, rockstar, synergy, best-in-breed, world-class, thought leader, go-getter, self-starter, team player, proven track record, detail-oriented (as a standalone brag), leveraged (when vague), spearheaded (when inflated), strategic thinker, excellent communication skills, strong communication skills, strong leader, proven leader (as labels without proof in bullets).
 
 EXPORT LAYOUT (align with resume_rules/formatting_rules.txt — required for the .docx builder)
 - Single-column content only: no tables, text boxes, sidebars, charts, graphics, photos, icons, or decorative borders in the resume block.
@@ -179,7 +196,7 @@ SKILLS
 - Use ``Category: skill, skill`` lines only; never bold individual skills with ``**`` (the exporter bolds the category label only).
 
 EXPERIENCE
-- This is the main proof section. Follow BULLET LINE INTEGRITY, IMPACT / METRICS, ACTION VERBS, WEAK ROLES, and INDUSTRY AND DOMAIN VOCABULARY guidance above.
+- This is the main proof section. Follow BULLET LINE INTEGRITY, IMPACT / METRICS, ACTION VERBS, WEAK ROLES, COMMUNICATION / LEADERSHIP / DRIVE, and INDUSTRY AND DOMAIN VOCABULARY guidance above.
 - For each role, use one machine-parseable header line immediately before bullets:
   Role | Company | Month YYYY - Month YYYY | Location
   (full month names; the exporter renders company/location on the first row and title/dates on the second.)
@@ -192,6 +209,7 @@ EXPERIENCE
 - If direct domain match exists, align more directly to the JD’s workflows and products.
 - If direct domain match is weaker, emphasize transferable systems, APIs, automation, operational processes, compliance-oriented workflows, data-heavy systems, transaction-like processes, or platform capabilities as appropriate.
 - Keep bullets concise and impactful.
+- For anchor roles (most recent + most JD-relevant), target **5–7** bullets when evidence supports distinct points across delivery, impact, communication with stakeholders/clients, ownership or leadership scope, and initiative—see WEAK ROLES bullet counts.
 - Avoid repetitive bullet structures across roles; each role should feel distinct in systems and outcomes.
 
 PROJECTS
@@ -220,7 +238,7 @@ APPLICATION ANSWER RULES
   - otherwise write exactly: Needs candidate confirmation
 
 STEP 6: Audit and improve before returning
-Before final output, re-scan Experience: (1) every ``- `` line is one full sentence with metrics on the same line; (2) no role relies on three generic coordination/mentoring bullets without a delivery or metric line; (3) industry-appropriate terms appear where truthful; (4) JD-relevant roles are not “all internal engineering” with zero user/business outcome lines when context allows; (5) no placeholder metrics. Re-scan Summary: if present, it includes the strongest provable metric or scale signal when the profile has one.
+Before final output, re-scan Experience: (1) every ``- `` line is one full sentence with metrics on the same line; (2) anchor roles (most recent + most JD-relevant) use **5–7** bullets only when each bullet adds distinct proof—not padding; (3) no role relies on three generic coordination/mentoring bullets without a delivery or metric line; (4) at least one bullet per important role hints at **communication** (stakeholders/clients) or **ownership/initiative** when the profile supports it, without empty labels; (5) industry-appropriate terms appear where truthful; (6) JD-relevant roles are not “all internal engineering” with zero user/business outcome lines when context allows; (7) no placeholder metrics. Re-scan Summary: if present, it includes the strongest provable metric or scale signal when the profile has one.
 
 CHECKLIST
 - Is the resume strongly aligned to the JD?
@@ -230,6 +248,8 @@ CHECKLIST
 - Are the bullets contribution-focused with clear outcomes, not duty-only lines?
 - Do metrics use varied formats (not mostly “by X%”)?
 - Are opening verbs strong, accurate, and varied—especially avoiding a wall of “Led / Collaborated / Mentored” without concrete delivery nouns and outcomes?
+- Do anchor roles have enough depth (typically **5–7** bullets each when evidence supports it) without duplicate or filler lines?
+- Is communication, ownership/leadership, or initiative shown through **specific** bullets—not buzzword labels?
 - Does each role feel distinct?
 - Are summary claims supported, and does the Summary (if present) surface the strongest provable metric or scale signal when one exists in the profile?
 - Does at least one important role show analytical/problem-solving depth through concrete actions, not a label?

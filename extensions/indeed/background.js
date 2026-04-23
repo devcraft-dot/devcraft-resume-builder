@@ -17,6 +17,8 @@ const DEFAULT_STATE = {
   searchTabId: null,
   /** Recent skip reasons (newest last), for popup + debugging */
   skipLog: [],
+  /** Jobs skipped by smart filter (clearance / government), for manual review — URLs preserved */
+  smartSkips: [],
 };
 
 const PENDING_DETAIL_URLS_KEY = "indeedPendingDetailUrls";
@@ -79,6 +81,88 @@ function appendSkipLog(message) {
   const max = 80;
   if (state.skipLog.length > max) state.skipLog.splice(0, state.skipLog.length - max);
   console.warn("[Indeed ext] skip:", line);
+}
+
+const SMART_SKIP_MAX = 200;
+
+/** @returns {"clearance"|"government"|null} */
+function classifySmartFilterSkip(job) {
+  const title = String(job?.title || "").trim().toLowerCase();
+  const company = String(job?.company_name || "").trim().toLowerCase();
+  const desc = String(job?.description_text || "").trim().toLowerCase();
+  const hay = [title, company, desc].filter(Boolean).join("\n");
+  if (!hay) return null;
+
+  const clearanceRes = [
+    /\bts\/sci\b/,
+    /\bsci\s+eligible\b/,
+    /\bsecurity clearance\b/,
+    /\bsecret clearance\b/,
+    /\btop[-\s]?secret\b/,
+    /\bclearance required\b/,
+    /\bclearance\s+is\s+required\b/,
+    /\brequires?\s+(?:a\s+|an\s+|active\s+)?(?:u\.?s\.?\s+)?(?:government\s+)?security clearance\b/,
+    /\bactive\s+clearance\b/,
+    /\bcurrent\s+clearance\b/,
+    /\beligible\s+for\s+(?:a\s+|an\s+)?(?:u\.?s\.?\s+)?security clearance\b/,
+    /\beligible\s+to\s+obtain\s+(?:a\s+|an\s+)?(?:u\.?s\.?\s+)?security clearance\b/,
+    /\bability\s+to\s+obtain(?:\s+and\s+maintain)?\s+(?:a\s+|an\s+)?(?:u\.?s\.?\s+)?security clearance\b/,
+    /\bmust\s+(?:obtain|hold|have|possess)\s+(?:a\s+|an\s+)?(?:u\.?s\.?\s+)?security clearance\b/,
+    /\bpublic\s+trust\b/,
+    /\bdod\s+clearance\b/,
+  ];
+  for (const re of clearanceRes) {
+    if (re.test(hay)) return "clearance";
+  }
+
+  const govFromCompany = (c) => {
+    if (!c) return false;
+    if (/^(state|commonwealth)\s+of\s+/.test(c)) return true;
+    if (/^(county|city|town|borough|township)\s+of\s+/.test(c)) return true;
+    if (/\bunited states\b/.test(c) && /\b(department|agency|commission|bureau)\b/.test(c)) return true;
+    if (/\b(u\.?s\.|us)\s+(army|navy|air force|marine corps|coast guard)\b/.test(c)) return true;
+    if (/\b(u\.?s\.|us)\s+department\s+of\b/.test(c)) return true;
+    if (/\bfederal\s+(bureau|agency|reserve board)\b/.test(c)) return true;
+    if (/\bgovernment\b/.test(c) && !/\b(government\s+relations|relations\s+with\s+government)\b/.test(c)) return true;
+    return false;
+  };
+
+  const governmentRes = [
+    /\bfederal\s+government\b/,
+    /\bstate\s+government\b/,
+    /\blocal\s+government\b/,
+    /\bgovernment\s+(?:position|job|role|employment|employer|agency)\b/,
+    /\bfederal\s+(?:position|job|role|employment|employee|agency)\b/,
+    /\b(?:u\.?s\.|us)\s+government\b/,
+    /\bdepartment\s+of\s+(?:defense|homeland\s+security|justice|energy|veterans|health\s+and\s+human|labor|state|transportation|commerce|the\s+treasury|interior|agriculture|education|housing\s+and\s+urban)\b/,
+    /\bgs[- ]?\d{1,2}\b/,
+    /\bfederal\s+civilian\b/,
+    /\bpublic\s+service\s+position\b/,
+  ];
+  if (govFromCompany(company)) return "government";
+  for (const re of governmentRes) {
+    if (re.test(hay)) return "government";
+  }
+
+  return null;
+}
+
+function appendSmartSkip(entry) {
+  if (!Array.isArray(state.smartSkips)) state.smartSkips = [];
+  const row = {
+    url: String(entry.url || "").slice(0, 2000),
+    title: String(entry.title || "").slice(0, 500),
+    reason: entry.reason === "government" ? "government" : "clearance",
+  };
+  state.smartSkips.push(row);
+  if (state.smartSkips.length > SMART_SKIP_MAX) {
+    state.smartSkips.splice(0, state.smartSkips.length - SMART_SKIP_MAX);
+  }
+}
+
+function formatSmartSkipReportLines() {
+  const rows = Array.isArray(state.smartSkips) ? state.smartSkips : [];
+  return rows.map((x) => `[${x.reason}] ${x.title || "(no title)"}\t${x.url || ""}`);
 }
 
 function startKeepAlive() {
@@ -1071,6 +1155,20 @@ async function runLoop() {
               continue;
             }
 
+            const smartReason = classifySmartFilterSkip(job);
+            if (smartReason) {
+              state.scrapeIndex++;
+              state.skipped++;
+              appendSmartSkip({ url: indeedUrl, title: job.title || "", reason: smartReason });
+              appendSkipLog(
+                `smart filter (${smartReason}) | title=${(job.title || "").slice(0, 80)} | ${indeedUrl}`,
+              );
+              state.lastError = `Skipped (${smartReason}): ${job.title || indeedUrl}`;
+              await saveState();
+              broadcastState();
+              continue;
+            }
+
             const presence = await checkGenerationKeys(indeedUrl, profiles);
             const presenceList = presence || [];
             const allProfilesDone =
@@ -1162,7 +1260,28 @@ async function runLoop() {
         }
 
         if (state.scrapeIndex >= (await loadPendingDetailUrls()).length && state.running && !state.paused) {
-          state.lastError = "All jobs processed — done!";
+          const smartRows = Array.isArray(state.smartSkips) ? state.smartSkips : [];
+          if (smartRows.length) {
+            const lines = formatSmartSkipReportLines();
+            appendSkipLog(
+              `— SMART FILTER REPORT (${smartRows.length} job(s), gov/clearance — open "Manual review" in popup) —\n` +
+                lines.join("\n"),
+            );
+            try {
+              await chrome.storage.local.set({
+                indeedSmartSkipReport: {
+                  finishedAt: new Date().toISOString(),
+                  items: smartRows,
+                },
+              });
+            } catch {
+              /* */
+            }
+          }
+          state.lastError =
+            smartRows.length > 0
+              ? `All jobs processed — done! (${smartRows.length} skipped: gov/clearance — see Manual review + skip log)`
+              : "All jobs processed — done!";
           state.running = false;
           state.phase = "";
           await clearPendingDetailUrls();
@@ -1203,6 +1322,11 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         if (msg.reset) {
           Object.assign(state, DEFAULT_STATE);
           await clearPendingDetailUrls();
+          try {
+            await chrome.storage.local.remove("indeedSmartSkipReport");
+          } catch {
+            /* */
+          }
         }
         searchTabId = tab.id;
         state.running = true;
@@ -1265,12 +1389,14 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
     case "resetState":
       Object.assign(state, DEFAULT_STATE);
-      clearPendingDetailUrls().then(() =>
-        saveState().then(() => {
-          broadcastState();
-          sendResponse({ ok: true });
-        }),
-      );
+      clearPendingDetailUrls()
+        .then(() => chrome.storage.local.remove("indeedSmartSkipReport").catch(() => {}))
+        .then(() =>
+          saveState().then(() => {
+            broadcastState();
+            sendResponse({ ok: true });
+          }),
+        );
       return true;
   }
 });

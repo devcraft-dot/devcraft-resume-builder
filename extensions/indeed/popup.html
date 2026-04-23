@@ -88,11 +88,24 @@
       cursor: pointer; font-weight: 600; color: #374151; user-select: none;
     }
     .skip-log-wrap summary:hover { color: #111827; }
-    pre#skip-log {
+    pre#skip-log, pre#smart-skip-manual {
       margin-top: 6px; max-height: 160px; overflow: auto; white-space: pre-wrap;
       word-break: break-word; background: #fff; border: 1px solid #e5e7eb;
       padding: 8px; border-radius: 6px; font-size: 10px; line-height: 1.45;
       color: #374151;
+    }
+    pre#smart-skip-manual { max-height: 200px; }
+    .smart-skip-toolbar {
+      display: flex; gap: 8px; margin-top: 6px; margin-bottom: 2px;
+    }
+    .btn-smart-copy {
+      flex: 0 0 auto; padding: 5px 10px; font-size: 11px; font-weight: 600;
+      border: 1px solid #d1d5db; border-radius: 6px; background: #fff;
+      cursor: pointer; color: #374151;
+    }
+    .btn-smart-copy:hover { background: #f3f4f6; }
+    .smart-skip-hint {
+      font-size: 10px; color: #6b7280; margin-top: 4px; line-height: 1.4;
     }
 
     /* ─── Run: all profiles context ─── */
@@ -285,6 +298,16 @@
       <details class="skip-log-wrap">
         <summary>Skip log (why jobs were skipped)</summary>
         <pre id="skip-log">No skips recorded yet.</pre>
+      </details>
+      <details class="skip-log-wrap">
+        <summary>Manual review — gov / clearance skips (URLs)</summary>
+        <p class="smart-skip-hint">
+          Jobs auto-skipped for security clearance or government signals. After a full run finishes, a copy of this list is also appended to the skip log and cached locally.
+        </p>
+        <div class="smart-skip-toolbar">
+          <button type="button" class="btn-smart-copy" id="btn-smart-skip-copy">Copy list</button>
+        </div>
+        <pre id="smart-skip-manual">None yet this session.</pre>
       </details>
     </div>
 

@@ -193,6 +193,31 @@ function updateUI(s) {
       lines.length > 0 ? lines.join("\n") : "No skips recorded yet (also check extension service worker console).";
   }
 
+  const smartPre = $("#smart-skip-manual");
+  if (smartPre) {
+    const live = Array.isArray(s.smartSkips) ? s.smartSkips : [];
+    if (live.length) {
+      smartPre.textContent = live
+        .map((x) => `[${x.reason || "?"}] ${(x.title || "").trim() || "(no title)"}\n${x.url || ""}`)
+        .join("\n\n");
+    } else {
+      chrome.storage.local.get("indeedSmartSkipReport", (d) => {
+        const rep = d.indeedSmartSkipReport;
+        const items = rep && Array.isArray(rep.items) ? rep.items : [];
+        if (items.length) {
+          const when = rep.finishedAt ? new Date(rep.finishedAt).toLocaleString() : "";
+          smartPre.textContent =
+            `(Last completed run${when ? ", " + when : ""})\n\n` +
+            items
+              .map((x) => `[${x.reason || "?"}] ${(x.title || "").trim() || "(no title)"}\n${x.url || ""}`)
+              .join("\n\n");
+        } else {
+          smartPre.textContent = "None yet this session. After a full run, skipped gov/clearance jobs appear here.";
+        }
+      });
+    }
+  }
+
   const isRunning = s.running && !s.paused;
   const isPaused = s.running && s.paused;
   const isStopped = !s.running;
@@ -232,6 +257,26 @@ $("#btn-reset").addEventListener("click", () => {
   chrome.runtime.sendMessage({ action: "resetState" }, () => {
     chrome.runtime.sendMessage({ action: "getState" }, updateUI);
   });
+});
+
+$("#btn-smart-skip-copy")?.addEventListener("click", async () => {
+  const pre = $("#smart-skip-manual");
+  const text = pre?.textContent?.trim() || "";
+  if (!text || text.startsWith("None yet")) {
+    alert("Nothing to copy yet.");
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    const btn = $("#btn-smart-skip-copy");
+    if (btn) {
+      const prev = btn.textContent;
+      btn.textContent = "Copied";
+      setTimeout(() => (btn.textContent = prev), 1500);
+    }
+  } catch {
+    alert("Could not copy — select the text in the box and copy manually.");
+  }
 });
 
 $("#btn-link-settings").addEventListener("click", () => {

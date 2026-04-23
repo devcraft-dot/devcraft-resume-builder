@@ -31,6 +31,7 @@ class Generation(Base):
     title: Mapped[str] = mapped_column(String(500))
     company_name: Mapped[str] = mapped_column(String(500), default="")
     salary_range: Mapped[str] = mapped_column(String(200), default="")
+    note: Mapped[str] = mapped_column(String(2000), default="")
     url: Mapped[str] = mapped_column(String(2000), index=True)
 
     resume_drive_url: Mapped[str] = mapped_column(String(2000), default="")

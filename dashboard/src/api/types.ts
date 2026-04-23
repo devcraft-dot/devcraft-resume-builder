@@ -6,6 +6,7 @@ export interface Generation {
   title: string;
   company_name: string;
   salary_range: string;
+  note: string;
   url: string;
   resume_drive_url: string;
   questions_drive_url: string;

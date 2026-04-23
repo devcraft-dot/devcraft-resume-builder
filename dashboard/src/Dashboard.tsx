@@ -437,6 +437,7 @@ export function Dashboard({
             <col className="w-[26%]" />
             <col className="w-[20%]" />
             <col className="w-[88px]" />
+            <col className="w-[22%]" />
             <col className="w-[44px]" />
             <col className="w-[108px]" />
             <col className="w-[168px]" />
@@ -450,6 +451,7 @@ export function Dashboard({
               <th className="px-3 py-3">Title</th>
               <th className="px-3 py-3">Company</th>
               <th className="px-3 py-3">Salary</th>
+              <th className="px-3 py-3">Note</th>
               <th className="px-2 py-3 text-center" title="Job posting">
                 JD
               </th>
@@ -506,6 +508,12 @@ export function Dashboard({
                     onSave={(v) => handlePatch(row.id, "salary_range", v)}
                   />
                 </td>
+                <td className="px-3 py-2.5 min-w-0">
+                  <EditableCell
+                    value={row.note}
+                    onSave={(v) => handlePatch(row.id, "note", v)}
+                  />
+                </td>
                 <td className="px-1 py-2.5 text-center align-middle">
                   <JdLink url={row.url} />
                 </td>
@@ -549,7 +557,7 @@ export function Dashboard({
             {!loading && rows.length === 0 && (
               <tr>
                 <td
-                  colSpan={10}
+                  colSpan={11}
                   className="text-center py-12 text-gray-400 text-sm"
                 >
                   No generations found

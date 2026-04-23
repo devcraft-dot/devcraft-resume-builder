@@ -33,6 +33,7 @@ class GenerationRead(BaseModel):
     title: str
     company_name: str
     salary_range: str
+    note: str
     url: str
     resume_drive_url: str
     questions_drive_url: str
@@ -47,6 +48,7 @@ class GenerationPatch(BaseModel):
     title: str | None = Field(None, max_length=500)
     company_name: str | None = Field(None, max_length=500)
     salary_range: str | None = Field(None, max_length=200)
+    note: str | None = Field(None, max_length=2000)
 
 
 class CheckUrlsRequest(BaseModel):

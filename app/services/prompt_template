@@ -198,7 +198,7 @@ Skills
 - Prefer short, standard category labels that scan quickly, for example: Programming Languages, Frameworks, Databases, Cloud & Tools, APIs & Integration, Engineering Practices, Testing & SDLC, Architecture & Systems, Domain Expertise (pick what fits the JD; do not use all at once).
 - Keep category names parallel, concrete, and easy to scan.
 - Avoid vague category names like Tools & Methods, Other, Miscellaneous, Core Competencies unless the JD clearly supports them.
-- Do not use too many categories.
+- Do not use too many categories; aim for about **5–7** categories total so the block stays scannable.
 - Do not force equal numbers per category.
 - Each category should feel natural and useful.
 - Include relevant hard skills, major JD terms, deep engineering themes, supporting technical concepts, and field-standard adjacent skills.

@@ -5,11 +5,15 @@ Renders model Markdown into .docx: layout, sections, bullets, and ``**emphasis**
 exactly as written. Structural styling only (name, section titles, experience header rows,
 Skills category labels). Skill list values are forced plain so only the category label is bold.
 
-Layout follows ATS + recruiter guidance (e.g. [HireKit resume formatting](https://hirekit.co/guides/resume-formatting-best-practices), [ATS resume fonts & margins](https://atsresumeai.com/blog/ats-resume-formatting-guide/)): **single column**, standard **Calibri** body **~11 pt**, margins **0.9 in** all sides (within the usual **0.75–1 in** band; avoid going under about **0.5 in**), **~1.15** line spacing for scan speed, **bold section titles**. **Name + contact (optional title) centered**; everything else **left-aligned**. No critical text in Word headers/footers.
+Default layout targets a **final ATS + recruiter spec** (single column, text-only contact in the
+**document body**—never Word header/footer): **Calibri**, **22 pt** name, **11 pt** contact/body,
+**12 pt bold** section titles, **0.6 in** margins (within the common **~0.5–0.7 in** tight band;
+wider **0.75–1 in** is also widely recommended if you need more room). **Line spacing ~1.1** on
+body/bullets. **Name + contact (optional title) centered**; all other content **left-aligned**.
 
 For quick scans, bold **job title and company** on one line creates clear anchors ([Resumly section scanning](https://www.resumly.ai/blog/optimizing-resume-sections-for-quick-scanning-by-recruiters)).
 
-**Bullets (Experience, etc.):** **0.25 in** symmetric hanging indent (Word-style default depth). **Space after** bullets stays in a **~6–9 pt** skim band for short-to-medium bullets ([HireKit spacing notes](https://hirekit.co/guides/resume-formatting-best-practices)). Leader is **•** plus a normal space (plain text, ATS-safe).
+**Bullets:** **0.25 in** symmetric hanging indent ([Microsoft hanging indent](https://support.microsoft.com/en-us/office/indent-the-second-line-in-word-9d1b9955-d08a-4773-a900-d0a9e641279c)). **No extra paragraph space between consecutive bullets** (tight stack); **~4–6 pt** after the **last** bullet in a role as the “job block” gap. Solid **•** + space only (ATS-safe).
 
 **Skills (Category: values):** each line uses a **left tab stop** after the bold label so wrapped
 value text aligns under the value column—the usual Word pattern for label/value lines and
@@ -73,13 +77,13 @@ _EXPERIENCE_ROLE_SECTIONS = frozenset(
     }
 )
 
-# System fonts ATS parsers handle well; 11 pt body is widely recommended.
+# Final spec: Calibri 11 pt body, 22 pt name, 12 pt section titles, 0.6" margins, ~1.1 line spacing.
 _BODY_FONT = "Calibri"
 _BODY_PT = 11.0
-_NAME_PT = 18.0  # guides often cite ~14–18 pt for name (bold)
-_SECTION_TITLE_PT = 13.0  # section titles commonly 12–14 pt bold
-_LINE_SPACING = 1.15  # single-ish with slight air; common “readable default” band
-_MARGINS_IN = 0.9  # 0.75–1 in is the usual safe band; 0.9 balances text width + whitespace
+_NAME_PT = 22.0
+_SECTION_TITLE_PT = 12.0
+_LINE_SPACING = 1.1
+_MARGINS_IN = 0.6
 # Hanging bullet: match Word’s common ~0.25 in list hang ([Microsoft hanging indent](https://support.microsoft.com/en-us/office/indent-the-second-line-in-word-9d1b9955-d08a-4773-a900-d0a9e641279c)).
 _BULLET_LEFT_INDENT_IN = 0.25
 _BULLET_FIRST_LINE_INDENT_IN = -0.25
@@ -565,7 +569,7 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
         elif item_type == "section_header":
             display = str(content).strip().title()
             current_section = display.upper()
-            p = _para(space_before=14, space_after=8)
+            p = _para(space_before=10, space_after=7)
             run = p.add_run(display)
             run.bold = True
             run.font.name = _BODY_FONT
@@ -585,20 +589,15 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
             # Pipe row from model: Role | Company | Dates | Location (Experience) or
             # School | Degree | Years | Location (Education).
             #
-            # Experience (ATS-friendly scan):
-            #   Line 1: **Title** | *Company*
-            #   Line 2: Location | Dates  (lighter)
-            #
-            # Education (parallel hierarchy):
-            #   Line 1: **Degree** | *School*
-            #   Line 2: Location | Years  (lighter)
+            # Experience: Line 1 bold Title | bold Company; Line 2 Location | Dates (secondary).
+            # Education: Line 1 bold Degree | bold School; Line 2 Location | Years (secondary).
             if is_education and len(parts) >= 3:
                 school = parts[0]
                 degree = parts[1] if len(parts) > 1 else ""
                 years = parts[2] if len(parts) > 2 else ""
                 location = parts[3] if len(parts) > 3 else ""
 
-                p1 = _para(space_before=8, space_after=4)
+                p1 = _para(space_before=6, space_after=3)
                 if degree and school:
                     _add_plain(p1, degree, bold=True, size=_BODY_PT, color=_EXP_COLOR_PRIMARY)
                     _add_plain(p1, " | ", bold=False, size=_BODY_PT, color=_EXP_COLOR_PRIMARY)
@@ -617,7 +616,7 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
 
                 line2 = " | ".join(x for x in (location, years) if x)
                 if line2:
-                    p2 = _para(space_before=1, space_after=10)
+                    p2 = _para(space_before=0, space_after=8)
                     _add_plain(
                         p2,
                         line2,
@@ -634,7 +633,7 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
 
                 # Line 1–2: readable gap between title|company and location|dates;
                 # line 2: extra space after before bullets.
-                p1 = _para(space_before=8, space_after=4)
+                p1 = _para(space_before=8, space_after=3)
                 if role and company:
                     _add_plain(p1, role, bold=True, size=_BODY_PT, color=_EXP_COLOR_PRIMARY)
                     _add_plain(p1, " | ", bold=False, size=_BODY_PT, color=_EXP_COLOR_PRIMARY)
@@ -660,7 +659,7 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
 
                 line2 = " | ".join(x for x in (location, dates) if x)
                 if line2:
-                    p2 = _para(space_before=1, space_after=10)
+                    p2 = _para(space_before=0, space_after=6)
                     _add_plain(
                         p2,
                         line2,
@@ -698,14 +697,14 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
             in_exp = current_section in _EXPERIENCE_ROLE_SECTIONS
             in_edu = current_section == "EDUCATION"
             if in_exp:
-                space_before = 2
-                space_after = 14 if is_last_bullet else 6
+                space_before = 0
+                space_after = 6 if is_last_bullet else 0
             elif in_edu:
-                space_before = 2
-                space_after = 11 if is_last_bullet else 5
+                space_before = 0
+                space_after = 5 if is_last_bullet else 0
             else:
-                space_before = 2
-                space_after = 9 if is_last_bullet else 5
+                space_before = 0
+                space_after = 4 if is_last_bullet else 0
             p = _para(space_before=space_before, space_after=space_after)
             p.paragraph_format.left_indent = Inches(_BULLET_LEFT_INDENT_IN)
             p.paragraph_format.first_line_indent = Inches(_BULLET_FIRST_LINE_INDENT_IN)
@@ -720,7 +719,7 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
             label, values, _bulleted = content  # type: ignore[misc]
             label_out = _short_skill_category_label(str(label))
             plain_values = _strip_md_spans_for_skill_values(str(values))
-            p = _para(space_before=1, space_after=4)
+            p = _para(space_before=2, space_after=7)
             # Hanging-style wrap for long value lists: continuation lines align under the value
             # column (after tab), not under the category label.
             p.paragraph_format.tab_stops.add_tab_stop(

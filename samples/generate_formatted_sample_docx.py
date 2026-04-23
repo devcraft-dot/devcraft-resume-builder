@@ -40,8 +40,17 @@ def main() -> None:
         job,
         "Cheuk Chan",
     )
-    out = Path(__file__).resolve().parent / "formatted_resume_sample.docx"
-    out.write_bytes(buf.getvalue())
+    data = buf.getvalue()
+    base = Path(__file__).resolve().parent
+    primary = base / "formatted_resume_sample.docx"
+    fallback = base / "formatted_resume_sample_latest.docx"
+    try:
+        primary.write_bytes(data)
+        out = primary
+    except OSError:
+        fallback.write_bytes(data)
+        out = fallback
+        print("(Primary file was locked; wrote fallback.)", flush=True)
     print(out)
     print("suggested download name:", suggested_name)
 

@@ -5,8 +5,15 @@ Renders model Markdown into .docx: layout, sections, bullets, and ``**emphasis**
 exactly as written. Structural styling only (name, section titles, experience header rows,
 Skills category labels). Skill list values are forced plain so only the category label is bold.
 
-Contact lines are written in the **document body** (centered under the name), never in the
-Word header/footer, so ATS tools can parse them reliably.
+Layout follows ATS + recruiter guidance (e.g. [HireKit resume formatting](https://hirekit.co/guides/resume-formatting-best-practices), [ATS resume fonts & margins](https://atsresumeai.com/blog/ats-resume-formatting-guide/)): **single column**, standard **Calibri** body **~11 pt**, margins **0.9 in** all sides (within the usual **0.75–1 in** band; avoid going under about **0.5 in**), **~1.15** line spacing for scan speed, **bold section titles**. **Name + contact (optional title) centered**; everything else **left-aligned**. No critical text in Word headers/footers.
+
+For quick scans, bold **job title and company** on one line creates clear anchors ([Resumly section scanning](https://www.resumly.ai/blog/optimizing-resume-sections-for-quick-scanning-by-recruiters)).
+
+**Bullets (Experience, etc.):** **0.25 in** symmetric hanging indent (Word-style default depth). **Space after** bullets stays in a **~6–9 pt** skim band for short-to-medium bullets ([HireKit spacing notes](https://hirekit.co/guides/resume-formatting-best-practices)). Leader is **•** plus a normal space (plain text, ATS-safe).
+
+**Skills (Category: values):** each line uses a **left tab stop** after the bold label so wrapped
+value text aligns under the value column—the usual Word pattern for label/value lines and
+recommended for consistent alignment in structured sections ([tab stops / ruler alignment](https://www.therecruitmentinsights.com/blog/resume-writing-tipstricks/005-resume-formatting-in-ms-wordstep-by-step)).
 
 Light touches on text: curly quotes to ASCII, collapsed whitespace, and date tokens in
 lines parsed through ``_clean_line`` (role/education rows, body lines) for consistent
@@ -66,7 +73,19 @@ _EXPERIENCE_ROLE_SECTIONS = frozenset(
     }
 )
 
+# System fonts ATS parsers handle well; 11 pt body is widely recommended.
 _BODY_FONT = "Calibri"
+_BODY_PT = 11.0
+_NAME_PT = 18.0  # guides often cite ~14–18 pt for name (bold)
+_SECTION_TITLE_PT = 13.0  # section titles commonly 12–14 pt bold
+_LINE_SPACING = 1.15  # single-ish with slight air; common “readable default” band
+_MARGINS_IN = 0.9  # 0.75–1 in is the usual safe band; 0.9 balances text width + whitespace
+# Hanging bullet: match Word’s common ~0.25 in list hang ([Microsoft hanging indent](https://support.microsoft.com/en-us/office/indent-the-second-line-in-word-9d1b9955-d08a-4773-a900-d0a9e641279c)).
+_BULLET_LEFT_INDENT_IN = 0.25
+_BULLET_FIRST_LINE_INDENT_IN = -0.25
+_BULLET_LEADER = "\u2022 "
+# Skills: label + tab + values; tab position balances short vs long category labels.
+_SKILL_VALUE_TAB_IN = 1.78
 
 
 def _safe_filename(value: str) -> str:
@@ -389,6 +408,7 @@ def _short_skill_category_label(label: str) -> str:
 def _add_md_runs(paragraph, text: str, base_size_pt: float, bold_base: bool = False) -> None:
     from docx.shared import Pt
 
+    base_size_pt = float(base_size_pt) if base_size_pt else _BODY_PT
     sanitized = _sanitize_text(text)
     parts = re.split(r"(\*\*[^*]+\*\*)", sanitized)
     for part in parts:
@@ -404,51 +424,53 @@ def _add_md_runs(paragraph, text: str, base_size_pt: float, bold_base: bool = Fa
 
 def _build_docx(items: list[tuple[str, object]]) -> object:
     from docx import Document
-    from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
+    from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING, WD_TAB_ALIGNMENT
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
     from docx.shared import Inches, Pt, RGBColor
 
     doc = Document()
 
-    # Experience header rows (match recruiter-style split: company/location then title/dates).
-    _EXP_COLOR_PRIMARY = RGBColor(0x26, 0x26, 0x26)
-    _EXP_COLOR_SECONDARY = RGBColor(0x4A, 0x5E, 0x72)
+    # Experience / education meta lines: strong contrast for print + screen (not too light).
+    _EXP_COLOR_PRIMARY = RGBColor(0x21, 0x21, 0x21)
+    _EXP_COLOR_SECONDARY = RGBColor(0x42, 0x42, 0x42)
 
     for section in doc.sections:
-        section.top_margin = Inches(0.75)
-        section.bottom_margin = Inches(0.75)
-        section.left_margin = Inches(0.75)
-        section.right_margin = Inches(0.75)
+        m = Inches(_MARGINS_IN)
+        section.top_margin = m
+        section.bottom_margin = m
+        section.left_margin = m
+        section.right_margin = m
 
     style = doc.styles["Normal"]
-    style.font.name = "Calibri"
-    style.font.size = Pt(10.5)
+    style.font.name = _BODY_FONT
+    style.font.size = Pt(_BODY_PT)
     style.paragraph_format.space_before = Pt(0)
     style.paragraph_format.space_after = Pt(0)
     style.paragraph_format.line_spacing_rule = WD_LINE_SPACING.MULTIPLE
-    style.paragraph_format.line_spacing = 1.08
+    style.paragraph_format.line_spacing = _LINE_SPACING
 
     def _para(
         text="",
         bold=False,
         italic=False,
-        size=10.5,
+        size=_BODY_PT,
         space_before=0,
         space_after=0,
-        align=None,
+        align=WD_ALIGN_PARAGRAPH.LEFT,
     ):
         p = doc.add_paragraph()
         p.paragraph_format.space_before = Pt(space_before)
         p.paragraph_format.space_after = Pt(space_after)
         p.paragraph_format.line_spacing_rule = WD_LINE_SPACING.MULTIPLE
-        p.paragraph_format.line_spacing = 1.08
-        if align:
+        p.paragraph_format.line_spacing = _LINE_SPACING
+        if align is not None:
             p.alignment = align
         if text:
             run = p.add_run(text)
             run.bold = bold
             run.italic = italic
+            run.font.name = _BODY_FONT
             run.font.size = Pt(size)
         return p
 
@@ -463,9 +485,9 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
             bottom = OxmlElement("w:bottom")
             borders.append(bottom)
         bottom.set(qn("w:val"), "single")
-        bottom.set(qn("w:sz"), "6")
+        bottom.set(qn("w:sz"), "4")
         bottom.set(qn("w:space"), "1")
-        bottom.set(qn("w:color"), "B7C3D0")
+        bottom.set(qn("w:color"), "D4DDE5")
 
     def _next_non_empty_type(start_idx: int) -> str:
         for next_idx in range(start_idx + 1, len(items)):
@@ -500,7 +522,7 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
         *,
         bold: bool = False,
         italic: bool = False,
-        size: float = 10.5,
+        size: float = _BODY_PT,
         color=None,
     ) -> None:
         run = paragraph.add_run(text)
@@ -518,22 +540,22 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
             continue
 
         if item_type == "name":
-            p = _para(space_before=0, space_after=2, align=WD_ALIGN_PARAGRAPH.CENTER)
+            p = _para(space_before=0, space_after=3, align=WD_ALIGN_PARAGRAPH.CENTER)
             run = p.add_run(str(content))
             run.bold = True
             run.font.name = _BODY_FONT
-            run.font.size = Pt(20)
+            run.font.size = Pt(_NAME_PT)
 
         elif item_type == "title":
-            p = _para(space_before=0, space_after=2, align=WD_ALIGN_PARAGRAPH.CENTER)
+            p = _para(space_before=0, space_after=3, align=WD_ALIGN_PARAGRAPH.CENTER)
             run = p.add_run(str(content))
             run.bold = False
             run.font.name = _BODY_FONT
-            run.font.size = Pt(12)
+            run.font.size = Pt(_SECTION_TITLE_PT)
 
         elif item_type == "contact":
-            p = _para(space_before=0, space_after=12, align=WD_ALIGN_PARAGRAPH.CENTER)
-            _add_md_runs(p, str(content), base_size_pt=10.5)
+            p = _para(space_before=0, space_after=9, align=WD_ALIGN_PARAGRAPH.CENTER)
+            _add_md_runs(p, str(content), base_size_pt=_BODY_PT)
             if _next_non_empty_type(idx) == "section_header":
                 _add_bottom_rule(p)
 
@@ -543,11 +565,11 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
         elif item_type == "section_header":
             display = str(content).strip().title()
             current_section = display.upper()
-            p = _para(space_before=18, space_after=8)
+            p = _para(space_before=14, space_after=8)
             run = p.add_run(display)
             run.bold = True
             run.font.name = _BODY_FONT
-            run.font.size = Pt(12)
+            run.font.size = Pt(_SECTION_TITLE_PT)
             _add_bottom_rule(p)
 
         elif item_type == "job_title":
@@ -576,31 +598,31 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
                 years = parts[2] if len(parts) > 2 else ""
                 location = parts[3] if len(parts) > 3 else ""
 
-                p1 = _para(space_before=12, space_after=4)
+                p1 = _para(space_before=8, space_after=4)
                 if degree and school:
-                    _add_plain(p1, degree, bold=True, size=11, color=_EXP_COLOR_PRIMARY)
-                    _add_plain(p1, " | ", bold=False, size=11, color=_EXP_COLOR_PRIMARY)
+                    _add_plain(p1, degree, bold=True, size=_BODY_PT, color=_EXP_COLOR_PRIMARY)
+                    _add_plain(p1, " | ", bold=False, size=_BODY_PT, color=_EXP_COLOR_PRIMARY)
                     _add_plain(
                         p1,
                         school,
-                        bold=False,
-                        italic=True,
-                        size=11,
+                        bold=True,
+                        italic=False,
+                        size=_BODY_PT,
                         color=_EXP_COLOR_PRIMARY,
                     )
                 elif school:
-                    _add_plain(p1, school, bold=True, size=11, color=_EXP_COLOR_PRIMARY)
+                    _add_plain(p1, school, bold=True, size=_BODY_PT, color=_EXP_COLOR_PRIMARY)
                 elif degree:
-                    _add_plain(p1, degree, bold=True, size=11, color=_EXP_COLOR_PRIMARY)
+                    _add_plain(p1, degree, bold=True, size=_BODY_PT, color=_EXP_COLOR_PRIMARY)
 
                 line2 = " | ".join(x for x in (location, years) if x)
                 if line2:
-                    p2 = _para(space_before=2, space_after=8)
+                    p2 = _para(space_before=1, space_after=10)
                     _add_plain(
                         p2,
                         line2,
                         bold=False,
-                        size=10.5,
+                        size=_BODY_PT,
                         color=_EXP_COLOR_SECONDARY,
                     )
 
@@ -612,38 +634,38 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
 
                 # Line 1–2: readable gap between title|company and location|dates;
                 # line 2: extra space after before bullets.
-                p1 = _para(space_before=12, space_after=5)
+                p1 = _para(space_before=8, space_after=4)
                 if role and company:
-                    _add_plain(p1, role, bold=True, size=11, color=_EXP_COLOR_PRIMARY)
-                    _add_plain(p1, " | ", bold=False, size=11, color=_EXP_COLOR_PRIMARY)
+                    _add_plain(p1, role, bold=True, size=_BODY_PT, color=_EXP_COLOR_PRIMARY)
+                    _add_plain(p1, " | ", bold=False, size=_BODY_PT, color=_EXP_COLOR_PRIMARY)
                     _add_plain(
                         p1,
                         company,
-                        bold=False,
-                        italic=True,
-                        size=11,
+                        bold=True,
+                        italic=False,
+                        size=_BODY_PT,
                         color=_EXP_COLOR_PRIMARY,
                     )
                 elif role:
-                    _add_plain(p1, role, bold=True, size=11, color=_EXP_COLOR_PRIMARY)
+                    _add_plain(p1, role, bold=True, size=_BODY_PT, color=_EXP_COLOR_PRIMARY)
                 elif company:
                     _add_plain(
                         p1,
                         company,
-                        bold=False,
-                        italic=True,
-                        size=11,
+                        bold=True,
+                        italic=False,
+                        size=_BODY_PT,
                         color=_EXP_COLOR_PRIMARY,
                     )
 
                 line2 = " | ".join(x for x in (location, dates) if x)
                 if line2:
-                    p2 = _para(space_before=2, space_after=12)
+                    p2 = _para(space_before=1, space_after=10)
                     _add_plain(
                         p2,
                         line2,
                         bold=False,
-                        size=10.5,
+                        size=_BODY_PT,
                         color=_EXP_COLOR_SECONDARY,
                     )
 
@@ -664,58 +686,60 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
                 else:
                     role_co = first
                     right = ""
-                p = _para(space_before=6, space_after=2)
+                p = _para(space_before=6, space_after=4)
                 _set_right_tab(p)
-                _add_plain(p, role_co, bold=True, size=11)
+                _add_plain(p, role_co, bold=True, size=_BODY_PT)
                 if right:
-                    _add_plain(p, "\t", size=10.5)
-                    _add_plain(p, right, size=10.5)
+                    _add_plain(p, "\t", size=_BODY_PT)
+                    _add_plain(p, right, size=_BODY_PT)
 
         elif item_type == "bullet":
             is_last_bullet = idx in last_bullet_indices
             in_exp = current_section in _EXPERIENCE_ROLE_SECTIONS
             in_edu = current_section == "EDUCATION"
             if in_exp:
-                # Clear separation between bullets and a larger break after each role.
-                space_before = 5
-                space_after = 22 if is_last_bullet else 9
+                space_before = 2
+                space_after = 14 if is_last_bullet else 6
             elif in_edu:
-                space_before = 3
-                space_after = 14 if is_last_bullet else 5
+                space_before = 2
+                space_after = 11 if is_last_bullet else 5
             else:
                 space_before = 2
-                space_after = 16 if is_last_bullet else 4
+                space_after = 9 if is_last_bullet else 5
             p = _para(space_before=space_before, space_after=space_after)
-            p.paragraph_format.left_indent = Inches(0.2)
-            p.paragraph_format.first_line_indent = Inches(-0.2)
-            if in_exp:
-                p.paragraph_format.line_spacing_rule = WD_LINE_SPACING.MULTIPLE
-                p.paragraph_format.line_spacing = 1.12
-            run = p.add_run("\u2022 ")
+            p.paragraph_format.left_indent = Inches(_BULLET_LEFT_INDENT_IN)
+            p.paragraph_format.first_line_indent = Inches(_BULLET_FIRST_LINE_INDENT_IN)
+            p.paragraph_format.line_spacing_rule = WD_LINE_SPACING.MULTIPLE
+            p.paragraph_format.line_spacing = _LINE_SPACING
+            run = p.add_run(_BULLET_LEADER)
             run.font.name = _BODY_FONT
-            run.font.size = Pt(10.5)
-            _add_md_runs(p, str(content), base_size_pt=10.5)
+            run.font.size = Pt(_BODY_PT)
+            _add_md_runs(p, str(content), base_size_pt=_BODY_PT)
 
         elif item_type == "skill":
             label, values, _bulleted = content  # type: ignore[misc]
             label_out = _short_skill_category_label(str(label))
-            p = _para(space_before=2, space_after=5)
-            r_label = p.add_run(f"{label_out}: ")
+            plain_values = _strip_md_spans_for_skill_values(str(values))
+            p = _para(space_before=1, space_after=4)
+            # Hanging-style wrap for long value lists: continuation lines align under the value
+            # column (after tab), not under the category label.
+            p.paragraph_format.tab_stops.add_tab_stop(
+                Inches(_SKILL_VALUE_TAB_IN),
+                WD_TAB_ALIGNMENT.LEFT,
+            )
+            r_label = p.add_run(f"{label_out}:\t")
             r_label.bold = True
             r_label.font.name = _BODY_FONT
-            r_label.font.size = Pt(10.5)
-            # Skill items stay plain (no per-item bolding); only the
-            # category label above is bold. This matches the CV-platform
-            # style and avoids highlighter-style noise in Skills.
-            plain_values = _strip_md_spans_for_skill_values(str(values))
-            _add_md_runs(p, plain_values, base_size_pt=10.5)
+            r_label.font.size = Pt(_BODY_PT)
+            # Values stay plain (no per-item bolding); only the category label is bold.
+            _add_md_runs(p, plain_values, base_size_pt=_BODY_PT)
 
         elif item_type == "body":
-            sa = 3 if current_section == "SUMMARY" else 0
+            sa = 6 if current_section == "SUMMARY" else 0
             p = _para(space_before=0, space_after=sa)
             p.paragraph_format.left_indent = Inches(0)
             p.paragraph_format.first_line_indent = Inches(0)
-            _add_md_runs(p, str(content), base_size_pt=10.5)
+            _add_md_runs(p, str(content), base_size_pt=_BODY_PT)
 
     return doc
 

@@ -1,0 +1,24 @@
+CREATE TABLE generations (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+
+    profile_name        VARCHAR(200)  NOT NULL,
+    stage               VARCHAR(50)   NOT NULL DEFAULT 'generated',
+    title               VARCHAR(500)  NOT NULL,
+    company_name        VARCHAR(500)  NOT NULL DEFAULT '',
+    salary_range        VARCHAR(200)  NOT NULL DEFAULT '',
+    note                VARCHAR(2000) NOT NULL DEFAULT '',
+    url                 VARCHAR(2000)  NOT NULL,
+
+    resume_drive_url    VARCHAR(2000) NOT NULL DEFAULT '',
+    questions_drive_url VARCHAR(2000) NOT NULL DEFAULT '',
+    jd_drive_url        VARCHAR(2000) NOT NULL DEFAULT '',
+
+    model_name          VARCHAR(100)  NOT NULL DEFAULT ''
+);
+
+CREATE INDEX ix_generations_created_at ON generations (created_at);
+CREATE INDEX ix_generations_stage_created_at ON generations (stage, created_at);
+CREATE INDEX ix_generations_profile_name ON generations (profile_name);
+CREATE INDEX ix_generations_model_name ON generations (model_name);
+CREATE INDEX ix_generations_url ON generations (url);

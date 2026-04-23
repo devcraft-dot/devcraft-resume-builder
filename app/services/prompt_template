@@ -84,18 +84,30 @@ ANTI-BUZZWORD AND FILLER RULES
 STRONG VERB RULES
 - Every bullet must begin with the most precise believable strong action verb available.
 - Do not default to generic verbs if a more specific verb fits better.
-- No opening verb should appear more than 2 times across the resume unless it is clearly the best exact choice.
-- Prefer verbs from this bank when appropriate:
-  accelerated, achieved, aligned, architected, authored, automated, built, coded, codified, configured, connected, consolidated, constructed, debugged, defined, delivered, deployed, designed, diagnosed, directed, documented, drove, enabled, engineered, established, evaluated, executed, expanded, expedited, formalized, generated, guided, improved, implemented, increased, integrated, instrumented, introduced, launched, led, maintained, matched, migrated, modeled, modernized, optimized, orchestrated, produced, reduced, redesigned, refined, refactored, resolved, restored, secured, shaped, shipped, simplified, stabilized, standardized, strengthened, streamlined, supervised, tested, transformed, tuned, upgraded, validated, wrote
-- Use the most specific verb family for the action:
-  architecture/design: architected, designed, modeled, shaped, reworked
-  implementation/build: engineered, implemented, built, created
-  performance: tuned, optimized, accelerated, reduced, stabilized
-  reliability/incidents: resolved, restored, stabilized, mitigated, diagnosed
-  integration/data movement: integrated, connected, consolidated, migrated, matched
-  process/quality: standardized, formalized, codified, strengthened, tightened
-  documentation: authored, documented, codified, wrote
-  testing/verification: validated, tested, expanded, instrumented
+- No opening verb should appear more than **2 times** across the entire resume unless it is clearly the best exact choice.
+- **Never open a bullet** with vague or passive-sounding verbs/phrases such as:
+  used, utilized, leveraged (when it means merely “used”), applied (when it means merely “used”), worked, worked on, worked with, worked in, helped, assisted, aided, supported (when vague), participated in, took part in, involved in, was involved in, contributed to (when no clear ownership), responsible for, duties included, tasked with, familiar with, experience with, knowledge of, dealt with, handled (when vague), did, made, got, took (when it means “performed” generically), showed, studied (when no outcome), tried, attempted, was part of, played a role in, collaborated on (when it hides what **you** built/changed), monitored (when passive watching only), maintained (when it means “kept lights on” with no outcome—prefer a stronger verb if you shipped improvements)
+- **Avoid as default openers** (overused / low-signal on many tech resumes—replace with a sharper verb from the banks below when possible):
+  developed, created, built (more than twice each—rotate synonyms), managed (unless people/project scope is the real story), coordinated (unless concrete deliverable), facilitated (unless workshop/process outcome is clear), supported various, assisted with, helped to, general “improved” without object
+- Weak **non-verb filler** to avoid at bullet starts or mid-sentence crutches:
+  various, several, numerous, multiple, different kinds of, different types of, a wide range of, extensive experience with, overall, in general, basically, essentially, in order to, as well as, along with, etc., and so on, among other things, including but not limited to
+
+STRONG VERB BANK (pick by meaning; vary across bullets)
+- Leadership / ownership: led, directed, drove, owned, spearheaded, championed, guided, mentored, staffed, hired, ramped, delegated, prioritized, represented, negotiated, influenced, secured buy-in, aligned stakeholders
+- Build / ship: built, shipped, delivered, launched, released, rolled out, productionized, hardened, stabilized, migrated, cut over, sunset, deprecated (systems/features), stood up, provisioned
+- Engineering / implementation: engineered, implemented, integrated, automated, configured, deployed, installed, provisioned, containerized, orchestrated, parameterized, instrumented, refactored, modularized, decoupled, hardened, patched, upgraded, backfilled, replayed, reprocessed
+- Design / architecture: architected, designed, modeled, prototyped, specified, defined APIs, bounded contexts, shaped, reworked, rationalized, simplified designs, capacity-planned, load-tested, failure-mode analyzed
+- Data / pipelines: modeled, curated, validated, reconciled, aggregated, joined, denormalized, normalized, deduplicated, partitioned, backfilled, streamed, batch-processed, scheduled, orchestrated DAGs, lineage-tracked
+- Performance / cost / reliability: optimized, tuned, reduced latency, reduced cost, right-sized, cached, batched, debounced, throttled, shed load, improved SLOs, reduced MTTR, reduced error budgets burned, prevented incidents, mitigated, fault-isolated
+- Quality / testing: tested, validated, verified, reproduced, regression-tested, contract-tested, load-tested, chaos-tested, fuzzed, tightened acceptance criteria, shrank defect escape rate, shrank flaky tests
+- Security / compliance: hardened, tightened controls, scoped permissions, rotated secrets, audited, remediated findings, mapped controls, evidence-packaged, logged access, reduced exposure
+- Documentation / clarity: authored, documented, codified runbooks, diagrammed, illustrated flows, published RFCs, reviewed docs for accuracy
+- Cross-functional delivery: partnered with product, paired with SRE, aligned eng + design, translated requirements, de-risked scope, sequenced milestones, unblocked teams, escalated early with options
+
+ANTI-VERB REPETITION (bullets + summary)
+- The Summary may highlight the **same underlying achievement** as the strongest Experience bullet, but it must read like a **headline**, not a rearranged bullet.
+- **Hard bans:** (1) no **identical 4+ word phrase** in the same order between Summary and any bullet; (2) do not reuse the **same opening verb** for that achievement in Summary vs bullet; (3) do not paste the bullet’s **metric clause** verbatim—keep numbers truthful but change surrounding words (e.g. “roughly a fifth” vs “about 20%” only if still accurate); (4) do not reuse the bullet’s **primary noun phrase** for the system/workflow unchanged (e.g. swap “claims adjudication pipeline” vs “healthcare claims processing path” if both are truthful).
+- Prefer Summary = **role + domain + one abstracted proof**; bullets = **mechanism + object + outcome**.
 
 PHRASE REPETITION RULES
 - Repetition is mainly about repeated action verbs and repeated phrase patterns.
@@ -167,31 +179,20 @@ ROLE DEPTH
 SECTION RULES
 
 Summary
-- Always include a summary.
-- Use 2–3 sentences.
-- Sentence 1: define the candidate’s role identity, seniority, and strongest domain/system alignment for the JD.
-- Sentence 2: include the single strongest measurable result, scale signal, or quantified scope in the resume.
-- Sentence 3 optional: highlight one or two important JD-aligned capabilities, systems, workflows, deep themes, or leadership signals.
-- Front-load important ATS keywords naturally.
+- Always include a summary (2–3 short sentences; compact and scannable).
+- Sentence 1: role identity, seniority, and strongest domain/system alignment for the JD (front-load credible ATS keywords—no stuffing).
+- Sentence 2: **exactly one** standout measurable result, scale signal, or quantified scope—the candidate’s **single strongest believable proof point** for this role. It should usually match the **same underlying fact** as the best Experience bullet when that bullet is clearly the top proof, but **must obey ANTI-VERB REPETITION (bullets + summary)** above: headline-level paraphrase only; no shared phrasing tricks.
+- Sentence 3 optional: one or two JD-aligned capabilities, systems/workflows, deep themes, or leadership signals—still no overlap with bullet wording.
 - No buzzwords, pronouns, or career-objective language.
-- The summary must not reuse the exact phrase or sentence pattern of any Experience bullet. It may reference the same achievement, but must paraphrase it at a higher level.
 
-SUMMARY MOST-PROUD-RESULT RULE
-- The summary must include exactly one standout measurable result or quantified scope signal that reads like the candidate’s most impressive proof point for the target role.
-- This result should be the strongest believable metric in the resume, not just a generic improvement statement.
-- Prefer the result that best combines:
-  1. relevance to the JD
-  2. measurable impact
-  3. scale or complexity
-  4. credibility from the profile and inferred context
-- Good examples:
-  - reduced release defects by roughly 20% across concurrent projects
-  - improved reconciliation efficiency by about 20% across payment and claims workflows
-  - supported millions of claims records in daily healthcare operations
-  - handled 10K+ daily transactions in production financial systems
-- The summary result must not reuse the exact wording of any Experience bullet.
-- Rewrite it at a higher level so it sounds like a headline achievement, not a copied bullet.
-- If multiple strong metrics exist, choose the one most aligned to the JD’s core fit signals.
+Summary proof-point quality (same fact, new words)
+- Pick the proof that best combines JD relevance, measurable impact, scale/complexity, and profile credibility.
+- **Style target:** if the bullet reads operational (“Built X, enabling Y, cutting Z by ~20%”), the summary should read like an executive headline (“Cut a major defect driver ~20% while scaling X for production operations”)—**different structure, different verbs, different noun anchors** where truthful.
+- Example **headline shapes** (do not copy verbatim—vary every time):
+  - “Materially reduced a recurring production defect driver (~20%) while shipping concurrent releases.”
+  - “Improved reconciliation throughput for payment/claims-scale workflows (~20%).”
+  - “Operates at production scale (millions of claims records/day class systems).”
+  - “Owns high-volume money-movement paths (10K+ daily transactions class production load).”
 
 Skills
 - Group skills into clear, ATS-friendly categories.
@@ -237,9 +238,11 @@ FINAL CHECK
 Before returning, confirm:
 - no repeated opener or repeated phrase fragment appears too often
 - no stock phrase cluster is reused mechanically
-- strong verbs are varied across bullets
+- **no bullet opens with a banned weak opener** (used/utilized/worked on/helped/assisted/responsible for/participated in/etc.)
+- **developed / created / built** are not overused as openers—rotate sharper verbs from STRONG VERB BANK
+- strong verbs are varied across bullets (≤2 repeats per opener unless unavoidable)
 - the summary is factual, not promotional
-- the summary does not repeat the exact wording of a bullet-level achievement
+- the summary’s proof point **does not violate** ANTI-VERB REPETITION (no 4+ word copy, no same opener verb for the same achievement, no cloned metric clause)
 - at least 5 quantified bullets are present
 - metric styles are varied
 - skills are grouped into clear ATS-friendly categories
@@ -256,7 +259,7 @@ Use this section order in the markdown (the DOCX builder also normalizes section
 City, ST | email | phone | LinkedIn
 
 ## Summary
-- Keep the Summary to 2–3 lines total (compact; top-third scannable).
+- Keep the Summary to 2–3 short sentences (compact; top-third scannable when rendered).
 
 ## Skills
 

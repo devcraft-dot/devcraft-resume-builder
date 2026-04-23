@@ -54,6 +54,18 @@ _EXPERIENCE_SECTIONS = {
     "EDUCATION",
 }
 
+# Role + bullet blocks (exclude EDUCATION so education bullets stay a bit tighter).
+_EXPERIENCE_ROLE_SECTIONS = frozenset(
+    {
+        "WORK EXPERIENCE",
+        "PROFESSIONAL EXPERIENCE",
+        "EXPERIENCE",
+        "PROJECTS",
+        "NOTABLE PROJECTS",
+        "KEY PROJECTS",
+    }
+)
+
 _BODY_FONT = "Calibri"
 
 
@@ -564,7 +576,7 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
                 years = parts[2] if len(parts) > 2 else ""
                 location = parts[3] if len(parts) > 3 else ""
 
-                p1 = _para(space_before=12, space_after=2)
+                p1 = _para(space_before=12, space_after=4)
                 if degree and school:
                     _add_plain(p1, degree, bold=True, size=11, color=_EXP_COLOR_PRIMARY)
                     _add_plain(p1, " | ", bold=False, size=11, color=_EXP_COLOR_PRIMARY)
@@ -583,7 +595,7 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
 
                 line2 = " | ".join(x for x in (location, years) if x)
                 if line2:
-                    p2 = _para(space_before=0, space_after=6)
+                    p2 = _para(space_before=2, space_after=8)
                     _add_plain(
                         p2,
                         line2,
@@ -598,7 +610,9 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
                 dates = parts[2] if len(parts) > 2 else ""
                 location = parts[3] if len(parts) > 3 else ""
 
-                p1 = _para(space_before=12, space_after=2)
+                # Line 1–2: readable gap between title|company and location|dates;
+                # line 2: extra space after before bullets.
+                p1 = _para(space_before=12, space_after=5)
                 if role and company:
                     _add_plain(p1, role, bold=True, size=11, color=_EXP_COLOR_PRIMARY)
                     _add_plain(p1, " | ", bold=False, size=11, color=_EXP_COLOR_PRIMARY)
@@ -624,7 +638,7 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
 
                 line2 = " | ".join(x for x in (location, dates) if x)
                 if line2:
-                    p2 = _para(space_before=0, space_after=6)
+                    p2 = _para(space_before=2, space_after=12)
                     _add_plain(
                         p2,
                         line2,
@@ -659,15 +673,24 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
 
         elif item_type == "bullet":
             is_last_bullet = idx in last_bullet_indices
-            # Small inter-bullet space (~1.5pt) makes dense bullet blocks easier
-            # to scan without wasting vertical space. A bigger gap closes out
-            # the role cleanly before the next company header.
-            p = _para(
-                space_before=2,
-                space_after=16 if is_last_bullet else 2,
-            )
+            in_exp = current_section in _EXPERIENCE_ROLE_SECTIONS
+            in_edu = current_section == "EDUCATION"
+            if in_exp:
+                # Clear separation between bullets and a larger break after each role.
+                space_before = 5
+                space_after = 22 if is_last_bullet else 9
+            elif in_edu:
+                space_before = 3
+                space_after = 14 if is_last_bullet else 5
+            else:
+                space_before = 2
+                space_after = 16 if is_last_bullet else 4
+            p = _para(space_before=space_before, space_after=space_after)
             p.paragraph_format.left_indent = Inches(0.2)
             p.paragraph_format.first_line_indent = Inches(-0.2)
+            if in_exp:
+                p.paragraph_format.line_spacing_rule = WD_LINE_SPACING.MULTIPLE
+                p.paragraph_format.line_spacing = 1.12
             run = p.add_run("\u2022 ")
             run.font.name = _BODY_FONT
             run.font.size = Pt(10.5)

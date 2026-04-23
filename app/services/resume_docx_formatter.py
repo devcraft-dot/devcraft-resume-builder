@@ -5,9 +5,16 @@ Renders model Markdown into .docx: layout, sections, bullets, and ``**emphasis**
 exactly as written. Structural styling only (name, section titles, experience header rows,
 Skills category labels). Skill list values are forced plain so only the category label is bold.
 
+Contact lines are written in the **document body** (centered under the name), never in the
+Word header/footer, so ATS tools can parse them reliably.
+
 Light touches on text: curly quotes to ASCII, collapsed whitespace, and date tokens in
 lines parsed through ``_clean_line`` (role/education rows, body lines) for consistent
-Month YYYY formatting — no verb substitution, JD keyword injection, or spelling rewrites.
+``Month YYYY`` spelling and **en-dash** (U+2013) between range endpoints — no verb substitution,
+JD keyword injection, or spelling rewrites.
+
+Known sections are reordered for output to: Summary → Skills → Experience (+ projects) →
+Education → other sections (e.g. certifications, application Q&A), regardless of model order.
 """
 
 from __future__ import annotations
@@ -37,6 +44,7 @@ _SECTION_KEYWORDS = {
     "ACHIEVEMENTS",
     "AWARDS",
     "ADDITIONAL INFORMATION",
+    "APPLICATION QUESTIONS",
 }
 
 _EXPERIENCE_SECTIONS = {
@@ -132,9 +140,15 @@ def _normalize_dates(text: str) -> str:
 
     s = _FULL_MONTH_RE.sub(_full, text)
     s = _ABBR_MONTH_RE.sub(_expand, s)
+    # Standardize range punctuation to en dash (May 2025 – March 2026).
+    en = "\u2013"
+
+    def _range_dash(m: re.Match) -> str:
+        return f"{m.group(1)} {en} {m.group(2)}"
+
     s = re.sub(
         r"([A-Za-z]+\s+\d{4})\s*[–—-]\s*([A-Za-z]+\s+\d{4}|Present)",
-        r"\1 - \2",
+        _range_dash,
         s,
     )
     return s
@@ -145,16 +159,19 @@ def _clean_line(text: str) -> str:
 
 
 def _is_section_header(line: str) -> bool:
-    stripped = _clean_line(line.strip())
-    if stripped.upper() in _SECTION_KEYWORDS:
+    raw = line.strip()
+    stripped = _clean_line(raw)
+    head = _strip_md_heading(raw)
+    if head.upper() in _SECTION_KEYWORDS or stripped.upper() in _SECTION_KEYWORDS:
         return True
+    check = head.strip()
     return (
-        stripped.isupper()
-        and 3 <= len(stripped) <= 80
-        and "|" not in stripped
-        and "•" not in stripped
-        and "@" not in stripped
-        and not stripped.startswith("http")
+        check.isupper()
+        and 3 <= len(check) <= 80
+        and "|" not in check
+        and "•" not in check
+        and "@" not in check
+        and not check.startswith("http")
     )
 
 
@@ -261,6 +278,102 @@ def _parse_resume(text: str) -> list[tuple[str, object]]:
     return result
 
 
+def _section_bucket(header_line: str) -> int:
+    """
+    Canonical section order for DOCX output (lower sorts earlier).
+    10 Summary, 20 Skills, 30 Experience/Projects, 40 Education, 45 certs/etc., 50 other.
+    """
+    u = str(header_line or "").strip().upper()
+    if u in (
+        "SUMMARY",
+        "MARKET TITLE",
+        "PROFESSIONAL SUMMARY",
+        "OBJECTIVE",
+    ):
+        return 10
+    if "SKILL" in u or "COMPETENC" in u:
+        return 20
+    if u in (
+        "WORK EXPERIENCE",
+        "PROFESSIONAL EXPERIENCE",
+        "EXPERIENCE",
+        "PROJECTS",
+        "NOTABLE PROJECTS",
+        "KEY PROJECTS",
+    ):
+        return 30
+    if u == "EDUCATION":
+        return 40
+    if u in (
+        "CERTIFICATIONS",
+        "CERTIFICATIONS OR ACHIEVEMENTS",
+        "ACHIEVEMENTS",
+        "AWARDS",
+        "ADDITIONAL INFORMATION",
+    ):
+        return 45
+    if u in ("APPLICATION QUESTIONS", "APPLICATION Q&A", "APPLICATION ANSWERS"):
+        return 55
+    return 50
+
+
+def _reorder_section_blocks(items: list[tuple[str, object]]) -> list[tuple[str, object]]:
+    """Place Summary, Skills, Experience, Education (then other sections) regardless of model order."""
+    if not items:
+        return items
+    i = 0
+    preamble: list[tuple[str, object]] = []
+    while i < len(items) and items[i][0] != "section_header":
+        preamble.append(items[i])
+        i += 1
+
+    buckets: dict[int, list[tuple[str, object]]] = {
+        10: [],
+        20: [],
+        30: [],
+        40: [],
+        45: [],
+        50: [],
+        55: [],
+    }
+    while i < len(items):
+        if items[i][0] != "section_header":
+            preamble.append(items[i])
+            i += 1
+            continue
+        block: list[tuple[str, object]] = [items[i]]
+        hdr = str(items[i][1]).strip()
+        i += 1
+        while i < len(items) and items[i][0] != "section_header":
+            block.append(items[i])
+            i += 1
+        buckets[_section_bucket(hdr)].extend(block)
+
+    out: list[tuple[str, object]] = list(preamble)
+    for k in (10, 20, 30, 40, 45, 50, 55):
+        out.extend(buckets.get(k, []))
+    return out
+
+
+_SKILL_LABEL_SHORT: dict[str, str] = {
+    "cloud, infrastructure & tools": "Cloud & Tools",
+    "cloud infrastructure & tools": "Cloud & Tools",
+    "cloud & infrastructure": "Cloud & Tools",
+    "cloud and infrastructure": "Cloud & Tools",
+    "concepts & methodologies": "Engineering Practices",
+    "concepts and methodologies": "Engineering Practices",
+    "testing, quality & sdlc": "Testing & SDLC",
+    "testing quality & sdlc": "Testing & SDLC",
+    "databases & data": "Databases",
+    "apis & integration": "APIs & Integration",
+}
+
+
+def _short_skill_category_label(label: str) -> str:
+    key = str(label or "").strip().lower()
+    return _SKILL_LABEL_SHORT.get(key, str(label or "").strip())
+
+
 def _add_md_runs(paragraph, text: str, base_size_pt: float, bold_base: bool = False) -> None:
     from docx.shared import Pt
 
@@ -279,7 +392,7 @@ def _add_md_runs(paragraph, text: str, base_size_pt: float, bold_base: bool = Fa
 
 def _build_docx(items: list[tuple[str, object]]) -> object:
     from docx import Document
-    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
     from docx.shared import Inches, Pt, RGBColor
@@ -301,7 +414,8 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
     style.font.size = Pt(10.5)
     style.paragraph_format.space_before = Pt(0)
     style.paragraph_format.space_after = Pt(0)
-    style.paragraph_format.line_spacing = 1.0
+    style.paragraph_format.line_spacing_rule = WD_LINE_SPACING.MULTIPLE
+    style.paragraph_format.line_spacing = 1.08
 
     def _para(
         text="",
@@ -315,7 +429,8 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
         p = doc.add_paragraph()
         p.paragraph_format.space_before = Pt(space_before)
         p.paragraph_format.space_after = Pt(space_after)
-        p.paragraph_format.line_spacing = 1.0
+        p.paragraph_format.line_spacing_rule = WD_LINE_SPACING.MULTIPLE
+        p.paragraph_format.line_spacing = 1.08
         if align:
             p.alignment = align
         if text:
@@ -372,11 +487,13 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
         text: str,
         *,
         bold: bool = False,
+        italic: bool = False,
         size: float = 10.5,
         color=None,
     ) -> None:
         run = paragraph.add_run(text)
         run.bold = bold
+        run.italic = italic
         run.font.name = _BODY_FONT
         run.font.size = Pt(size)
         if color is not None:
@@ -393,7 +510,7 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
             run = p.add_run(str(content))
             run.bold = True
             run.font.name = _BODY_FONT
-            run.font.size = Pt(18)
+            run.font.size = Pt(20)
 
         elif item_type == "title":
             p = _para(space_before=0, space_after=2, align=WD_ALIGN_PARAGRAPH.CENTER)
@@ -403,7 +520,7 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
             run.font.size = Pt(12)
 
         elif item_type == "contact":
-            p = _para(space_before=0, space_after=10, align=WD_ALIGN_PARAGRAPH.CENTER)
+            p = _para(space_before=0, space_after=12, align=WD_ALIGN_PARAGRAPH.CENTER)
             _add_md_runs(p, str(content), base_size_pt=10.5)
             if _next_non_empty_type(idx) == "section_header":
                 _add_bottom_rule(p)
@@ -414,7 +531,7 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
         elif item_type == "section_header":
             display = str(content).strip().title()
             current_section = display.upper()
-            p = _para(space_before=14, space_after=6)
+            p = _para(space_before=18, space_after=8)
             run = p.add_run(display)
             run.bold = True
             run.font.name = _BODY_FONT
@@ -431,51 +548,49 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
             parts = [x.strip() for x in normalized.split("|") if x.strip()]
             is_education = "EDUCATION" in current_section
 
-            # Experience: Role | Company | Dates | Location  ->
-            #   Line 1:  **Company**                          **Location**
-            #   Line 2:  Title                                Dates
-            # Education: School | Degree | Years | Location  ->
-            #   Line 1:  **School**                           **Location**
-            #   Line 2:  Degree                               Years
+            # Pipe row from model: Role | Company | Dates | Location (Experience) or
+            # School | Degree | Years | Location (Education).
+            #
+            # Experience (ATS-friendly scan):
+            #   Line 1: **Title** | *Company*
+            #   Line 2: Location | Dates  (lighter)
+            #
+            # Education (parallel hierarchy):
+            #   Line 1: **Degree** | *School*
+            #   Line 2: Location | Years  (lighter)
             if is_education and len(parts) >= 3:
                 school = parts[0]
                 degree = parts[1] if len(parts) > 1 else ""
                 years = parts[2] if len(parts) > 2 else ""
                 location = parts[3] if len(parts) > 3 else ""
 
-                # Line 1: School (bold, dark) | Location (bold, dark, right).
-                p1 = _para(space_before=10, space_after=0)
-                _set_right_tab(p1)
-                _add_plain(p1, school, bold=True, size=11, color=_EXP_COLOR_PRIMARY)
-                if location:
-                    _add_plain(p1, "\t", bold=False, size=11, color=_EXP_COLOR_PRIMARY)
+                p1 = _para(space_before=12, space_after=2)
+                if degree and school:
+                    _add_plain(p1, degree, bold=True, size=11, color=_EXP_COLOR_PRIMARY)
+                    _add_plain(p1, " | ", bold=False, size=11, color=_EXP_COLOR_PRIMARY)
                     _add_plain(
-                        p1, location, bold=True, size=11, color=_EXP_COLOR_PRIMARY
+                        p1,
+                        school,
+                        bold=False,
+                        italic=True,
+                        size=11,
+                        color=_EXP_COLOR_PRIMARY,
                     )
+                elif school:
+                    _add_plain(p1, school, bold=True, size=11, color=_EXP_COLOR_PRIMARY)
+                elif degree:
+                    _add_plain(p1, degree, bold=True, size=11, color=_EXP_COLOR_PRIMARY)
 
-                # Line 2: Degree (regular, slate) | Years (regular, slate, right).
-                if degree or years:
-                    p2 = _para(space_before=0, space_after=3)
-                    _set_right_tab(p2)
-                    if degree:
-                        _add_plain(
-                            p2,
-                            degree,
-                            bold=False,
-                            size=11,
-                            color=_EXP_COLOR_SECONDARY,
-                        )
-                    if years:
-                        _add_plain(
-                            p2, "\t", bold=False, size=11, color=_EXP_COLOR_SECONDARY
-                        )
-                        _add_plain(
-                            p2,
-                            years,
-                            bold=False,
-                            size=11,
-                            color=_EXP_COLOR_SECONDARY,
-                        )
+                line2 = " | ".join(x for x in (location, years) if x)
+                if line2:
+                    p2 = _para(space_before=0, space_after=6)
+                    _add_plain(
+                        p2,
+                        line2,
+                        bold=False,
+                        size=10.5,
+                        color=_EXP_COLOR_SECONDARY,
+                    )
 
             elif not is_education and len(parts) >= 3:
                 role = parts[0]
@@ -483,39 +598,40 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
                 dates = parts[2] if len(parts) > 2 else ""
                 location = parts[3] if len(parts) > 3 else ""
 
-                # Line 1: Company (bold, dark) | Location (bold, dark, right).
-                p1 = _para(space_before=10, space_after=0)
-                _set_right_tab(p1)
-                _add_plain(p1, company, bold=True, size=11, color=_EXP_COLOR_PRIMARY)
-                if location:
-                    _add_plain(p1, "\t", bold=False, size=11, color=_EXP_COLOR_PRIMARY)
+                p1 = _para(space_before=12, space_after=2)
+                if role and company:
+                    _add_plain(p1, role, bold=True, size=11, color=_EXP_COLOR_PRIMARY)
+                    _add_plain(p1, " | ", bold=False, size=11, color=_EXP_COLOR_PRIMARY)
                     _add_plain(
-                        p1, location, bold=True, size=11, color=_EXP_COLOR_PRIMARY
+                        p1,
+                        company,
+                        bold=False,
+                        italic=True,
+                        size=11,
+                        color=_EXP_COLOR_PRIMARY,
+                    )
+                elif role:
+                    _add_plain(p1, role, bold=True, size=11, color=_EXP_COLOR_PRIMARY)
+                elif company:
+                    _add_plain(
+                        p1,
+                        company,
+                        bold=False,
+                        italic=True,
+                        size=11,
+                        color=_EXP_COLOR_PRIMARY,
                     )
 
-                # Line 2: Title (regular, slate) | Dates (regular, slate, right).
-                if role or dates:
-                    p2 = _para(space_before=0, space_after=3)
-                    _set_right_tab(p2)
-                    if role:
-                        _add_plain(
-                            p2,
-                            role,
-                            bold=False,
-                            size=11,
-                            color=_EXP_COLOR_SECONDARY,
-                        )
-                    if dates:
-                        _add_plain(
-                            p2, "\t", bold=False, size=11, color=_EXP_COLOR_SECONDARY
-                        )
-                        _add_plain(
-                            p2,
-                            dates,
-                            bold=False,
-                            size=11,
-                            color=_EXP_COLOR_SECONDARY,
-                        )
+                line2 = " | ".join(x for x in (location, dates) if x)
+                if line2:
+                    p2 = _para(space_before=0, space_after=6)
+                    _add_plain(
+                        p2,
+                        line2,
+                        bold=False,
+                        size=10.5,
+                        color=_EXP_COLOR_SECONDARY,
+                    )
 
             else:
                 # Fallback for oddly shaped lines (em-dash, 2 parts, etc.).
@@ -547,8 +663,8 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
             # to scan without wasting vertical space. A bigger gap closes out
             # the role cleanly before the next company header.
             p = _para(
-                space_before=1,
-                space_after=8 if is_last_bullet else 1,
+                space_before=2,
+                space_after=16 if is_last_bullet else 2,
             )
             p.paragraph_format.left_indent = Inches(0.2)
             p.paragraph_format.first_line_indent = Inches(-0.2)
@@ -559,8 +675,9 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
 
         elif item_type == "skill":
             label, values, _bulleted = content  # type: ignore[misc]
-            p = _para(space_before=0, space_after=3)
-            r_label = p.add_run(f"{label}: ")
+            label_out = _short_skill_category_label(str(label))
+            p = _para(space_before=2, space_after=5)
+            r_label = p.add_run(f"{label_out}: ")
             r_label.bold = True
             r_label.font.name = _BODY_FONT
             r_label.font.size = Pt(10.5)
@@ -571,7 +688,8 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
             _add_md_runs(p, plain_values, base_size_pt=10.5)
 
         elif item_type == "body":
-            p = _para(space_before=0, space_after=0)
+            sa = 3 if current_section == "SUMMARY" else 0
+            p = _para(space_before=0, space_after=sa)
             p.paragraph_format.left_indent = Inches(0)
             p.paragraph_format.first_line_indent = Inches(0)
             _add_md_runs(p, str(content), base_size_pt=10.5)
@@ -581,7 +699,7 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
 
 def build_formatted_resume_docx(resume_text: str, job, profile_name: str) -> tuple[BytesIO, str]:
     """Build resume .docx in memory. Returns (buffer, filename)."""
-    items = _parse_resume(str(resume_text or ""))
+    items = _reorder_section_blocks(_parse_resume(str(resume_text or "")))
     doc = _build_docx(items)
 
     candidate_name = (profile_name or "").strip() or "Candidate"

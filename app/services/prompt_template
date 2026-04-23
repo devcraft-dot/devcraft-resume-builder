@@ -195,8 +195,8 @@ SUMMARY MOST-PROUD-RESULT RULE
 
 Skills
 - Group skills into clear, ATS-friendly categories.
-- Use category names that fit the role, such as Programming Languages, Cloud & Infrastructure, Databases & Data, APIs & Integration, Architecture & Distributed Systems, Testing, Quality & SDLC, Domain Expertise.
-- Keep categories parallel, concrete, and easy to scan.
+- Prefer short, standard category labels that scan quickly, for example: Programming Languages, Frameworks, Databases, Cloud & Tools, APIs & Integration, Engineering Practices, Testing & SDLC, Architecture & Systems, Domain Expertise (pick what fits the JD; do not use all at once).
+- Keep category names parallel, concrete, and easy to scan.
 - Avoid vague category names like Tools & Methods, Other, Miscellaneous, Core Competencies unless the JD clearly supports them.
 - Do not use too many categories.
 - Do not force equal numbers per category.
@@ -206,6 +206,7 @@ Skills
 - Do not include weak filler skills. Keep only searchable, role-relevant hard skills and concepts.
 
 Experience
+- Emit each role as one pipe-delimited line (parsed by the formatter): Role | Company | Month YYYY – Month YYYY | Location. Use an en dash between dates. The DOCX will render this as two lines: Title | Company, then Location | Dates.
 - Lead with the most target-relevant bullets.
 - Make each role distinct.
 - Show leadership, communication, customer focus, teamwork, judgment, reliability, initiative, and ownership through concrete work and outcomes.
@@ -248,16 +249,19 @@ Before returning, confirm:
 
 OUTPUT FORMAT
 
+Use this section order in the markdown (the DOCX builder also normalizes section order): Header (name + contact in the body, not a Word header/footer), Summary, Skills, Experience, Education, then Application Questions if present.
+
 ## Resume
 # Full Name
 City, ST | email | phone | LinkedIn
 
 ## Summary
+- Keep the Summary to 2–3 lines total (compact; top-third scannable).
 
 ## Skills
 
 ## Experience
-Role | Company | Month YYYY - Month YYYY | Location
+Role | Company | Month YYYY – Month YYYY | Location
 - bullet
 - bullet
 

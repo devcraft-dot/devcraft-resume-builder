@@ -70,12 +70,12 @@ These elements can interfere with parsing or reduce readability.
 
 9. Keep role headers consistent
 
-For each role, include the same core items in the same order:
+For each role, include the same core items in a consistent layout. A common ATS-friendly pattern is two lines:
 
-job title
-company name
-location
-dates
+job title | company name
+location | Month YYYY – Month YYYY
+
+Use one date style and the same separators throughout.
 
 Consistency helps ATS extraction and makes recruiter review faster.
 
@@ -83,7 +83,7 @@ Consistency helps ATS extraction and makes recruiter review faster.
 
 Use one date style throughout the document, such as:
 
-Month Year – Month Year
+Month Year – Month Year (en dash between endpoints)
 
 Do not mix date styles. Consistency improves readability and reduces parsing mistakes.
 

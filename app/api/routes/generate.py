@@ -4,7 +4,7 @@ import logging
 import math
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, select
+from sqlalchemy import func, select, tuple_
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
@@ -134,17 +134,36 @@ def check_generation_keys(
     db: Session = Depends(get_db),
 ) -> CheckGenerationKeysResponse:
     """True if a generation row already exists for the same JD URL and profile name."""
-    out: list[GenerationPresenceResult] = []
-    for item in payload.items:
+    items = payload.items or []
+    if not items:
+        return CheckGenerationKeysResponse(items=[])
+
+    pairs: list[tuple[str, str]] = []
+    for item in items:
         url = item.url.strip()
         pn = (item.profile_name or "default").strip()
-        hit = db.scalar(
-            select(Generation.id).where(
-                Generation.url == url,
-                Generation.profile_name == pn,
-            ).limit(1),
+        pairs.append((url, pn))
+
+    # One round-trip for all pairs (composite IN); extension may send many rows.
+    unique_pairs = list(dict.fromkeys(pairs))
+    existing_pairs: set[tuple[str, str]] = set()
+    if unique_pairs:
+        rows = db.execute(
+            select(Generation.url, Generation.profile_name).where(
+                tuple_(Generation.url, Generation.profile_name).in_(unique_pairs),
+            ),
+        ).all()
+        existing_pairs = {(str(u or "").strip(), str(p or "").strip()) for u, p in rows}
+
+    out: list[GenerationPresenceResult] = []
+    for item, (url, pn) in zip(items, pairs):
+        out.append(
+            GenerationPresenceResult(
+                url=item.url,
+                profile_name=pn,
+                exists=(url, pn) in existing_pairs,
+            ),
         )
-        out.append(GenerationPresenceResult(url=item.url, profile_name=pn, exists=hit is not None))
     return CheckGenerationKeysResponse(items=out)
 
 

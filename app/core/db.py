@@ -22,9 +22,19 @@ def _engine():
     )
 
 
+@lru_cache(maxsize=1)
+def _session_factory() -> sessionmaker:
+    """One sessionmaker per process — avoids rebuilding the class on every HTTP request."""
+    return sessionmaker(
+        bind=_engine(),
+        autoflush=False,
+        autocommit=False,
+        expire_on_commit=False,
+    )
+
+
 def get_db():
-    session = sessionmaker(bind=_engine(), autoflush=False, autocommit=False)
-    db: Session = session()
+    db = _session_factory()()
     try:
         yield db
     finally:

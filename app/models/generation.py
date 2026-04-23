@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, String, func
+from sqlalchemy import DateTime, Index, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
@@ -12,6 +12,14 @@ def utc_now() -> datetime:
 
 class Generation(Base):
     __tablename__ = "generations"
+    __table_args__ = (
+        # List view: ORDER BY created_at DESC + optional stage filter
+        Index("ix_generations_created_at", "created_at"),
+        Index("ix_generations_stage_created_at", "stage", "created_at"),
+        # Analytics: GROUP BY profile_name / model_name
+        Index("ix_generations_profile_name", "profile_name"),
+        Index("ix_generations_model_name", "model_name"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     created_at: Mapped[datetime] = mapped_column(

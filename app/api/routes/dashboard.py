@@ -29,15 +29,12 @@ _passed_resume_check_expr = case(
 
 @router.get("/dashboard/analytics", response_model=DashboardAnalytics)
 def dashboard_analytics(db: Session = Depends(get_db)) -> DashboardAnalytics:
-    total_g = int(db.scalar(select(func.count()).select_from(Generation)) or 0)
-    passed_total = int(
-        db.scalar(
-            select(func.count()).select_from(Generation).where(
-                Generation.stage.in_(("intro", "tech", "final", "success")),
-            ),
-        )
-        or 0,
-    )
+    # Single scan for total rows + "passed resume check" count (same predicate as _passed_resume_check_expr).
+    total_g, passed_total = db.execute(
+        select(func.count(Generation.id), func.sum(_passed_resume_check_expr)).select_from(Generation),
+    ).one()
+    total_g = int(total_g or 0)
+    passed_total = int(passed_total or 0)
 
     stage_rows = db.execute(
         select(Generation.stage, func.count(Generation.id))

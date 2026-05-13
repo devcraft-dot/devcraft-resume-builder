@@ -1,9 +1,28 @@
+import hashlib
 from datetime import datetime
 
 from pydantic import BaseModel, Field
 
 
 ALLOWED_MODELS = ("gpt-5.4", "gpt-5.4-mini", "deepseek", "deepseek-reasoner")
+
+
+def canonical_url_for_manual_entry(
+    *,
+    profile_name: str,
+    title: str,
+    company_name: str,
+    description_text: str,
+    reference_url: str,
+) -> str:
+    """Stable job URL for pasted JDs: optional real link, else content hash (must match manual-jd extension)."""
+    ref = (reference_url or "").strip()
+    if ref:
+        return ref[:2000]
+    pn = (profile_name or "").strip() or "default"
+    key = f"{pn}\n{title.strip()}\n{(company_name or '').strip()}\n{(description_text or '').strip()}"
+    digest = hashlib.sha256(key.encode("utf-8", errors="replace")).hexdigest()
+    return f"manual:{digest}"
 
 
 class QuestionField(BaseModel):
@@ -23,6 +42,24 @@ class GenerateRequest(BaseModel):
     profile_name: str = Field("", max_length=200)
     profile_text: str = Field(..., min_length=1)
     model: str = Field("gpt-5.4-mini")
+
+
+class ManualGenerateRequest(BaseModel):
+    """Paste-a-JD flow: same pipeline as POST /api/generate; URL is derived for dedup unless reference_url is set."""
+
+    title: str = Field(..., min_length=1, max_length=500)
+    company_name: str = Field("", max_length=500)
+    description_text: str = Field(..., min_length=1)
+    salary_range: str = Field("", max_length=200)
+    questions: list[QuestionField] = Field(default_factory=list)
+    profile_name: str = Field("", max_length=200)
+    profile_text: str = Field(..., min_length=1)
+    model: str = Field("gpt-5.4-mini")
+    reference_url: str = Field(
+        "",
+        max_length=2000,
+        description="Optional real posting URL for tracking; otherwise a hash of JD + profile is used.",
+    )
 
 
 class GenerationRead(BaseModel):

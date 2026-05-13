@@ -19,6 +19,8 @@ from app.schemas.generate import (
     GenerationPatch,
     GenerationPresenceResult,
     GenerationRead,
+    ManualGenerateRequest,
+    canonical_url_for_manual_entry,
 )
 from app.services.document_service import build_answers_docx, build_jd_docx, build_resume_docx
 from app.services.drive_service import upload_buffers_parallel
@@ -38,12 +40,12 @@ PIPELINE_STAGES = frozenset(
 # POST /api/generate — the core endpoint
 # ---------------------------------------------------------------------------
 
-@router.post("/generate", response_model=GenerationRead)
-def generate(payload: GenerateRequest, db: Session = Depends(get_db)):
+
+def _run_generate(payload: GenerateRequest, db: Session) -> Generation:
     if payload.model not in ALLOWED_MODELS:
         raise HTTPException(400, f"Invalid model. Choose from: {list(ALLOWED_MODELS)}")
 
-    profile_name = (payload.profile_name or "default").strip()
+    profile_name = (payload.profile_name or "").strip() or "default"
 
     existing = db.scalar(
         select(Generation).where(
@@ -121,6 +123,40 @@ def generate(payload: GenerateRequest, db: Session = Depends(get_db)):
         logger.exception("Failed to append Sheets row (generation saved to DB)")
 
     return gen
+
+
+@router.post("/generate", response_model=GenerationRead)
+def generate(payload: GenerateRequest, db: Session = Depends(get_db)):
+    return _run_generate(payload, db)
+
+
+# ---------------------------------------------------------------------------
+# POST /api/generate/manual — pasted JD (same pipeline; URL from reference or content hash)
+# ---------------------------------------------------------------------------
+
+
+@router.post("/generate/manual", response_model=GenerationRead)
+def generate_manual(payload: ManualGenerateRequest, db: Session = Depends(get_db)):
+    profile_name = (payload.profile_name or "").strip() or "default"
+    canonical_url = canonical_url_for_manual_entry(
+        profile_name=profile_name,
+        title=payload.title,
+        company_name=payload.company_name,
+        description_text=payload.description_text,
+        reference_url=payload.reference_url,
+    )
+    inner = GenerateRequest(
+        title=payload.title,
+        url=canonical_url,
+        company_name=payload.company_name,
+        description_text=payload.description_text,
+        salary_range=payload.salary_range,
+        questions=payload.questions,
+        profile_name=profile_name,
+        profile_text=payload.profile_text,
+        model=payload.model,
+    )
+    return _run_generate(inner, db)
 
 
 # ---------------------------------------------------------------------------

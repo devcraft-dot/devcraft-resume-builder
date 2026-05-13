@@ -235,39 +235,81 @@ function isGreenhouseJobUrl(url) {
   }
 }
 
-async function findGreenhouseTabId() {
+/** Public Ashby board: /{orgSlug}/{jobPostingId}( /application ) */
+function isAshbyJobUrl(url) {
+  if (!url || typeof url !== "string") return false;
+  try {
+    const u = new URL(url);
+    if (u.hostname.toLowerCase() !== "jobs.ashbyhq.com") return false;
+    const parts = u.pathname.split("/").filter(Boolean);
+    if (parts.length < 2) return false;
+    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const last = parts[parts.length - 1];
+    const idPart = last.toLowerCase() === "application" ? parts[parts.length - 2] : last;
+    return uuidRe.test(idPart);
+  } catch {
+    return false;
+  }
+}
+
+/** @returns {"greenhouse"|"ashby"|null} */
+function detectJobBoardFromUrl(url) {
+  if (isGreenhouseJobUrl(url)) return "greenhouse";
+  if (isAshbyJobUrl(url)) return "ashby";
+  return null;
+}
+
+async function findJobBoardTabId() {
   const last = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-  if (last[0]?.id != null && isGreenhouseJobUrl(last[0].url)) return last[0].id;
+  if (last[0]?.id != null && detectJobBoardFromUrl(last[0].url)) return last[0].id;
   const wins = await chrome.windows.getAll({ populate: true });
   for (const win of wins) {
     if (win.type !== "normal" || !win.tabs) continue;
-    const hit = win.tabs.find((t) => t.active && isGreenhouseJobUrl(t.url));
+    const hit = win.tabs.find((t) => t.active && detectJobBoardFromUrl(t.url));
     if (hit?.id != null) return hit.id;
   }
   const any = await chrome.tabs.query({});
-  const jobTab = any.find((t) => isGreenhouseJobUrl(t.url));
+  const jobTab = any.find((t) => detectJobBoardFromUrl(t.url));
   return jobTab?.id ?? null;
 }
 
-async function scrapeGreenhouseFromJobTab() {
-  const tabId = await findGreenhouseTabId();
-  if (tabId == null) {
-    throw new Error(
-      "No Greenhouse job tab found. Open a posting (…greenhouse… URL with /jobs/…) in Chrome, focus that tab, then try again.",
-    );
-  }
-  await chrome.scripting.executeScript({
-    target: { tabId },
-    files: ["greenhouseScrapeInjected.js"],
-  });
-  const [{ result }] = await chrome.scripting.executeScript({
-    target: { tabId },
-    func: () => globalThis.__MANUAL_JD_GREENHOUSE_SCRAPE__,
-  });
-  return result;
+function boardLabel(board) {
+  return board === "ashby" ? "Ashby" : "Greenhouse";
 }
 
-function applyGreenhouseScrape(payload) {
+async function scrapeJobBoardFromTab() {
+  const tabId = await findJobBoardTabId();
+  if (tabId == null) {
+    throw new Error(
+      "No supported job tab found. Open a Greenhouse posting (…greenhouse… URL with /jobs/…) or an Ashby job on jobs.ashbyhq.com, focus that tab, then try again.",
+    );
+  }
+  const tab = await chrome.tabs.get(tabId);
+  const board = detectJobBoardFromUrl(tab?.url || "");
+  if (!board) {
+    throw new Error("Could not detect job board from tab URL.");
+  }
+
+  const file = board === "greenhouse" ? "greenhouseScrapeInjected.js" : "ashbyScrapeInjected.js";
+  const ashby = board === "ashby";
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    files: [file],
+    ...(ashby ? { world: "MAIN" } : {}),
+  });
+
+  const [{ result }] = await chrome.scripting.executeScript({
+    target: { tabId },
+    ...(ashby ? { world: "MAIN" } : {}),
+    func:
+      board === "greenhouse"
+        ? () => globalThis.__MANUAL_JD_GREENHOUSE_SCRAPE__
+        : () => globalThis.__MANUAL_JD_ASHBY_SCRAPE__,
+  });
+  return { result, board };
+}
+
+function applyScrapedJobPayload(payload) {
   const jt = document.getElementById("job-title");
   const co = document.getElementById("company");
   const sa = document.getElementById("salary");
@@ -290,17 +332,20 @@ function applyGreenhouseScrape(payload) {
   });
 }
 
-$("#btn-autofill-greenhouse")?.addEventListener("click", async () => {
-  setStatus("Scraping Greenhouse tab…", "run");
+$("#btn-autofill-job-tab")?.addEventListener("click", async () => {
+  setStatus("Scraping job tab…", "run");
   try {
-    const r = await scrapeGreenhouseFromJobTab();
+    const { result: r, board } = await scrapeJobBoardFromTab();
     if (!r?.ok) {
       setStatus(r?.error || "Autofill failed.", "err");
       return;
     }
-    applyGreenhouseScrape(r);
+    applyScrapedJobPayload(r);
     const nq = (r.questions || []).length;
-    setStatus(`Autofill: ${r.title || "Job"}${r.company ? " @ " + r.company : ""} — ${nq} application field(s).`, "ok");
+    setStatus(
+      `${boardLabel(board)} autofill: ${r.title || "Job"}${r.company ? " @ " + r.company : ""} — ${nq} application field(s).`,
+      "ok",
+    );
   } catch (e) {
     setStatus(e?.message || String(e), "err");
   }

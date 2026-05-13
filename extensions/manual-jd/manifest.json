@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Resume Builder — Manual JD",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "description": "Paste a job description and generate resumes via the same API as the Indeed extension",
   "permissions": ["storage", "sidePanel", "tabs", "scripting"],
   "host_permissions": [
@@ -11,7 +11,9 @@
     "https://boards.greenhouse.io/*",
     "http://boards.greenhouse.io/*",
     "https://*.greenhouse.io/*",
-    "http://*.greenhouse.io/*"
+    "http://*.greenhouse.io/*",
+    "https://jobs.ashbyhq.com/*",
+    "http://jobs.ashbyhq.com/*"
   ],
   "background": {
     "service_worker": "background.js"

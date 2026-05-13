@@ -71,7 +71,8 @@ def _strip_markdown_for_qa_display(text: str) -> str:
     return re.sub(r"\*\*", "", t).strip()
 
 
-def _looks_like_question_line(line: str) -> bool:
+def _starts_new_question_block(line: str) -> bool:
+    """True only when a line likely begins a *new* question (not a markdown list inside an answer)."""
     s = line.strip()
     if not s:
         return False
@@ -83,9 +84,57 @@ def _looks_like_question_line(line: str) -> bool:
         return True
     if re.match(r"^\d+\.\s+\S", s):
         return True
-    if re.match(r"^[-*]\s+\S", s):
-        return True
     return False
+
+
+def _try_parse_question_heading_line(line: str) -> str | None:
+    """Extract question text from 'Question 3: …', '**Question:** …', etc. Returns None if not a question line."""
+    s = line.strip()
+    s = re.sub(r"^#+\s*", "", s).strip()
+    s = re.sub(r"^\*+", "", s).strip()
+    m = re.match(r"^(?:Q|Question)\s*(?:\d+\s*)?[:.]\s*\**\s*(.+)$", s, re.IGNORECASE)
+    if m:
+        return m.group(1).strip()
+    return None
+
+
+def _lift_question_prefix_from_placeholder_answer(blob: str) -> tuple[str, str]:
+    """If merged fallback text starts with 'Question 3: …', use that as the real question line."""
+    blob = str(blob or "").strip()
+    if not blob:
+        return "Application question", ""
+    first, _, rest = blob.partition("\n")
+    first = first.strip()
+    first = re.sub(r"^#+\s*", "", first).strip()
+    first = re.sub(r"^\*+", "", first).strip()
+    m = re.match(r"^(?:Question\s*(?:\d+\s*)?[:.]\s*\**\s*)(.+)$", first, re.IGNORECASE)
+    if m:
+        return m.group(1).strip(), rest.strip()
+    return "Application question", blob
+
+
+def _coalesce_placeholder_application_pairs(pairs: list[tuple[str, str]]) -> list[tuple[str, str]]:
+    """Merge consecutive ('Application question', …) rows produced by paragraph-split fallback."""
+    if not pairs:
+        return pairs
+    out: list[tuple[str, str]] = []
+    i = 0
+    while i < len(pairs):
+        q, a = pairs[i]
+        if q != "Application question" or not (a or "").strip():
+            out.append((q, a))
+            i += 1
+            continue
+        chunks = [a.strip()]
+        j = i + 1
+        while j < len(pairs) and pairs[j][0] == "Application question" and (pairs[j][1] or "").strip():
+            chunks.append(pairs[j][1].strip())
+            j += 1
+        blob = "\n\n".join(chunks)
+        q2, a2 = _lift_question_prefix_from_placeholder_answer(blob)
+        out.append((q2, a2))
+        i = j
+    return out
 
 
 def _parse_answers_to_qa_pairs(text: str) -> list[tuple[str, str]]:
@@ -115,11 +164,32 @@ def _parse_answers_to_qa_pairs(text: str) -> list[tuple[str, str]]:
                 L = lines[i].strip()
                 if not L:
                     i += 1
-                    if ans_lines and i < len(lines) and _looks_like_question_line(lines[i]):
+                    if ans_lines and i < len(lines) and _starts_new_question_block(lines[i]):
                         break
                     continue
-                if _looks_like_question_line(lines[i]):
+                if _starts_new_question_block(lines[i]):
                     break
+                ans_lines.append(L)
+                i += 1
+            pairs.append((q, "\n".join(ans_lines).strip()))
+            continue
+
+        q_heading = _try_parse_question_heading_line(line)
+        if q_heading is not None:
+            q = q_heading
+            ans_lines = []
+            i += 1
+            while i < len(lines):
+                L = lines[i].strip()
+                if not L:
+                    i += 1
+                    if ans_lines and i < len(lines) and _starts_new_question_block(lines[i]):
+                        break
+                    continue
+                if _starts_new_question_block(lines[i]):
+                    break
+                if re.match(r"^(?:A|Answer)\s*[:.]?\s*", L, re.IGNORECASE):
+                    L = re.sub(r"^(?:A|Answer)\s*[:.]?\s*", "", L, flags=re.IGNORECASE)
                 ans_lines.append(L)
                 i += 1
             pairs.append((q, "\n".join(ans_lines).strip()))
@@ -134,10 +204,10 @@ def _parse_answers_to_qa_pairs(text: str) -> list[tuple[str, str]]:
                 L = lines[i].strip()
                 if not L:
                     i += 1
-                    if ans_lines and i < len(lines) and _looks_like_question_line(lines[i]):
+                    if ans_lines and i < len(lines) and _starts_new_question_block(lines[i]):
                         break
                     continue
-                if _looks_like_question_line(lines[i]):
+                if _starts_new_question_block(lines[i]):
                     break
                 if re.match(r"^(?:A|Answer)\s*[:.]?\s*", L, re.IGNORECASE):
                     L = re.sub(r"^(?:A|Answer)\s*[:.]?\s*", "", L, flags=re.IGNORECASE)
@@ -156,7 +226,7 @@ def _parse_answers_to_qa_pairs(text: str) -> list[tuple[str, str]]:
                 if not L:
                     i += 1
                     continue
-                if re.match(r"^\d+\.\s+", L) or _looks_like_question_line(lines[i]):
+                if re.match(r"^\d+\.\s+", L) or _starts_new_question_block(lines[i]):
                     break
                 if re.match(r"^(?:A|Answer)\s*[:.]?\s*", L, re.IGNORECASE):
                     L = re.sub(r"^(?:A|Answer)\s*[:.]?\s*", "", L, flags=re.IGNORECASE)
@@ -168,7 +238,7 @@ def _parse_answers_to_qa_pairs(text: str) -> list[tuple[str, str]]:
         i += 1
 
     if pairs:
-        return pairs
+        return _coalesce_placeholder_application_pairs(pairs)
 
     blocks = [b.strip() for b in re.split(r"\n\s*\n+", text) if b.strip()]
     for b in blocks:
@@ -183,7 +253,7 @@ def _parse_answers_to_qa_pairs(text: str) -> list[tuple[str, str]]:
     if not pairs and text:
         pairs.append(("Application responses", text))
 
-    return pairs
+    return _coalesce_placeholder_application_pairs(pairs)
 
 
 def _add_qa_pair_to_doc(doc: Document, question: str, answer: str) -> None:

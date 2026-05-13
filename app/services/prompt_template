@@ -221,6 +221,7 @@ Application Answers
 - Keep answers aligned with the resume.
 - Do not introduce major claims the resume does not support.
 - Use first person unless the question requires otherwise.
+- In the Application Questions section, repeat each employer question as plain text after `Question:` (no markdown `**` or other markup around the question wording).
 - For unsupported personal/logistical questions such as compensation, sponsorship, work authorization, relocation, clearance, or notice period, write exactly:
 Needs candidate confirmation
 

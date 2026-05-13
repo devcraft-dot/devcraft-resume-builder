@@ -5,7 +5,10 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      width: 420px;
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      min-height: 100vh;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       font-size: 13px;
       color: #1a1a1a;
@@ -49,6 +52,13 @@
     .btn-start { background: #7c3aed; color: #fff; }
     .btn-start:hover:not(:disabled) { background: #6d28d9; }
     .btn-start:disabled { opacity: 0.45; cursor: not-allowed; }
+    .autofill-row { margin-top: 12px; }
+    .btn-autofill {
+      width: 100%; padding: 9px 12px; font-size: 12px; font-weight: 600;
+      border: 1px solid #0f766e; border-radius: 8px; cursor: pointer;
+      background: #ecfdf5; color: #115e59;
+    }
+    .btn-autofill:hover { background: #d1fae5; }
     .status-msg {
       margin-top: 12px; font-size: 12px; padding: 10px; border-radius: 6px;
       background: #f3f4f6; color: #374151; word-break: break-word; min-height: 2.5em;
@@ -74,6 +84,58 @@
     }
     .btn-row button.primary { background: #111827; color: #fff; border-color: #111827; }
     .save-status { font-size: 11px; color: #059669; margin-left: 8px; }
+    .questions-block { margin-top: 4px; }
+    #questions-container { margin-top: 8px; }
+    .q-row {
+      background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+      padding: 10px; margin-bottom: 8px;
+    }
+    .q-row-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .q-row-title { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; }
+    .q-remove {
+      border: none; background: transparent; color: #9ca3af; cursor: pointer;
+      font-size: 18px; line-height: 1; padding: 0 4px;
+    }
+    .q-remove:hover { color: #ef4444; }
+    .q-row .q-label { margin-bottom: 8px; }
+    .q-row-grid { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; margin-bottom: 8px; }
+    .q-inline { font-size: 11px; color: #4b5563; }
+    .q-inline span { display: block; font-weight: 600; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .q-inline select { width: 100%; }
+    .q-check { display: flex; align-items: center; gap: 6px; padding-bottom: 4px; white-space: nowrap; }
+    .q-check input { width: auto; }
+    #btn-add-question {
+      margin-top: 6px; padding: 6px 12px; font-size: 12px; font-weight: 600;
+      border: 1px dashed #9ca3af; border-radius: 8px; background: #fff; color: #4b5563; cursor: pointer;
+    }
+    #btn-add-question:hover { border-color: #7c3aed; color: #7c3aed; }
+    .dl-section {
+      margin-top: 16px; padding-top: 14px; border-top: 1px solid #e5e7eb;
+    }
+    .dl-section > label {
+      display: block; font-size: 11px; font-weight: 700; color: #4b5563;
+      margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.03em;
+    }
+    .dl-card {
+      background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+      padding: 12px; margin-bottom: 10px;
+    }
+    .dl-card h3 { font-size: 13px; font-weight: 600; margin: 0 0 8px 0; color: #111827; }
+    .dl-group { margin-bottom: 10px; }
+    .dl-group:last-child { margin-bottom: 0; }
+    .dl-group strong {
+      display: block; font-size: 10px; font-weight: 700; color: #64748b;
+      text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px;
+    }
+    .dl-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .btn-dl {
+      padding: 6px 10px; font-size: 11px; font-weight: 600;
+      border: 1px solid #d1d5db; border-radius: 6px; background: #f9fafb; color: #374151;
+      cursor: pointer;
+    }
+    .btn-dl:hover { background: #ede9fe; border-color: #a78bfa; color: #5b21b6; }
+    .btn-dl-open { background: #fff; }
+    .dl-missing { font-size: 11px; color: #9ca3af; }
   </style>
 </head>
 <body>
@@ -102,15 +164,30 @@
       <label for="jd">Job description</label>
       <textarea id="jd" placeholder="Paste the full job description here…"></textarea>
     </div>
+    <div class="field questions-block">
+      <label>Application / screener questions (optional)</label>
+      <p class="hint">Mirror the employer form (Indeed smart apply, greenhouse, etc.). For &quot;single choice&quot;, list options separated by commas.</p>
+      <div id="questions-container"></div>
+      <button type="button" id="btn-add-question">+ Add question</button>
+    </div>
     <div class="field">
       <label for="reference-url">Posting URL (optional)</label>
       <input id="reference-url" type="url" placeholder="https://… — optional; used for de-duplication and tracking" />
       <div class="hint">If empty, the extension and server use a hash of title + company + JD + profile name (same as API).</div>
+      <p class="hint" style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #e5e7eb;">This UI opens in the browser <strong>side panel</strong> (click the extension icon or use the on-page rail). The rail can send selected text here as the job description.</p>
+    </div>
+    <div class="autofill-row">
+      <button type="button" class="btn-autofill" id="btn-autofill-greenhouse">Autofill from Greenhouse tab</button>
+      <p class="hint" style="margin-top: 6px;">Uses the focused or last-used browser tab on <code>job-boards.greenhouse.io</code> / <code>boards.greenhouse.io</code> (URL must include <code>/jobs/</code>). Fills title, company, pay range, full description, posting URL, and custom application questions (EEO / voluntary self-ID blocks are skipped).</p>
     </div>
     <div class="controls">
       <button type="button" class="btn-start" id="btn-start">Start</button>
     </div>
-    <div id="status-msg" class="status-msg">Ready. Uses the same saved profiles as the Indeed extension (chrome.storage.sync &quot;profiles&quot;).</div>
+    <div id="status-msg" class="status-msg">Ready. Same profiles as the Indeed extension (chrome.storage.sync &quot;profiles&quot;). Use the toolbar icon to open this side panel.</div>
+    <div id="downloads-section" class="dl-section" style="display: none;">
+      <label>Downloads</label>
+      <div id="downloads-list"></div>
+    </div>
   </div>
 
   <div id="panel-settings" class="panel">
@@ -123,7 +200,7 @@
     </div>
   </div>
 
-  <script src="config.js"></script>
+  <script src="manualExtensionCore.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

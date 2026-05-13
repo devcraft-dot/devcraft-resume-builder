@@ -1,160 +1,12 @@
 const $ = (s) => document.querySelector(s);
-
-const API_ERROR_LOG_KEY = "manualJdApiErrorLog";
-const API_ERROR_LOG_MAX = 40;
-
-/** @param {string} text */
-async function sha256Hex(text) {
-  const enc = new TextEncoder().encode(text);
-  const buf = await crypto.subtle.digest("SHA-256", enc);
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-/**
- * Must match `canonical_url_for_manual_entry` in app/schemas/generate.py (order + trimming).
- * @param {string} profileName
- * @param {{ title: string, company: string, jd: string, referenceUrl: string }} job
- */
-async function canonicalJobUrl(profileName, job) {
-  const ref = (job.referenceUrl || "").trim();
-  if (ref) return ref.slice(0, 2000);
-  const pn = (profileName || "").trim() || "default";
-  const key = `${pn}\n${job.title.trim()}\n${(job.company || "").trim()}\n${(job.jd || "").trim()}`;
-  const digest = await sha256Hex(key);
-  return `manual:${digest}`;
-}
+const { canonicalJobUrl, checkGenerationKeys, postGenerateManual, extractDriveFileId, driveExportUrl } =
+  globalThis.ManualJD;
 
 function setStatus(text, kind) {
   const el = $("#status-msg");
   if (!el) return;
   el.textContent = text;
   el.className = "status-msg" + (kind ? ` ${kind}` : "");
-}
-
-async function appendApiErrorLog(entry) {
-  try {
-    const r = await chrome.storage.local.get(API_ERROR_LOG_KEY);
-    const prev = Array.isArray(r[API_ERROR_LOG_KEY]) ? r[API_ERROR_LOG_KEY] : [];
-    const row = {
-      at: new Date().toISOString(),
-      path: String(entry.path || "").slice(0, 400),
-      method: String(entry.method || "POST").slice(0, 16),
-      status: typeof entry.status === "number" ? entry.status : 0,
-      detail: String(entry.detail || "").slice(0, 3000),
-      context: String(entry.context || "").slice(0, 500),
-    };
-    await chrome.storage.local.set({
-      [API_ERROR_LOG_KEY]: [row, ...prev].slice(0, API_ERROR_LOG_MAX),
-    });
-  } catch (e) {
-    console.error("[Manual JD] appendApiErrorLog", e);
-  }
-}
-
-/**
- * @param {string} jdUrl
- * @param {{ name?: string, model?: string, text?: string }[]} profilesList
- */
-async function checkGenerationKeys(jdUrl, profilesList) {
-  if (!jdUrl || !profilesList?.length) return [];
-  const items = profilesList.map((p) => ({
-    url: jdUrl,
-    profile_name: (p.name || "").trim() || "default",
-  }));
-  try {
-    const res = await fetch(`${API_URL}/api/check-generation-keys`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items }),
-    });
-    if (!res.ok) {
-      const text = await res.text().catch(() => res.statusText);
-      let detail = text?.slice(0, 1200) || res.statusText;
-      try {
-        const j = JSON.parse(text);
-        if (j?.detail != null) detail = typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail);
-      } catch {
-        /* */
-      }
-      await appendApiErrorLog({
-        path: "/api/check-generation-keys",
-        method: "POST",
-        status: res.status,
-        detail,
-        context: (jdUrl || "").slice(0, 400),
-      });
-      return null;
-    }
-    const data = await res.json();
-    return Array.isArray(data.items) ? data.items : [];
-  } catch (e) {
-    const msg = e?.message || String(e);
-    await appendApiErrorLog({
-      path: "/api/check-generation-keys",
-      method: "POST",
-      status: 0,
-      detail: msg,
-      context: (jdUrl || "").slice(0, 400),
-    });
-    return null;
-  }
-}
-
-/**
- * @param {{ name?: string, model?: string, text?: string }} profile
- * @param {{ title: string, company: string, salary: string, jd: string, referenceUrl: string }} job
- */
-async function postGenerateManual(profile, job) {
-  const body = {
-    title: job.title.trim(),
-    company_name: (job.company || "").trim(),
-    description_text: (job.jd || "").trim(),
-    salary_range: (job.salary || "").trim(),
-    questions: [],
-    profile_name: (profile.name || "").trim() || "default",
-    profile_text: (profile.text || "").trim(),
-    model: profile.model || "gpt-5.4-mini",
-    reference_url: (job.referenceUrl || "").trim(),
-  };
-  let res;
-  try {
-    res = await fetch(`${API_URL}/api/generate/manual`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-  } catch (e) {
-    const msg = e?.message || String(e);
-    await appendApiErrorLog({
-      path: "/api/generate/manual",
-      method: "POST",
-      status: 0,
-      detail: msg,
-      context: `${job.title} · ${profile.name || "default"}`,
-    });
-    throw new Error(`Network/CORS (${API_URL}): ${msg}`);
-  }
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    let detail = text?.slice(0, 1200) || res.statusText;
-    try {
-      const j = JSON.parse(text);
-      if (j?.detail != null) detail = typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail);
-    } catch {
-      /* */
-    }
-    await appendApiErrorLog({
-      path: "/api/generate/manual",
-      method: "POST",
-      status: res.status,
-      detail,
-      context: `${job.title} · ${profile.name || "default"}`,
-    });
-    throw new Error(`API ${res.status}: ${detail}`);
-  }
-  return res.json();
 }
 
 /* ─── Tabs ─────────────────────────────────────────────────────── */
@@ -254,6 +106,206 @@ $("#btn-save")?.addEventListener("click", () => {
   });
 });
 
+/* ─── Application questions ─────────────────────────────────────── */
+function addQuestionRow(data = {}) {
+  const host = $("#questions-container");
+  if (!host) return;
+  const label = data.label != null ? String(data.label) : "";
+  const type = data.type === "textarea" || data.type === "select" ? data.type : "input";
+  const required = data.required === true;
+  let optionsStr = "";
+  if (Array.isArray(data.options)) optionsStr = data.options.join(", ");
+  else if (data.options != null) optionsStr = String(data.options);
+
+  const row = document.createElement("div");
+  row.className = "q-row";
+  row.innerHTML = `
+    <div class="q-row-head">
+      <span class="q-row-title">Question</span>
+      <button type="button" class="q-remove" title="Remove">&times;</button>
+    </div>
+    <input type="text" class="q-label" placeholder="e.g. Are you authorized to work in the US?" value="${esc(label)}" />
+    <div class="q-row-grid">
+      <label class="q-inline"><span>Field type</span>
+        <select class="q-type">
+          <option value="input" ${type === "input" ? "selected" : ""}>Short text</option>
+          <option value="textarea" ${type === "textarea" ? "selected" : ""}>Long text</option>
+          <option value="select" ${type === "select" ? "selected" : ""}>Single choice</option>
+        </select>
+      </label>
+      <label class="q-inline q-check"><input type="checkbox" class="q-required" ${required ? "checked" : ""} /> Required</label>
+    </div>
+    <input type="text" class="q-options" placeholder="Single choice options: Yes, No, Prefer not to say" value="${esc(optionsStr)}" />
+  `;
+  row.querySelector(".q-remove")?.addEventListener("click", () => row.remove());
+  host.appendChild(row);
+}
+
+function collectApplicationQuestions() {
+  const out = [];
+  document.querySelectorAll("#questions-container .q-row").forEach((row) => {
+    const label = row.querySelector(".q-label")?.value?.trim() || "";
+    if (!label) return;
+    const type = row.querySelector(".q-type")?.value || "input";
+    const required = row.querySelector(".q-required")?.checked === true;
+    const optionsRaw = row.querySelector(".q-options")?.value || "";
+    const options = optionsRaw.split(/[,;\n]/).map((s) => s.trim()).filter(Boolean);
+    out.push({ label, type, required, options });
+  });
+  return out;
+}
+
+function escAttr(s) {
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;");
+}
+
+function openUrl(url) {
+  const u = String(url || "").trim();
+  if (!u) return;
+  try {
+    chrome.tabs.create({ url: u });
+  } catch {
+    window.open(u, "_blank", "noopener,noreferrer");
+  }
+}
+
+function renderDownloadButtons(title, url) {
+  const u = String(url || "").trim();
+  if (!u) {
+    return `<div class="dl-group"><strong>${esc(title)}</strong><span class="dl-missing">No file URL</span></div>`;
+  }
+  const id = extractDriveFileId(u);
+  let btns = "";
+  if (id) {
+    const pdf = escAttr(driveExportUrl(u, "pdf"));
+    const docx = escAttr(driveExportUrl(u, "docx"));
+    btns += `<button type="button" class="btn-dl" data-open-url="${pdf}">PDF</button>`;
+    btns += `<button type="button" class="btn-dl" data-open-url="${docx}">DOCX</button>`;
+  }
+  btns += `<button type="button" class="btn-dl btn-dl-open" data-open-url="${escAttr(u)}">Open in Drive</button>`;
+  return `<div class="dl-group"><strong>${esc(title)}</strong><div class="dl-row">${btns}</div></div>`;
+}
+
+function renderDownloads(results) {
+  const list = $("#downloads-list");
+  const section = $("#downloads-section");
+  if (!list || !section) return;
+  if (!results?.length) {
+    section.style.display = "none";
+    list.innerHTML = "";
+    return;
+  }
+  section.style.display = "block";
+  list.innerHTML = results
+    .map(({ profileLabel, gen }) => {
+      const name = esc(profileLabel || "Profile");
+      return `
+        <div class="dl-card">
+          <h3>${name}</h3>
+          ${renderDownloadButtons("Tailored resume", gen.resume_drive_url)}
+          ${renderDownloadButtons("Job description", gen.jd_drive_url)}
+          ${renderDownloadButtons("Application answers", gen.questions_drive_url)}
+        </div>`;
+    })
+    .join("");
+
+  list.querySelectorAll("button[data-open-url]").forEach((btn) => {
+    btn.addEventListener("click", () => openUrl(btn.getAttribute("data-open-url")));
+  });
+}
+
+$("#btn-add-question")?.addEventListener("click", () => addQuestionRow());
+
+function isGreenhouseJobUrl(url) {
+  if (!url || typeof url !== "string") return false;
+  try {
+    const u = new URL(url);
+    if (!u.pathname.includes("/jobs/")) return false;
+    const h = u.hostname.toLowerCase();
+    return (
+      h === "job-boards.greenhouse.io" ||
+      h === "boards.greenhouse.io" ||
+      h.endsWith(".greenhouse.io")
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function findGreenhouseTabId() {
+  const last = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+  if (last[0]?.id != null && isGreenhouseJobUrl(last[0].url)) return last[0].id;
+  const wins = await chrome.windows.getAll({ populate: true });
+  for (const win of wins) {
+    if (win.type !== "normal" || !win.tabs) continue;
+    const hit = win.tabs.find((t) => t.active && isGreenhouseJobUrl(t.url));
+    if (hit?.id != null) return hit.id;
+  }
+  const any = await chrome.tabs.query({});
+  const jobTab = any.find((t) => isGreenhouseJobUrl(t.url));
+  return jobTab?.id ?? null;
+}
+
+async function scrapeGreenhouseFromJobTab() {
+  const tabId = await findGreenhouseTabId();
+  if (tabId == null) {
+    throw new Error(
+      "No Greenhouse job tab found. Open a posting (…greenhouse… URL with /jobs/…) in Chrome, focus that tab, then try again.",
+    );
+  }
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    files: ["greenhouseScrapeInjected.js"],
+  });
+  const [{ result }] = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: () => globalThis.__MANUAL_JD_GREENHOUSE_SCRAPE__,
+  });
+  return result;
+}
+
+function applyGreenhouseScrape(payload) {
+  const jt = document.getElementById("job-title");
+  const co = document.getElementById("company");
+  const sa = document.getElementById("salary");
+  const jd = document.getElementById("jd");
+  const ref = document.getElementById("reference-url");
+  if (jt) jt.value = payload.title || "";
+  if (co) co.value = payload.company || "";
+  if (sa) sa.value = payload.salary_range || "";
+  if (jd) jd.value = payload.description_text || "";
+  if (ref) ref.value = payload.posting_url || "";
+  const qc = document.getElementById("questions-container");
+  if (qc) qc.innerHTML = "";
+  (payload.questions || []).forEach((q) => {
+    addQuestionRow({
+      label: q.label,
+      type: q.type || "input",
+      required: !!q.required,
+      options: Array.isArray(q.options) ? q.options.join(", ") : String(q.options || ""),
+    });
+  });
+}
+
+$("#btn-autofill-greenhouse")?.addEventListener("click", async () => {
+  setStatus("Scraping Greenhouse tab…", "run");
+  try {
+    const r = await scrapeGreenhouseFromJobTab();
+    if (!r?.ok) {
+      setStatus(r?.error || "Autofill failed.", "err");
+      return;
+    }
+    applyGreenhouseScrape(r);
+    const nq = (r.questions || []).length;
+    setStatus(`Autofill: ${r.title || "Job"}${r.company ? " @ " + r.company : ""} — ${nq} application field(s).`, "ok");
+  } catch (e) {
+    setStatus(e?.message || String(e), "err");
+  }
+});
+
 /* ─── Run ────────────────────────────────────────────────────────── */
 let running = false;
 
@@ -281,7 +333,8 @@ $("#btn-start")?.addEventListener("click", async () => {
     return;
   }
 
-  const job = { title, company, salary, jd, referenceUrl };
+  const questions = collectApplicationQuestions();
+  const job = { title, company, salary, jd, referenceUrl, questions };
   running = true;
   const btn = $("#btn-start");
   if (btn) btn.disabled = true;
@@ -289,6 +342,8 @@ $("#btn-start")?.addEventListener("click", async () => {
   let generated = 0;
   let skipped = 0;
   let failed = 0;
+  const generationResults = [];
+  renderDownloads([]);
 
   try {
     for (let i = 0; i < usable.length; i++) {
@@ -307,8 +362,10 @@ $("#btn-start")?.addEventListener("click", async () => {
 
       setStatus(`Generating ${label}…`, "run");
       try {
-        await postGenerateManual(profile, job);
+        const gen = await postGenerateManual(profile, job);
         generated++;
+        generationResults.push({ profileLabel: label, gen });
+        renderDownloads(generationResults);
         setStatus(`Generated: ${label}`, "ok");
       } catch (e) {
         failed++;
@@ -329,4 +386,37 @@ $("#btn-start")?.addEventListener("click", async () => {
   }
 });
 
-document.addEventListener("DOMContentLoaded", loadProfiles);
+function applyPendingJdFromRail() {
+  chrome.storage.local.get(["manualJd_pendingJd"], (d) => {
+    if (d.manualJd_pendingJd == null) return;
+    const ta = document.getElementById("jd");
+    const text = String(d.manualJd_pendingJd);
+    if (ta && text.trim()) ta.value = text;
+    chrome.storage.local.remove(["manualJd_pendingJd"]);
+    document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+    document.querySelector('.tab-btn[data-tab="run"]')?.classList.add("active");
+    document.getElementById("panel-run")?.classList.add("active");
+    if (text.trim()) setStatus("Loaded JD from the page (book on the rail).", "ok");
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadProfiles();
+  applyPendingJdFromRail();
+});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local" || changes.manualJd_pendingJd == null) return;
+  const nv = changes.manualJd_pendingJd.newValue;
+  if (nv != null && String(nv).trim()) {
+    const ta = document.getElementById("jd");
+    if (ta) ta.value = String(nv);
+    chrome.storage.local.remove(["manualJd_pendingJd"]);
+    document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+    document.querySelector('.tab-btn[data-tab="run"]')?.classList.add("active");
+    document.getElementById("panel-run")?.classList.add("active");
+    setStatus("Updated JD from the page (book on the rail).", "ok");
+  }
+});

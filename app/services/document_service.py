@@ -57,6 +57,20 @@ def _strip_default_paragraph(doc: Document) -> None:
 # Answers Q&A parsing
 # ---------------------------------------------------------------------------
 
+def _strip_markdown_for_qa_display(text: str) -> str:
+    """Remove markdown bold/italic markers so DOCX shows plain HR question/answer text."""
+    t = str(text or "").strip()
+    while True:
+        if t.startswith("**") and t.endswith("**") and len(t) >= 4:
+            t = t[2:-2].strip()
+            continue
+        if len(t) >= 2 and t.startswith("*") and t.endswith("*") and not t.startswith("**"):
+            t = t[1:-1].strip()
+            continue
+        break
+    return re.sub(r"\*\*", "", t).strip()
+
+
 def _looks_like_question_line(line: str) -> bool:
     s = line.strip()
     if not s:
@@ -173,12 +187,13 @@ def _parse_answers_to_qa_pairs(text: str) -> list[tuple[str, str]]:
 
 
 def _add_qa_pair_to_doc(doc: Document, question: str, answer: str) -> None:
+    q_clean = _strip_markdown_for_qa_display(question)
     p_q = doc.add_paragraph()
     r_label = p_q.add_run("Question: ")
     r_label.bold = True
     r_label.font.name = _BODY_FONT
     r_label.font.size = Pt(10.5)
-    r_q = p_q.add_run(question)
+    r_q = p_q.add_run(q_clean)
     r_q.font.name = _BODY_FONT
     r_q.font.size = Pt(10.5)
     p_q.paragraph_format.space_after = Pt(2)
@@ -201,6 +216,7 @@ def _add_qa_pair_to_doc(doc: Document, question: str, answer: str) -> None:
     ans_lines = [x.strip() for x in ans.splitlines() if x.strip()] or [ans]
     first = True
     for segment in ans_lines:
+        seg_clean = _strip_markdown_for_qa_display(segment)
         p_a = doc.add_paragraph()
         p_a.paragraph_format.left_indent = Inches(0.2)
         p_a.paragraph_format.space_after = Pt(4 if first else 2)
@@ -209,12 +225,12 @@ def _add_qa_pair_to_doc(doc: Document, question: str, answer: str) -> None:
             ra.bold = True
             ra.font.name = _BODY_FONT
             ra.font.size = Pt(10.5)
-            rb = p_a.add_run(segment)
+            rb = p_a.add_run(seg_clean)
             rb.font.name = _BODY_FONT
             rb.font.size = Pt(10.5)
             first = False
         else:
-            rb = p_a.add_run(segment)
+            rb = p_a.add_run(seg_clean)
             rb.font.name = _BODY_FONT
             rb.font.size = Pt(10.5)
     doc.paragraphs[-1].paragraph_format.space_after = Pt(10)

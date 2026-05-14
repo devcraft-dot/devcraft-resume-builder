@@ -6,6 +6,40 @@
   const API_URL = "https://devcraft-resume-builder.vercel.app";
   const API_ERROR_LOG_KEY = "manualJdApiErrorLog";
   const API_ERROR_LOG_MAX = 40;
+  const ACCESS_TOKEN_KEY = "manualJd_accessToken";
+
+  function storageLocalGet(keys) {
+    return new Promise((resolve) => chrome.storage.local.get(keys, resolve));
+  }
+
+  function storageLocalSet(obj) {
+    return new Promise((resolve) => chrome.storage.local.set(obj, resolve));
+  }
+
+  async function getAccessToken() {
+    const r = await storageLocalGet([ACCESS_TOKEN_KEY]);
+    return String(r[ACCESS_TOKEN_KEY] || "").trim();
+  }
+
+  async function setAccessToken(token) {
+    const t = String(token || "").trim();
+    if (t) await storageLocalSet({ [ACCESS_TOKEN_KEY]: t });
+    else await storageLocalSet({ [ACCESS_TOKEN_KEY]: "" });
+  }
+
+  async function authJsonHeaders() {
+    const h = { "Content-Type": "application/json" };
+    const t = await getAccessToken();
+    if (t) h.Authorization = `Bearer ${t}`;
+    return h;
+  }
+
+  async function authMultipartHeaders() {
+    const h = {};
+    const t = await getAccessToken();
+    if (t) h.Authorization = `Bearer ${t}`;
+    return h;
+  }
 
   async function sha256Hex(text) {
     const enc = new TextEncoder().encode(text);
@@ -58,7 +92,7 @@
     try {
       const res = await fetch(`${API_URL}/api/check-generation-keys`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await authJsonHeaders(),
         body: JSON.stringify({ items }),
       });
       if (!res.ok) {
@@ -126,7 +160,7 @@
     try {
       res = await fetch(`${API_URL}/api/generate/manual`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await authJsonHeaders(),
         body: JSON.stringify(body),
       });
     } catch (e) {
@@ -164,21 +198,21 @@
   async function postUploadApplicationScreenshot(blob, meta = {}) {
     const title = String(meta.title || "").trim().slice(0, 500);
     const company_name = String(meta.company || "").trim().slice(0, 500);
-    const params = new URLSearchParams();
-    if (title) params.set("title", title);
-    if (company_name) params.set("company_name", company_name);
-    const qs = params.toString();
-    const path = `/api/upload/application-screenshot${qs ? `?${qs}` : ""}`;
+    const jobUrls = Array.isArray(meta.jobUrls) ? meta.jobUrls.map((u) => String(u || "").trim()).filter(Boolean) : [];
+    const path = "/api/upload/application-screenshot";
     const fd = new FormData();
     const mime = blob.type || "image/png";
     let fname = "screenshot.png";
     if (mime === "image/jpeg" || mime === "image/jpg") fname = "screenshot.jpg";
     else if (mime === "image/webp") fname = "screenshot.webp";
     fd.append("file", blob, fname);
+    fd.append("title", title);
+    fd.append("company_name", company_name);
+    if (jobUrls.length) fd.append("job_urls_json", JSON.stringify(jobUrls));
 
     let res;
     try {
-      res = await fetch(`${API_URL}${path}`, { method: "POST", body: fd });
+      res = await fetch(`${API_URL}${path}`, { method: "POST", headers: await authMultipartHeaders(), body: fd });
     } catch (e) {
       const msg = e?.message || String(e);
       await appendApiErrorLog({
@@ -217,6 +251,43 @@
     return res.json();
   }
 
+  async function fetchAuthConfig() {
+    const res = await fetch(`${API_URL}/api/auth/config`, { method: "GET" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+
+  async function postAuthLogin(email, password) {
+    const res = await fetch(`${API_URL}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const text = await res.text().catch(() => res.statusText);
+    if (!res.ok) throw new Error(text || res.statusText);
+    return JSON.parse(text);
+  }
+
+  async function postAuthRegister(email, password) {
+    const res = await fetch(`${API_URL}/api/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const text = await res.text().catch(() => res.statusText);
+    if (!res.ok) throw new Error(text || res.statusText);
+    return JSON.parse(text);
+  }
+
+  async function fetchMe() {
+    const res = await fetch(`${API_URL}/api/me`, { method: "GET", headers: await authJsonHeaders() });
+    if (!res.ok) {
+      const text = await res.text().catch(() => res.statusText);
+      throw new Error(text || res.statusText);
+    }
+    return res.json();
+  }
+
   globalThis.ManualJD = {
     API_URL,
     sha256Hex,
@@ -228,5 +299,11 @@
     fetchHealth,
     extractDriveFileId,
     driveExportUrl,
+    getAccessToken,
+    setAccessToken,
+    fetchAuthConfig,
+    postAuthLogin,
+    postAuthRegister,
+    fetchMe,
   };
 })();

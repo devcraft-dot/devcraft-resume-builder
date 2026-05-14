@@ -51,7 +51,23 @@
     }
     .btn-start { background: #7c3aed; color: #fff; }
     .btn-start:hover:not(:disabled) { background: #6d28d9; }
-    .btn-start:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-clear-app {
+      flex: 0 0 auto;
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      background: #fff;
+      color: #374151;
+      cursor: pointer;
+    }
+    .btn-clear-app:hover { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+    .account-banner {
+      font-size: 11px; color: #92400e; background: #fffbeb; border: 1px solid #fcd34d;
+      border-radius: 8px; padding: 8px 10px; margin-bottom: 12px; line-height: 1.35;
+    }
+    .account-banner.ok { color: #065f46; background: #ecfdf5; border-color: #6ee7b7; }
     .autofill-row { margin-top: 12px; }
     .btn-autofill {
       width: 100%; padding: 9px 12px; font-size: 12px; font-weight: 600;
@@ -169,10 +185,12 @@
     <div class="tab-row">
       <button type="button" class="tab-btn active" data-tab="run">Run</button>
       <button type="button" class="tab-btn" data-tab="settings">Profiles</button>
+      <button type="button" class="tab-btn" data-tab="account">Account</button>
     </div>
   </div>
 
   <div id="panel-run" class="panel active">
+    <div id="auth-banner-run" class="account-banner" style="display: none;"></div>
     <div class="field">
       <label for="job-title">Job title</label>
       <input id="job-title" type="text" placeholder="e.g. Senior Backend Engineer" autocomplete="off" />
@@ -195,9 +213,27 @@
       <div id="questions-container"></div>
       <button type="button" id="btn-add-question">+ Add question</button>
     </div>
+    <div class="field">
+      <label for="reference-url">Posting URL (optional)</label>
+      <input id="reference-url" type="url" placeholder="https://… — optional; used for de-duplication and tracking" />
+      <div class="hint">If empty, the extension and server use a hash of title + company + JD + profile name (same as API).</div>
+    </div>
+    <div class="autofill-row">
+      <button type="button" class="btn-autofill" id="btn-autofill-job-tab">Autofill from job tab</button>
+      <p class="hint" style="margin-top: 6px;">Uses the focused or last-used tab: <strong>Greenhouse</strong> (<code>*.greenhouse.io</code> with <code>/jobs/</code> in the path) or <strong>Ashby</strong> (<code>jobs.ashbyhq.com/…/…</code>). Fills title, company, pay range when shown, full description, posting URL, and custom application questions (Greenhouse EEO blocks are skipped).</p>
+    </div>
+    <div class="controls" style="flex-wrap: wrap;">
+      <button type="button" class="btn-start" id="btn-start">Start</button>
+      <button type="button" class="btn-clear-app" id="btn-clear-application" title="Clear job fields, questions, reference URL, and screenshot">Clear application</button>
+    </div>
+    <div id="status-msg" class="status-msg">Ready. Same profiles as the Indeed extension (chrome.storage.sync &quot;profiles&quot;). Use the toolbar icon to open this side panel.</div>
+    <div id="downloads-section" class="dl-section" style="display: none;">
+      <label>Downloads</label>
+      <div id="downloads-list"></div>
+    </div>
     <div class="field screenshot-block">
       <label>Application screenshot (optional)</label>
-      <p class="hint">Use <strong>Shift+Win+S</strong> to snip the application form, then click the box below and press <strong>Ctrl+V</strong> to paste. You can also drop an image file or choose one.</p>
+      <p class="hint">Use <strong>Shift+Win+S</strong> to snip the application form, then click the box below and press <strong>Ctrl+V</strong> to paste. You can also drop an image file or choose one. After upload, matching generation rows in stage <strong>generated</strong> move to <strong>applied</strong> (same job title + JD + profiles as Start).</p>
       <div id="screenshot-zone" class="screenshot-zone" tabindex="0" role="button" aria-label="Paste or drop application screenshot">
         <p>Paste screenshot here</p>
         <p class="sub">Click to focus, then Ctrl+V · or drag &amp; drop · or pick a file</p>
@@ -208,29 +244,12 @@
       <input type="file" id="screenshot-file" accept="image/png,image/jpeg,image/webp" hidden />
       <div class="screenshot-actions">
         <button type="button" id="btn-screenshot-pick">Choose image…</button>
-        <button type="button" id="btn-screenshot-clear">Clear</button>
+        <button type="button" id="btn-screenshot-clear">Clear image</button>
         <button type="button" class="primary" id="btn-screenshot-upload" disabled>Upload to Drive</button>
       </div>
       <div id="screenshot-result" class="screenshot-result hint"></div>
     </div>
-    <div class="field">
-      <label for="reference-url">Posting URL (optional)</label>
-      <input id="reference-url" type="url" placeholder="https://… — optional; used for de-duplication and tracking" />
-      <div class="hint">If empty, the extension and server use a hash of title + company + JD + profile name (same as API).</div>
-      <p class="hint" style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #e5e7eb;">This UI opens in the browser <strong>side panel</strong> (click the extension icon or use the on-page rail). The rail can send selected text here as the job description.</p>
-    </div>
-    <div class="autofill-row">
-      <button type="button" class="btn-autofill" id="btn-autofill-job-tab">Autofill from job tab</button>
-      <p class="hint" style="margin-top: 6px;">Uses the focused or last-used tab: <strong>Greenhouse</strong> (<code>*.greenhouse.io</code> with <code>/jobs/</code> in the path) or <strong>Ashby</strong> (<code>jobs.ashbyhq.com/…/…</code>). Fills title, company, pay range when shown, full description, posting URL, and custom application questions (Greenhouse EEO blocks are skipped).</p>
-    </div>
-    <div class="controls">
-      <button type="button" class="btn-start" id="btn-start">Start</button>
-    </div>
-    <div id="status-msg" class="status-msg">Ready. Same profiles as the Indeed extension (chrome.storage.sync &quot;profiles&quot;). Use the toolbar icon to open this side panel.</div>
-    <div id="downloads-section" class="dl-section" style="display: none;">
-      <label>Downloads</label>
-      <div id="downloads-list"></div>
-    </div>
+    <p class="hint" style="margin-top: 10px;">Opens in the browser <strong>side panel</strong>. The on-page rail can autofill from a job tab or open this panel.</p>
   </div>
 
   <div id="panel-settings" class="panel">
@@ -241,6 +260,33 @@
       <button type="button" class="primary" id="btn-save">Save profiles</button>
       <span id="save-status" class="save-status"></span>
     </div>
+  </div>
+
+  <div id="panel-account" class="panel">
+    <p class="hint" style="margin-bottom: 10px;">Sign in to get a JWT; the extension sends it on each API call. No server session — set <code>JWT_SECRET</code> on the API (e.g. Vercel env) to enable auth.</p>
+    <div id="account-logged-out">
+      <div class="field">
+        <label for="acc-email">Email</label>
+        <input id="acc-email" type="email" autocomplete="username" />
+      </div>
+      <div class="field">
+        <label for="acc-password">Password</label>
+        <input id="acc-password" type="password" autocomplete="current-password" />
+      </div>
+      <div class="btn-row">
+        <button type="button" id="acc-login">Log in</button>
+        <button type="button" class="primary" id="acc-register">Create account</button>
+      </div>
+    </div>
+    <div id="account-logged-in" style="display: none;">
+      <p class="hint" id="account-user-line"></p>
+      <p class="hint" id="account-stats-line" style="margin-top: 6px;"></p>
+      <div class="btn-row" style="margin-top: 12px;">
+        <button type="button" id="acc-refresh-me">Refresh stats</button>
+        <button type="button" class="primary" id="acc-logout">Log out</button>
+      </div>
+    </div>
+    <p id="account-msg" class="hint" style="margin-top: 12px;"></p>
   </div>
 
   <script src="manualExtensionCore.js"></script>

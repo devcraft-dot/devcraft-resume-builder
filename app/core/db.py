@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import threading
 from functools import lru_cache
 
 from sqlalchemy import create_engine
@@ -9,6 +10,22 @@ from app.core.config import settings
 
 class Base(DeclarativeBase):
     pass
+
+
+_schema_lock = threading.Lock()
+_schema_ready = False
+
+
+def ensure_schema() -> None:
+    """Create tables once (no FastAPI lifespan). Safe to call from get_db."""
+    global _schema_ready
+    if _schema_ready:
+        return
+    with _schema_lock:
+        if _schema_ready:
+            return
+        Base.metadata.create_all(bind=_engine())
+        _schema_ready = True
 
 
 @lru_cache(maxsize=1)
@@ -34,6 +51,7 @@ def _session_factory() -> sessionmaker:
 
 
 def get_db():
+    ensure_schema()
     db = _session_factory()()
     try:
         yield db

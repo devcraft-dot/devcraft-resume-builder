@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Resume Builder — Manual JD",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "Paste a job description and generate resumes via the same API as the Indeed extension",
   "permissions": ["storage", "sidePanel", "tabs", "scripting"],
   "host_permissions": [

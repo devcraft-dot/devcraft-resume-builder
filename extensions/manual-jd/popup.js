@@ -6,6 +6,12 @@ const {
   postUploadApplicationScreenshot,
   extractDriveFileId,
   driveExportUrl,
+  fetchAuthConfig,
+  getAccessToken,
+  setAccessToken,
+  postAuthLogin,
+  postAuthRegister,
+  fetchMe,
 } = globalThis.ManualJD;
 
 function setStatus(text, kind) {
@@ -22,6 +28,8 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
     document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
     btn.classList.add("active");
     $(`#panel-${btn.dataset.tab}`)?.classList.add("active");
+    if (btn.dataset.tab === "account") refreshAccountPanel();
+    if (btn.dataset.tab === "run") refreshAuthBanner();
   });
 });
 
@@ -338,6 +346,80 @@ function applyScrapedJobPayload(payload) {
   });
 }
 
+function tryConsumeAutofillPayload(raw) {
+  let o;
+  try {
+    o = typeof raw === "string" ? JSON.parse(raw) : raw;
+  } catch {
+    setStatus("Invalid autofill payload.", "err");
+    return;
+  }
+  const r = o?.result;
+  const board = o?.board;
+  if (!r?.ok) {
+    setStatus(r?.error || "Autofill failed.", "err");
+    return;
+  }
+  applyScrapedJobPayload(r);
+  const nq = (r.questions || []).length;
+  const bl = board === "ashby" ? "Ashby" : "Greenhouse";
+  setStatus(`${bl} autofill: ${r.title || "Job"}${r.company ? " @ " + r.company : ""} — ${nq} application field(s).`, "ok");
+}
+
+async function refreshAuthBanner() {
+  const banner = document.getElementById("auth-banner-run");
+  if (!banner) return;
+  try {
+    const cfg = await fetchAuthConfig();
+    if (!cfg?.auth_required) {
+      banner.style.display = "none";
+      return;
+    }
+    banner.style.display = "block";
+    const token = await getAccessToken();
+    if (!token) {
+      banner.className = "account-banner";
+      banner.textContent = "This API requires sign-in. Open the Account tab to log in or register.";
+    } else {
+      banner.className = "account-banner ok";
+      banner.textContent = "Signed in — generations are attributed to your account.";
+    }
+  } catch {
+    banner.style.display = "none";
+  }
+}
+
+async function refreshAccountPanel() {
+  const out = document.getElementById("account-msg");
+  const lo = document.getElementById("account-logged-out");
+  const li = document.getElementById("account-logged-in");
+  if (out) out.textContent = "";
+  try {
+    const cfg = await fetchAuthConfig();
+    const token = await getAccessToken();
+    if (!cfg?.auth_required) {
+      if (lo) lo.style.display = "block";
+      if (li) li.style.display = "none";
+      if (out) out.textContent = "Server has no JWT_SECRET — API runs without login. Add JWT_SECRET on the server to require accounts.";
+      return;
+    }
+    if (!token) {
+      if (lo) lo.style.display = "block";
+      if (li) li.style.display = "none";
+      return;
+    }
+    const me = await fetchMe();
+    if (lo) lo.style.display = "none";
+    if (li) li.style.display = "block";
+    const ul = document.getElementById("account-user-line");
+    const sl = document.getElementById("account-stats-line");
+    if (ul) ul.textContent = `Signed in as ${me.email}${me.is_admin ? " (admin)" : ""}.`;
+    if (sl) sl.textContent = `Your generation count: ${me.generation_count}`;
+  } catch (e) {
+    if (out) out.textContent = e?.message || String(e);
+  }
+}
+
 $("#btn-autofill-job-tab")?.addEventListener("click", async () => {
   setStatus("Scraping job tab…", "run");
   try {
@@ -527,12 +609,31 @@ function initScreenshotUpload() {
     if (!screenshotBlob) return;
     const title = ($("#job-title")?.value || "").trim();
     const company = ($("#company")?.value || "").trim();
+    const jd = ($("#jd")?.value || "").trim();
+    const referenceUrl = ($("#reference-url")?.value || "").trim();
+    const salary = ($("#salary")?.value || "").trim();
     const btn = $("#btn-screenshot-upload");
     if (btn) btn.disabled = true;
     setStatus("Uploading application screenshot…", "run");
     try {
-      const data = await postUploadApplicationScreenshot(screenshotBlob, { title, company });
+      collectProfiles();
+      const usable = profiles.filter((p) => (p.text || "").trim().length > 0);
+      const questions = collectApplicationQuestions();
+      const job = { title, company, salary, jd, referenceUrl, questions };
+      let jobUrls = [];
+      if (title && jd && usable.length) {
+        for (const p of usable) {
+          const label = (p.name || "").trim() || "default";
+          jobUrls.push(await canonicalJobUrl(label, job));
+        }
+      }
+      const data = await postUploadApplicationScreenshot(screenshotBlob, {
+        title,
+        company,
+        jobUrls,
+      });
       const url = String(data?.drive_url || "").trim();
+      const nApplied = Number(data?.generations_marked_applied ?? 0);
       const resEl = $("#screenshot-result");
       if (resEl && url) {
         resEl.textContent = "";
@@ -544,7 +645,20 @@ function initScreenshotUpload() {
         a.textContent = "Open in Google Drive";
         resEl.appendChild(a);
       }
-      setStatus("Screenshot uploaded to Drive.", "ok");
+      if (nApplied > 0) {
+        setStatus(
+          `Screenshot uploaded. Marked ${nApplied} generation row(s) as applied (was generated).`,
+          "ok",
+        );
+      } else {
+        setStatus(
+          "Screenshot uploaded to Drive." +
+            (jobUrls.length
+              ? " No matching rows in stage “generated” (generate first, or URL/profile may differ)."
+              : " Add job title + JD + profile text to link this upload to pipeline stages."),
+          jobUrls.length ? "ok" : "",
+        );
+      }
     } catch (e) {
       setStatus(e?.message || String(e), "err");
       if (btn) btn.disabled = false;
@@ -553,6 +667,78 @@ function initScreenshotUpload() {
     if (btn) btn.disabled = false;
   });
 }
+
+function clearApplicationForm() {
+  ["job-title", "company", "salary", "jd", "reference-url"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  const qc = document.getElementById("questions-container");
+  if (qc) qc.innerHTML = "";
+  setScreenshotPreviewFromBlob(null);
+  const res = document.getElementById("screenshot-result");
+  if (res) res.textContent = "";
+  renderDownloads([]);
+  setStatus("Application form cleared.", "ok");
+}
+
+$("#btn-clear-application")?.addEventListener("click", () => {
+  clearApplicationForm();
+});
+
+$("#acc-login")?.addEventListener("click", async () => {
+  const email = ($("#acc-email")?.value || "").trim();
+  const password = $("#acc-password")?.value || "";
+  const out = document.getElementById("account-msg");
+  if (!email || !password) {
+    if (out) out.textContent = "Enter email and password.";
+    return;
+  }
+  try {
+    const data = await postAuthLogin(email, password);
+    await setAccessToken(data.access_token);
+    if (out) out.textContent = "Logged in.";
+    await refreshAccountPanel();
+    await refreshAuthBanner();
+  } catch (e) {
+    if (out) out.textContent = e?.message || String(e);
+  }
+});
+
+$("#acc-register")?.addEventListener("click", async () => {
+  const email = ($("#acc-email")?.value || "").trim();
+  const password = $("#acc-password")?.value || "";
+  const out = document.getElementById("account-msg");
+  if (!email || !password) {
+    if (out) out.textContent = "Enter email and password (min 8 characters).";
+    return;
+  }
+  if (password.length < 8) {
+    if (out) out.textContent = "Password must be at least 8 characters.";
+    return;
+  }
+  try {
+    const data = await postAuthRegister(email, password);
+    await setAccessToken(data.access_token);
+    if (out) out.textContent = "Account created and signed in.";
+    await refreshAccountPanel();
+    await refreshAuthBanner();
+  } catch (e) {
+    if (out) out.textContent = e?.message || String(e);
+  }
+});
+
+$("#acc-logout")?.addEventListener("click", async () => {
+  await setAccessToken("");
+  const out = document.getElementById("account-msg");
+  if (out) out.textContent = "Logged out.";
+  await refreshAccountPanel();
+  await refreshAuthBanner();
+});
+
+$("#acc-refresh-me")?.addEventListener("click", () => {
+  refreshAccountPanel();
+});
 
 function applyPendingJdFromRail() {
   chrome.storage.local.get(["manualJd_pendingJd"], (d) => {
@@ -565,7 +751,7 @@ function applyPendingJdFromRail() {
     document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
     document.querySelector('.tab-btn[data-tab="run"]')?.classList.add("active");
     document.getElementById("panel-run")?.classList.add("active");
-    if (text.trim()) setStatus("Loaded JD from the page (book on the rail).", "ok");
+    if (text.trim()) setStatus("Loaded JD from a previous send-to-panel action.", "ok");
   });
 }
 
@@ -573,10 +759,30 @@ document.addEventListener("DOMContentLoaded", () => {
   loadProfiles();
   applyPendingJdFromRail();
   initScreenshotUpload();
+  refreshAuthBanner();
+  chrome.storage.local.get(["manualJd_autofillPayload"], (d) => {
+    const raw = d.manualJd_autofillPayload;
+    if (raw != null && String(raw).trim()) {
+      tryConsumeAutofillPayload(raw);
+      chrome.storage.local.remove(["manualJd_autofillPayload"]);
+    }
+  });
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area !== "local" || changes.manualJd_pendingJd == null) return;
+  if (area !== "local") return;
+  if (changes.manualJd_autofillPayload != null) {
+    const nv = changes.manualJd_autofillPayload.newValue;
+    if (nv != null && String(nv).trim()) {
+      tryConsumeAutofillPayload(nv);
+      chrome.storage.local.remove(["manualJd_autofillPayload"]);
+      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+      document.querySelector('.tab-btn[data-tab="run"]')?.classList.add("active");
+      document.getElementById("panel-run")?.classList.add("active");
+    }
+  }
+  if (changes.manualJd_pendingJd == null) return;
   const nv = changes.manualJd_pendingJd.newValue;
   if (nv != null && String(nv).trim()) {
     const ta = document.getElementById("jd");
@@ -586,6 +792,6 @@ chrome.storage.onChanged.addListener((changes, area) => {
     document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
     document.querySelector('.tab-btn[data-tab="run"]')?.classList.add("active");
     document.getElementById("panel-run")?.classList.add("active");
-    setStatus("Updated JD from the page (book on the rail).", "ok");
+    setStatus("Updated JD from send-to-panel.", "ok");
   }
 });

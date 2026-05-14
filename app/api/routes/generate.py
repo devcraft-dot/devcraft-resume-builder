@@ -1,14 +1,18 @@
 """All API endpoints — single router for the simplified resume-generation backend."""
 
+from __future__ import annotations
+
 import logging
 import math
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, select, tuple_
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.core.deps import auth_enabled, ensure_generation_owner, get_current_user_optional
 from app.models.generation import Generation
+from app.models.user import User
 from app.schemas.generate import (
     ALLOWED_MODELS,
     CheckGenerationKeysRequest,
@@ -32,16 +36,17 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["generate"])
 
 PIPELINE_STAGES = frozenset(
-    {"generated", "intro", "tech", "final", "success", "failed"},
+    {"generated", "applied", "intro", "tech", "final", "success", "failed"},
 )
 
 
-# ---------------------------------------------------------------------------
-# POST /api/generate — the core endpoint
-# ---------------------------------------------------------------------------
+def _owner_clause(user: User | None):
+    if user is None:
+        return Generation.user_id.is_(None)
+    return Generation.user_id == user.id
 
 
-def _run_generate(payload: GenerateRequest, db: Session) -> Generation:
+def _run_generate(payload: GenerateRequest, db: Session, user: User | None) -> Generation:
     if payload.model not in ALLOWED_MODELS:
         raise HTTPException(400, f"Invalid model. Choose from: {list(ALLOWED_MODELS)}")
 
@@ -51,6 +56,7 @@ def _run_generate(payload: GenerateRequest, db: Session) -> Generation:
         select(Generation).where(
             Generation.url == payload.url,
             Generation.profile_name == profile_name,
+            _owner_clause(user),
         )
     )
     if existing:
@@ -81,6 +87,7 @@ def _run_generate(payload: GenerateRequest, db: Session) -> Generation:
         )
 
         gen = Generation(
+            user_id=user.id if user else None,
             profile_name=profile_name,
             stage="generated",
             title=payload.title,
@@ -126,17 +133,24 @@ def _run_generate(payload: GenerateRequest, db: Session) -> Generation:
 
 
 @router.post("/generate", response_model=GenerationRead)
-def generate(payload: GenerateRequest, db: Session = Depends(get_db)):
-    return _run_generate(payload, db)
-
-
-# ---------------------------------------------------------------------------
-# POST /api/generate/manual — pasted JD (same pipeline; URL from reference or content hash)
-# ---------------------------------------------------------------------------
+def generate(
+    payload: GenerateRequest,
+    db: Session = Depends(get_db),
+    user: User | None = Depends(get_current_user_optional),
+):
+    if auth_enabled() and user is None:
+        raise HTTPException(401, "Authentication required")
+    return _run_generate(payload, db, user)
 
 
 @router.post("/generate/manual", response_model=GenerationRead)
-def generate_manual(payload: ManualGenerateRequest, db: Session = Depends(get_db)):
+def generate_manual(
+    payload: ManualGenerateRequest,
+    db: Session = Depends(get_db),
+    user: User | None = Depends(get_current_user_optional),
+):
+    if auth_enabled() and user is None:
+        raise HTTPException(401, "Authentication required")
     profile_name = (payload.profile_name or "").strip() or "default"
     canonical_url = canonical_url_for_manual_entry(
         profile_name=profile_name,
@@ -156,73 +170,56 @@ def generate_manual(payload: ManualGenerateRequest, db: Session = Depends(get_db
         profile_text=payload.profile_text,
         model=payload.model,
     )
-    return _run_generate(inner, db)
-
-
-# ---------------------------------------------------------------------------
-# POST /api/check-generation-keys — (url, profile_name) duplicate check for extension
-# ---------------------------------------------------------------------------
+    return _run_generate(inner, db, user)
 
 
 @router.post("/check-generation-keys", response_model=CheckGenerationKeysResponse)
 def check_generation_keys(
     payload: CheckGenerationKeysRequest,
     db: Session = Depends(get_db),
+    user: User | None = Depends(get_current_user_optional),
 ) -> CheckGenerationKeysResponse:
-    """True if a generation row already exists for the same JD URL and profile name."""
+    if auth_enabled() and user is None:
+        raise HTTPException(401, "Authentication required")
     items = payload.items or []
     if not items:
         return CheckGenerationKeysResponse(items=[])
 
-    pairs: list[tuple[str, str]] = []
+    out: list[GenerationPresenceResult] = []
     for item in items:
         url = item.url.strip()
         pn = (item.profile_name or "default").strip()
-        pairs.append((url, pn))
-
-    # One round-trip for all pairs (composite IN); extension may send many rows.
-    unique_pairs = list(dict.fromkeys(pairs))
-    existing_pairs: set[tuple[str, str]] = set()
-    if unique_pairs:
-        rows = db.execute(
-            select(Generation.url, Generation.profile_name).where(
-                tuple_(Generation.url, Generation.profile_name).in_(unique_pairs),
-            ),
-        ).all()
-        existing_pairs = {(str(u or "").strip(), str(p or "").strip()) for u, p in rows}
-
-    out: list[GenerationPresenceResult] = []
-    for item, (url, pn) in zip(items, pairs):
-        out.append(
-            GenerationPresenceResult(
-                url=item.url,
-                profile_name=pn,
-                exists=(url, pn) in existing_pairs,
-            ),
+        q = select(Generation.id).where(
+            Generation.url == url,
+            Generation.profile_name == pn,
+            _owner_clause(user),
         )
+        exists = db.scalar(q) is not None
+        out.append(GenerationPresenceResult(url=item.url, profile_name=pn, exists=exists))
     return CheckGenerationKeysResponse(items=out)
 
 
-# ---------------------------------------------------------------------------
-# POST /api/check-urls — bulk duplicate check by URL only (legacy)
-# ---------------------------------------------------------------------------
-
 @router.post("/check-urls")
-def check_urls(payload: CheckUrlsRequest, db: Session = Depends(get_db)) -> dict[str, bool]:
+def check_urls(
+    payload: CheckUrlsRequest,
+    db: Session = Depends(get_db),
+    user: User | None = Depends(get_current_user_optional),
+) -> dict[str, bool]:
+    if auth_enabled() and user is None:
+        raise HTTPException(401, "Authentication required")
     if not payload.urls:
         return {}
     unique = list(set(u.strip() for u in payload.urls if u.strip()))
     if not unique:
         return {}
-    existing = set(
-        db.scalars(select(Generation.url).where(Generation.url.in_(unique))).all()
-    )
+    stmt = select(Generation.url).where(Generation.url.in_(unique))
+    if user is None:
+        stmt = stmt.where(Generation.user_id.is_(None))
+    else:
+        stmt = stmt.where(Generation.user_id == user.id)
+    existing = set(db.scalars(stmt).all())
     return {u: u.strip() in existing for u in payload.urls}
 
-
-# ---------------------------------------------------------------------------
-# GET /api/generations — paginated list
-# ---------------------------------------------------------------------------
 
 @router.get("/generations", response_model=GenerationListResponse)
 def list_generations(
@@ -231,9 +228,16 @@ def list_generations(
     q: str | None = Query(None, description="Search title or company"),
     stage: str | None = Query(None, description="Filter by pipeline stage"),
     db: Session = Depends(get_db),
+    user: User | None = Depends(get_current_user_optional),
 ):
+    if auth_enabled() and user is None:
+        raise HTTPException(401, "Authentication required")
     stmt = select(Generation)
     count_stmt = select(func.count()).select_from(Generation)
+
+    if user is not None and not user.is_admin:
+        stmt = stmt.where(Generation.user_id == user.id)
+        count_stmt = count_stmt.where(Generation.user_id == user.id)
 
     if stage and stage.strip():
         st = stage.strip().lower()
@@ -265,27 +269,34 @@ def list_generations(
     )
 
 
-# ---------------------------------------------------------------------------
-# GET /api/generations/{id}
-# ---------------------------------------------------------------------------
-
 @router.get("/generations/{gen_id}", response_model=GenerationRead)
-def get_generation(gen_id: int, db: Session = Depends(get_db)):
+def get_generation(
+    gen_id: int,
+    db: Session = Depends(get_db),
+    user: User | None = Depends(get_current_user_optional),
+):
+    if auth_enabled() and user is None:
+        raise HTTPException(401, "Authentication required")
     gen = db.get(Generation, gen_id)
     if not gen:
         raise HTTPException(404, "Generation not found")
+    ensure_generation_owner(gen.user_id, user)
     return gen
 
 
-# ---------------------------------------------------------------------------
-# PATCH /api/generations/{id} — update stage, company, salary
-# ---------------------------------------------------------------------------
-
 @router.patch("/generations/{gen_id}", response_model=GenerationRead)
-def patch_generation(gen_id: int, payload: GenerationPatch, db: Session = Depends(get_db)):
+def patch_generation(
+    gen_id: int,
+    payload: GenerationPatch,
+    db: Session = Depends(get_db),
+    user: User | None = Depends(get_current_user_optional),
+):
+    if auth_enabled() and user is None:
+        raise HTTPException(401, "Authentication required")
     gen = db.get(Generation, gen_id)
     if not gen:
         raise HTTPException(404, "Generation not found")
+    ensure_generation_owner(gen.user_id, user)
 
     data = payload.model_dump(exclude_unset=True)
     if not data:
@@ -299,14 +310,17 @@ def patch_generation(gen_id: int, payload: GenerationPatch, db: Session = Depend
     return gen
 
 
-# ---------------------------------------------------------------------------
-# DELETE /api/generations/{id}
-# ---------------------------------------------------------------------------
-
 @router.delete("/generations/{gen_id}", status_code=204)
-def delete_generation(gen_id: int, db: Session = Depends(get_db)):
+def delete_generation(
+    gen_id: int,
+    db: Session = Depends(get_db),
+    user: User | None = Depends(get_current_user_optional),
+):
+    if auth_enabled() and user is None:
+        raise HTTPException(401, "Authentication required")
     gen = db.get(Generation, gen_id)
     if not gen:
         raise HTTPException(404, "Generation not found")
+    ensure_generation_owner(gen.user_id, user)
     db.delete(gen)
     db.commit()

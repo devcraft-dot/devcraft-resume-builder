@@ -2,18 +2,22 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import math
 import re
 from datetime import date
 from io import BytesIO
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.core.deps import auth_enabled, get_current_user_optional
 from app.models.application_screenshot import ApplicationScreenshot
+from app.models.generation import Generation
+from app.models.user import User
 from app.schemas.application_screenshot import ApplicationScreenshotList, ApplicationScreenshotRead
 from app.services.drive_service import (
     ALLOWED_IMAGE_TYPES,
@@ -31,18 +35,32 @@ def _safe_snippet(s: str, max_len: int = 40) -> str:
     return t or "job"
 
 
+def _gen_match_for_user(user):
+    if user is None:
+        return Generation.user_id.is_(None)
+    return Generation.user_id == user.id
+
+
 @router.post("/upload/application-screenshot")
 @router.post("/upload/application-screenshot/")
 async def upload_application_screenshot(
     file: UploadFile = File(...),
-    title: str = Query("", max_length=500),
-    company_name: str = Query("", max_length=500),
+    title: str = Form(""),
+    company_name: str = Form(""),
+    job_urls_json: str = Form(""),
     db: Session = Depends(get_db),
+    user: User | None = Depends(get_current_user_optional),
 ):
+    """Accept a pasted snip or image file (PNG / JPEG / WebP), store as a native Drive file.
+
+    Optional multipart field ``job_urls_json``: JSON array of canonical job URLs (same strings
+    as stored on ``generations.url``). For each URL, if a row exists with ``stage == generated``,
+    it is advanced to ``applied`` (scoped to the current user when auth is enabled).
     """
-    Accept a pasted snip or image file (PNG / JPEG / WebP), store as a native Drive file.
-    Requires the same Drive OAuth env as resume uploads.
-    """
+    if auth_enabled() and user is None:
+        raise HTTPException(401, "Authentication required")
+    title = (title or "").strip()[:500]
+    company_name = (company_name or "").strip()[:500]
     ct = (file.content_type or "").split(";")[0].strip().lower()
     if ct not in ALLOWED_IMAGE_TYPES:
         raise HTTPException(
@@ -75,18 +93,56 @@ async def upload_application_screenshot(
         )
 
     row = ApplicationScreenshot(
+        user_id=user.id if user else None,
         drive_url=url,
         filename=fn,
-        job_title=(title or "").strip()[:500],
-        company_name=(company_name or "").strip()[:500],
+        job_title=title,
+        company_name=company_name,
         file_mime=ct,
     )
     db.add(row)
+
+    stages_updated = 0
+    raw = (job_urls_json or "").strip()
+    if raw:
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError:
+            parsed = None
+        if isinstance(parsed, list):
+            seen: set[str] = set()
+            for item in parsed:
+                u = str(item or "").strip()
+                if not u or u in seen:
+                    continue
+                seen.add(u)
+                gen = db.scalar(
+                    select(Generation).where(
+                        Generation.url == u,
+                        _gen_match_for_user(user),
+                    )
+                )
+                if gen is not None and (gen.stage or "").strip().lower() == "generated":
+                    gen.stage = "applied"
+                    db.add(gen)
+                    stages_updated += 1
+
     db.commit()
     db.refresh(row)
 
-    logger.info("application screenshot uploaded id=%s name=%r bytes=%d", row.id, fn, len(data))
-    return {"id": row.id, "drive_url": url, "filename": fn}
+    logger.info(
+        "application screenshot uploaded id=%s name=%r bytes=%d stages_updated=%s",
+        row.id,
+        fn,
+        len(data),
+        stages_updated,
+    )
+    return {
+        "id": row.id,
+        "drive_url": url,
+        "filename": fn,
+        "generations_marked_applied": stages_updated,
+    }
 
 
 @router.get("/application-screenshots", response_model=ApplicationScreenshotList)
@@ -94,17 +150,23 @@ def list_application_screenshots(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
+    user: User | None = Depends(get_current_user_optional),
 ):
     """Paginated list for the dashboard (newest first)."""
-    total = int(db.scalar(select(func.count()).select_from(ApplicationScreenshot)) or 0)
+    if auth_enabled() and user is None:
+        raise HTTPException(401, "Authentication required")
+    stmt = select(ApplicationScreenshot)
+    count_stmt = select(func.count()).select_from(ApplicationScreenshot)
+    if user is not None and not user.is_admin:
+        stmt = stmt.where(ApplicationScreenshot.user_id == user.id)
+        count_stmt = count_stmt.where(ApplicationScreenshot.user_id == user.id)
+
+    total = int(db.scalar(count_stmt) or 0)
     pages = max(1, math.ceil(total / page_size)) if total else 1
     offset = (page - 1) * page_size
 
     rows = db.scalars(
-        select(ApplicationScreenshot)
-        .order_by(ApplicationScreenshot.created_at.desc())
-        .offset(offset)
-        .limit(page_size),
+        stmt.order_by(ApplicationScreenshot.created_at.desc()).offset(offset).limit(page_size),
     ).all()
 
     return ApplicationScreenshotList(

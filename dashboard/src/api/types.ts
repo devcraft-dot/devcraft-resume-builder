@@ -20,6 +20,7 @@ export interface ApplicationScreenshotList {
 export interface Generation {
   id: number;
   created_at: string;
+  user_id?: number | null;
   profile_name: string;
   stage: string;
   title: string;
@@ -43,6 +44,7 @@ export interface GenerationList {
 
 export const STAGES = [
   "generated",
+  "applied",
   "intro",
   "tech",
   "final",
@@ -58,9 +60,10 @@ export interface StageCount {
 export interface ModelBreakdown {
   model_name: string;
   total: number;
-  /** intro + tech + final + success (past initial generation) */
+  /** applied + intro + tech + final + success */
   passed_resume_check: number;
   generated: number;
+  applied: number;
   intro: number;
   tech: number;
   final: number;
@@ -73,6 +76,7 @@ export interface ProfileBreakdown {
   total: number;
   passed_resume_check: number;
   generated: number;
+  applied: number;
   intro: number;
   tech: number;
   final: number;

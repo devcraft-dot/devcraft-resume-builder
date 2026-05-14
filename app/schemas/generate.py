@@ -65,6 +65,7 @@ class ManualGenerateRequest(BaseModel):
 class GenerationRead(BaseModel):
     id: int
     created_at: datetime
+    user_id: int | None = None
     profile_name: str
     stage: str
     title: str

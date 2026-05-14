@@ -1,6 +1,12 @@
 const $ = (s) => document.querySelector(s);
-const { canonicalJobUrl, checkGenerationKeys, postGenerateManual, extractDriveFileId, driveExportUrl } =
-  globalThis.ManualJD;
+const {
+  canonicalJobUrl,
+  checkGenerationKeys,
+  postGenerateManual,
+  postUploadApplicationScreenshot,
+  extractDriveFileId,
+  driveExportUrl,
+} = globalThis.ManualJD;
 
 function setStatus(text, kind) {
   const el = $("#status-msg");
@@ -431,6 +437,123 @@ $("#btn-start")?.addEventListener("click", async () => {
   }
 });
 
+/* ─── Application screenshot (Win+Shift+S → paste → Drive) ───────── */
+let screenshotObjectUrl = null;
+let screenshotBlob = null;
+
+function setScreenshotPreviewFromBlob(blob) {
+  const zone = $("#screenshot-zone");
+  const img = $("#screenshot-preview");
+  const wrap = $("#screenshot-preview-wrap");
+  const btnUp = $("#btn-screenshot-upload");
+  const res = $("#screenshot-result");
+  if (screenshotObjectUrl) {
+    URL.revokeObjectURL(screenshotObjectUrl);
+    screenshotObjectUrl = null;
+  }
+  screenshotBlob = blob || null;
+  if (!zone || !img || !wrap || !btnUp) return;
+  if (res) res.textContent = "";
+  if (!blob) {
+    img.removeAttribute("src");
+    wrap.classList.remove("visible");
+    zone.classList.remove("has-image");
+    btnUp.disabled = true;
+    return;
+  }
+  screenshotObjectUrl = URL.createObjectURL(blob);
+  img.src = screenshotObjectUrl;
+  wrap.classList.add("visible");
+  zone.classList.add("has-image");
+  btnUp.disabled = false;
+}
+
+function consumeImageFile(file) {
+  if (!file) return;
+  const t = (file.type || "").toLowerCase();
+  if (!/^image\/(png|jpeg|jpg|webp)$/.test(t)) {
+    setStatus("Use a PNG, JPEG, or WebP image.", "err");
+    return;
+  }
+  setScreenshotPreviewFromBlob(file);
+  setStatus("Image ready. Click Upload to Drive when ready.", "ok");
+}
+
+function initScreenshotUpload() {
+  const zone = $("#screenshot-zone");
+  const fileIn = $("#screenshot-file");
+  if (!zone || !fileIn) return;
+
+  zone.addEventListener("click", () => zone.focus());
+
+  zone.addEventListener("paste", (e) => {
+    const items = e.clipboardData?.items;
+    if (!items?.length) return;
+    for (const item of items) {
+      if (item.kind === "file" && item.type?.startsWith("image/")) {
+        const blob = item.getAsFile();
+        if (blob) {
+          consumeImageFile(blob);
+          e.preventDefault();
+          break;
+        }
+      }
+    }
+  });
+
+  zone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  });
+  zone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    const f = e.dataTransfer?.files?.[0];
+    if (f) consumeImageFile(f);
+  });
+
+  $("#btn-screenshot-pick")?.addEventListener("click", () => fileIn.click());
+  fileIn.addEventListener("change", () => {
+    const f = fileIn.files?.[0];
+    if (f) consumeImageFile(f);
+    fileIn.value = "";
+  });
+
+  $("#btn-screenshot-clear")?.addEventListener("click", () => {
+    setScreenshotPreviewFromBlob(null);
+    setStatus("Screenshot cleared.", "");
+  });
+
+  $("#btn-screenshot-upload")?.addEventListener("click", async () => {
+    if (!screenshotBlob) return;
+    const title = ($("#job-title")?.value || "").trim();
+    const company = ($("#company")?.value || "").trim();
+    const btn = $("#btn-screenshot-upload");
+    if (btn) btn.disabled = true;
+    setStatus("Uploading application screenshot…", "run");
+    try {
+      const data = await postUploadApplicationScreenshot(screenshotBlob, { title, company });
+      const url = String(data?.drive_url || "").trim();
+      const resEl = $("#screenshot-result");
+      if (resEl && url) {
+        resEl.textContent = "";
+        resEl.appendChild(document.createTextNode("Uploaded — "));
+        const a = document.createElement("a");
+        a.href = url;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.textContent = "Open in Google Drive";
+        resEl.appendChild(a);
+      }
+      setStatus("Screenshot uploaded to Drive.", "ok");
+    } catch (e) {
+      setStatus(e?.message || String(e), "err");
+      if (btn) btn.disabled = false;
+      return;
+    }
+    if (btn) btn.disabled = false;
+  });
+}
+
 function applyPendingJdFromRail() {
   chrome.storage.local.get(["manualJd_pendingJd"], (d) => {
     if (d.manualJd_pendingJd == null) return;
@@ -449,6 +572,7 @@ function applyPendingJdFromRail() {
 document.addEventListener("DOMContentLoaded", () => {
   loadProfiles();
   applyPendingJdFromRail();
+  initScreenshotUpload();
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {

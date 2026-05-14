@@ -6,6 +6,7 @@ from starlette.responses import Response
 
 from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.generate import router as generate_router
+from app.api.routes.upload import router as upload_router
 from app.core.config import settings
 
 import app.models.generation as _generation_model  # noqa: F401 — register table
@@ -66,3 +67,4 @@ async def cors_preflight(full_path: str, request: Request) -> Response:
 
 app.include_router(generate_router)
 app.include_router(dashboard_router)
+app.include_router(upload_router)

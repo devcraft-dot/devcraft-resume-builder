@@ -136,6 +136,31 @@
     .btn-dl:hover { background: #ede9fe; border-color: #a78bfa; color: #5b21b6; }
     .btn-dl-open { background: #fff; }
     .dl-missing { font-size: 11px; color: #9ca3af; }
+    .screenshot-block { margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb; }
+    .screenshot-zone {
+      min-height: 120px; border: 2px dashed #c4b5fd; border-radius: 10px; background: #faf5ff;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+      padding: 12px; text-align: center; cursor: pointer; outline: none; transition: border-color 0.15s, background 0.15s;
+    }
+    .screenshot-zone:hover, .screenshot-zone:focus { border-color: #7c3aed; background: #f3e8ff; }
+    .screenshot-zone.has-image { border-style: solid; border-color: #a78bfa; background: #fff; }
+    .screenshot-zone p { font-size: 12px; color: #5b21b6; margin: 0; line-height: 1.4; }
+    .screenshot-zone .sub { font-size: 11px; color: #6b7280; }
+    .screenshot-preview-wrap { width: 100%; display: none; }
+    .screenshot-preview-wrap.visible { display: block; }
+    .screenshot-preview {
+      max-width: 100%; max-height: 220px; border-radius: 8px; border: 1px solid #e5e7eb;
+      object-fit: contain; background: #f3f4f6;
+    }
+    .screenshot-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .screenshot-actions button {
+      flex: 1; min-width: 100px; padding: 8px 10px; font-size: 12px; font-weight: 600;
+      border-radius: 8px; cursor: pointer; border: 1px solid #d1d5db; background: #fff; color: #374151;
+    }
+    .screenshot-actions button.primary { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+    .screenshot-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .screenshot-result { margin-top: 10px; font-size: 12px; word-break: break-all; }
+    .screenshot-result a { color: #5b21b6; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -169,6 +194,24 @@
       <p class="hint">Mirror the employer form (Indeed smart apply, greenhouse, etc.). For &quot;single choice&quot;, list options separated by commas.</p>
       <div id="questions-container"></div>
       <button type="button" id="btn-add-question">+ Add question</button>
+    </div>
+    <div class="field screenshot-block">
+      <label>Application screenshot (optional)</label>
+      <p class="hint">Use <strong>Shift+Win+S</strong> to snip the application form, then click the box below and press <strong>Ctrl+V</strong> to paste. You can also drop an image file or choose one.</p>
+      <div id="screenshot-zone" class="screenshot-zone" tabindex="0" role="button" aria-label="Paste or drop application screenshot">
+        <p>Paste screenshot here</p>
+        <p class="sub">Click to focus, then Ctrl+V · or drag &amp; drop · or pick a file</p>
+        <div id="screenshot-preview-wrap" class="screenshot-preview-wrap">
+          <img id="screenshot-preview" class="screenshot-preview" alt="Screenshot preview" />
+        </div>
+      </div>
+      <input type="file" id="screenshot-file" accept="image/png,image/jpeg,image/webp" hidden />
+      <div class="screenshot-actions">
+        <button type="button" id="btn-screenshot-pick">Choose image…</button>
+        <button type="button" id="btn-screenshot-clear">Clear</button>
+        <button type="button" class="primary" id="btn-screenshot-upload" disabled>Upload to Drive</button>
+      </div>
+      <div id="screenshot-result" class="screenshot-result hint"></div>
     </div>
     <div class="field">
       <label for="reference-url">Posting URL (optional)</label>

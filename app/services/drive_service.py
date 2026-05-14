@@ -21,6 +21,16 @@ DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.file"]
 DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 GDOC_MIME = "application/vnd.google-apps.document"
 
+# Max single upload for application-check screenshots (15 MiB).
+MAX_SCREENSHOT_BYTES = 15 * 1024 * 1024
+ALLOWED_IMAGE_TYPES = frozenset(
+    {
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+    }
+)
+
 
 def _get_drive_credentials() -> Credentials | None:
     raw = settings.drive_token_json.strip()
@@ -74,6 +84,43 @@ def upload_buffer(buf: BytesIO, filename: str) -> str:
         return uploaded.get("webViewLink", "")
     except Exception:
         logger.exception("Drive upload failed for %s", filename)
+        return ""
+
+
+def upload_raw_file_buffer(buf: BytesIO, filename: str, *, mime_type: str) -> str:
+    """Upload bytes as a native Drive file (e.g. PNG screenshot). Returns webViewLink."""
+    if not _is_drive_configured():
+        logger.info("Drive upload skipped: DRIVE_TOKEN_JSON not set")
+        return ""
+
+    creds = _get_drive_credentials()
+    if not creds:
+        logger.warning("Drive credentials invalid or expired")
+        return ""
+
+    try:
+        service = build("drive", "v3", credentials=creds)
+
+        metadata: dict = {"name": filename, "mimeType": mime_type}
+        if settings.google_drive_folder_id:
+            metadata["parents"] = [settings.google_drive_folder_id]
+
+        media = MediaIoBaseUpload(buf, mimetype=mime_type, resumable=True)
+
+        uploaded = service.files().create(
+            body=metadata,
+            media_body=media,
+            fields="id,webViewLink",
+        ).execute()
+
+        service.permissions().create(
+            fileId=uploaded["id"],
+            body={"type": "anyone", "role": "reader"},
+        ).execute()
+
+        return uploaded.get("webViewLink", "")
+    except Exception:
+        logger.exception("Drive raw upload failed for %s", filename)
         return ""
 
 

@@ -161,6 +161,56 @@
     return res.json();
   }
 
+  async function postUploadApplicationScreenshot(blob, meta = {}) {
+    const title = String(meta.title || "").trim().slice(0, 500);
+    const company_name = String(meta.company || "").trim().slice(0, 500);
+    const params = new URLSearchParams();
+    if (title) params.set("title", title);
+    if (company_name) params.set("company_name", company_name);
+    const qs = params.toString();
+    const path = `/api/upload/application-screenshot${qs ? `?${qs}` : ""}`;
+    const fd = new FormData();
+    const mime = blob.type || "image/png";
+    let fname = "screenshot.png";
+    if (mime === "image/jpeg" || mime === "image/jpg") fname = "screenshot.jpg";
+    else if (mime === "image/webp") fname = "screenshot.webp";
+    fd.append("file", blob, fname);
+
+    let res;
+    try {
+      res = await fetch(`${API_URL}${path}`, { method: "POST", body: fd });
+    } catch (e) {
+      const msg = e?.message || String(e);
+      await appendApiErrorLog({
+        path,
+        method: "POST",
+        status: 0,
+        detail: msg,
+        context: "application screenshot",
+      });
+      throw new Error(`Network/CORS (${API_URL}): ${msg}`);
+    }
+    if (!res.ok) {
+      const text = await res.text().catch(() => res.statusText);
+      let detail = text?.slice(0, 1200) || res.statusText;
+      try {
+        const j = JSON.parse(text);
+        if (j?.detail != null) detail = typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail);
+      } catch {
+        /* */
+      }
+      await appendApiErrorLog({
+        path,
+        method: "POST",
+        status: res.status,
+        detail,
+        context: "application screenshot",
+      });
+      throw new Error(`API ${res.status}: ${detail}`);
+    }
+    return res.json();
+  }
+
   async function fetchHealth() {
     const res = await fetch(`${API_URL}/health`, { method: "GET" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -174,6 +224,7 @@
     appendApiErrorLog,
     checkGenerationKeys,
     postGenerateManual,
+    postUploadApplicationScreenshot,
     fetchHealth,
     extractDriveFileId,
     driveExportUrl,

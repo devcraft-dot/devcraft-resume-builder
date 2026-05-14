@@ -1,11 +1,26 @@
-import type { DashboardAnalytics, Generation, GenerationList } from "./types";
+import type {
+  ApplicationScreenshotList,
+  DashboardAnalytics,
+  Generation,
+  GenerationList,
+} from "./types";
 
 const BASE = import.meta.env.VITE_API_URL || "";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const method = (init?.method ?? "GET").toUpperCase();
+  const headers = new Headers(init?.headers as HeadersInit | undefined);
+  if (
+    init?.body != null &&
+    typeof init.body === "string" &&
+    !headers.has("Content-Type")
+  ) {
+    headers.set("Content-Type", "application/json");
+  }
   const res = await fetch(`${BASE}${path}`, {
     ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
+    method,
+    headers,
   });
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
@@ -17,6 +32,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function fetchDashboardAnalytics() {
   return request<DashboardAnalytics>("/api/dashboard/analytics");
+}
+
+export function fetchApplicationScreenshots(page: number, pageSize: number) {
+  const params = new URLSearchParams({
+    page: String(page),
+    page_size: String(pageSize),
+  });
+  return request<ApplicationScreenshotList>(
+    `/api/application-screenshots?${params}`,
+  );
 }
 
 export function fetchGenerations(

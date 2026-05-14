@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { AnalyticsView } from "./AnalyticsView";
 import { Dashboard } from "./Dashboard";
+import { ScreenshotsView } from "./ScreenshotsView";
 
-type NavKey = "generations" | "analytics";
+type NavKey = "generations" | "analytics" | "screenshots";
 
 const NAV: { key: NavKey; label: string }[] = [
   { key: "generations", label: "Resumes" },
+  { key: "screenshots", label: "Application snips" },
   { key: "analytics", label: "Analytics" },
 ];
 
@@ -29,7 +31,7 @@ export default function App() {
               Resume Builder Dashboard
             </h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              Generations and pipeline analytics
+              Generations, application screenshots, and pipeline analytics
             </p>
           </div>
           <nav className="flex flex-wrap gap-2" aria-label="Main">
@@ -58,6 +60,7 @@ export default function App() {
             onClearStageFilter={() => setResumeStageFilter(null)}
           />
         )}
+        {nav === "screenshots" && <ScreenshotsView />}
         {nav === "analytics" && (
           <AnalyticsView onViewResumesForStage={goToResumesForStage} />
         )}

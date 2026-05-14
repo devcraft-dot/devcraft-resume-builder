@@ -1,3 +1,22 @@
+export interface ApplicationScreenshot {
+  id: number;
+  created_at: string;
+  drive_url: string;
+  filename: string;
+  job_title: string;
+  company_name: string;
+  file_mime: string;
+  thumbnail_url: string;
+}
+
+export interface ApplicationScreenshotList {
+  items: ApplicationScreenshot[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
+}
+
 export interface Generation {
   id: number;
   created_at: string;

@@ -9,7 +9,8 @@ from app.api.routes.generate import router as generate_router
 from app.api.routes.upload import router as upload_router
 from app.core.config import settings
 
-import app.models.generation as _generation_model  # noqa: F401 — register table
+import app.models.application_screenshot as _application_screenshot_model  # noqa: F401
+import app.models.generation as _generation_model  # noqa: F401 — register tables
 
 
 @asynccontextmanager

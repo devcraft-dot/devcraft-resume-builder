@@ -73,7 +73,7 @@ export default function App() {
               Resume Builder Dashboard
             </h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              Admin: generations, users, profiles, analytics
+              Admins manage the system here. End users sign in only in the Chrome extensions.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">

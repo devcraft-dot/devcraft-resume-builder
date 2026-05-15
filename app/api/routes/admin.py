@@ -30,6 +30,13 @@ router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 
 def _user_to_read(user: User) -> UserRead:
+    if not user.username or not user.password_hash:
+        raise HTTPException(
+            503,
+            "User rows are incomplete (null username or password_hash). "
+            "Run migrations/002_users_password_jwt.sql fully, or TRUNCATE users CASCADE and "
+            "redeploy with BOOTSTRAP_ADMIN_PASSWORD + JWT_SECRET_KEY.",
+        )
     profile_ids = [a.profile_id for a in (user.profile_assignments or [])]
     return UserRead(
         id=user.id,
@@ -43,11 +50,11 @@ def _user_to_read(user: User) -> UserRead:
 
 
 def _load_user(db: Session, user_id: int) -> User:
-    user = db.scalar(
+    user = db.scalars(
         select(User)
         .options(joinedload(User.profile_assignments))
         .where(User.id == user_id)
-    )
+    ).unique().first()
     if not user:
         raise HTTPException(404, "User not found")
     return user
@@ -60,7 +67,7 @@ def _load_user(db: Session, user_id: int) -> User:
 def list_users(_admin: AdminUser, db: DbSession) -> list[UserRead]:
     users = db.scalars(
         select(User).options(joinedload(User.profile_assignments)).order_by(User.id)
-    ).all()
+    ).unique().all()
     return [_user_to_read(u) for u in users]
 
 

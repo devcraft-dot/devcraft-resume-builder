@@ -9,6 +9,8 @@ import {
 } from "./api/client";
 import type { RegisteredProfileSummary, User } from "./api/types";
 
+const USERNAME_PATTERN = /^[a-zA-Z0-9_-]+$/;
+
 export function UsersView() {
   const [users, setUsers] = useState<User[]>([]);
   const [profiles, setProfiles] = useState<RegisteredProfileSummary[]>([]);
@@ -17,6 +19,20 @@ export function UsersView() {
   const [banner, setBanner] = useState<string | null>(null);
   const [assignUserId, setAssignUserId] = useState<number | null>(null);
   const [selectedProfileIds, setSelectedProfileIds] = useState<number[]>([]);
+
+  const [addUsername, setAddUsername] = useState("");
+  const [addPassword, setAddPassword] = useState("");
+  const [addPassword2, setAddPassword2] = useState("");
+  const [addDisplayName, setAddDisplayName] = useState("");
+  const [addRole, setAddRole] = useState<"user" | "admin">("user");
+  const [creating, setCreating] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const [pwdUserId, setPwdUserId] = useState<number | null>(null);
+  const [pwd1, setPwd1] = useState("");
+  const [pwd2, setPwd2] = useState("");
+  const [pwdSaving, setPwdSaving] = useState(false);
+  const [pwdError, setPwdError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -36,47 +52,86 @@ export function UsersView() {
     load();
   }, [load]);
 
-  async function handleCreate() {
-    const username = prompt("Username (letters, digits, _ or -):", "")?.trim().toLowerCase();
-    if (!username) return;
-    const password = prompt("Initial password (min 8 characters):", "");
-    if (!password || password.length < 8) {
-      alert("Password must be at least 8 characters.");
+  function resetAddForm() {
+    setAddUsername("");
+    setAddPassword("");
+    setAddPassword2("");
+    setAddDisplayName("");
+    setAddRole("user");
+    setFormError(null);
+  }
+
+  async function handleCreateUser(e: React.FormEvent) {
+    e.preventDefault();
+    setFormError(null);
+    const username = addUsername.trim().toLowerCase();
+    if (!username) {
+      setFormError("Username is required.");
       return;
     }
-    const name = prompt("Display name:", username)?.trim();
-    if (!name) return;
-    const role =
-      prompt("Role: admin or user", "user")?.trim().toLowerCase() === "admin"
-        ? "admin"
-        : "user";
+    if (!USERNAME_PATTERN.test(username)) {
+      setFormError("Username may only contain letters, digits, underscores, and hyphens.");
+      return;
+    }
+    if (addPassword.length < 8) {
+      setFormError("Password must be at least 8 characters.");
+      return;
+    }
+    if (addPassword !== addPassword2) {
+      setFormError("Passwords do not match.");
+      return;
+    }
+    const displayName = addDisplayName.trim() || username;
+    setCreating(true);
     try {
       await createAdminUser({
         username,
-        password,
-        display_name: name,
-        role,
+        password: addPassword,
+        display_name: displayName,
+        role: addRole,
       });
-      setBanner(`Created user “${username}”. Share the password you set with them securely.`);
+      const who =
+        addRole === "user"
+          ? `Created user “${username}”. They sign in only in the Chrome extension (Account → Sign in) with this username and password.`
+          : `Created admin “${username}”. Share the password securely.`;
+      setBanner(who);
+      resetAddForm();
       await load();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Create failed");
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Create failed");
+    } finally {
+      setCreating(false);
     }
   }
 
-  async function handleSetPassword(id: number) {
-    const pw = prompt("New password (min 8 characters):", "");
-    if (!pw || pw.length < 8) {
-      alert("Password must be at least 8 characters.");
+  function openSetPassword(userId: number) {
+    setPwdUserId(userId);
+    setPwd1("");
+    setPwd2("");
+    setPwdError(null);
+  }
+
+  async function saveSetPassword() {
+    if (pwdUserId == null) return;
+    setPwdError(null);
+    if (pwd1.length < 8) {
+      setPwdError("Password must be at least 8 characters.");
       return;
     }
-    if (!confirm("Set a new password? The user must use the new password on next sign-in."))
+    if (pwd1 !== pwd2) {
+      setPwdError("Passwords do not match.");
       return;
+    }
+    setPwdSaving(true);
     try {
-      await setAdminUserPassword(id, pw);
+      await setAdminUserPassword(pwdUserId, pwd1);
       setBanner("Password updated.");
+      setPwdUserId(null);
+      await load();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Update failed");
+      setPwdError(e instanceof Error ? e.message : "Update failed");
+    } finally {
+      setPwdSaving(false);
     }
   }
 
@@ -109,16 +164,15 @@ export function UsersView() {
   if (error) return <p className="text-red-600">{error}</p>;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      <div>
         <h2 className="text-lg font-semibold text-gray-900">Users</h2>
-        <button
-          type="button"
-          onClick={handleCreate}
-          className="px-4 py-2 text-sm font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-800"
-        >
-          Create user
-        </button>
+        <p className="text-sm text-gray-600 mt-1 max-w-3xl">
+          Create accounts here. <strong>Role “user”</strong> accounts are for the resume Chrome
+          extensions only — they sign in under the extension&apos;s{" "}
+          <strong>Account / Settings → Sign in</strong>, not on this dashboard. Assign profiles so
+          they can sync and generate. Admins can also use this dashboard after signing in here.
+        </p>
       </div>
 
       {banner && (
@@ -133,6 +187,88 @@ export function UsersView() {
           </button>
         </div>
       )}
+
+      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+        <h3 className="text-sm font-semibold text-gray-900">Add user</h3>
+        <form onSubmit={handleCreateUser} className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-1">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Username</label>
+            <input
+              type="text"
+              autoComplete="off"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+              placeholder="e.g. jamie"
+              value={addUsername}
+              onChange={(e) => setAddUsername(e.target.value)}
+            />
+            <p className="text-xs text-gray-500 mt-1">Letters, digits, _ and - only.</p>
+          </div>
+          <div className="sm:col-span-1">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Display name</label>
+            <input
+              type="text"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              placeholder="Shown in the app"
+              value={addDisplayName}
+              onChange={(e) => setAddDisplayName(e.target.value)}
+            />
+          </div>
+          <div className="sm:col-span-1">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Initial password</label>
+            <input
+              type="password"
+              autoComplete="new-password"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              value={addPassword}
+              onChange={(e) => setAddPassword(e.target.value)}
+            />
+          </div>
+          <div className="sm:col-span-1">
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              Confirm password
+            </label>
+            <input
+              type="password"
+              autoComplete="new-password"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              value={addPassword2}
+              onChange={(e) => setAddPassword2(e.target.value)}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Role</label>
+            <select
+              className="w-full max-w-xs border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+              value={addRole}
+              onChange={(e) => setAddRole(e.target.value as "user" | "admin")}
+            >
+              <option value="user">User (extension login only)</option>
+              <option value="admin">Admin (dashboard + extension)</option>
+            </select>
+          </div>
+          {formError && (
+            <p className="sm:col-span-2 text-sm text-red-600" role="alert">
+              {formError}
+            </p>
+          )}
+          <div className="sm:col-span-2 flex flex-wrap gap-2">
+            <button
+              type="submit"
+              disabled={creating}
+              className="px-4 py-2 text-sm font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
+            >
+              {creating ? "Creating…" : "Create user"}
+            </button>
+            <button
+              type="button"
+              onClick={resetAddForm}
+              className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            >
+              Clear form
+            </button>
+          </div>
+        </form>
+      </div>
 
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         <table className="w-full text-sm">
@@ -165,7 +301,7 @@ export function UsersView() {
                   <button
                     type="button"
                     className="text-blue-600 hover:underline"
-                    onClick={() => handleSetPassword(u.id)}
+                    onClick={() => openSetPassword(u.id)}
                   >
                     Set password
                   </button>
@@ -182,6 +318,62 @@ export function UsersView() {
           </tbody>
         </table>
       </div>
+
+      {pwdUserId != null && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-lg">
+            <h3 className="font-semibold mb-1">Set password</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              User will use this password in the extension (and in the dashboard if they are an
+              admin).
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">New password</label>
+                <input
+                  type="password"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  value={pwd1}
+                  onChange={(e) => setPwd1(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Confirm password
+                </label>
+                <input
+                  type="password"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  value={pwd2}
+                  onChange={(e) => setPwd2(e.target.value)}
+                />
+              </div>
+              {pwdError && (
+                <p className="text-sm text-red-600" role="alert">
+                  {pwdError}
+                </p>
+              )}
+            </div>
+            <div className="flex gap-2 mt-4 justify-end">
+              <button
+                type="button"
+                className="px-3 py-1.5 text-sm border rounded-lg"
+                onClick={() => setPwdUserId(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={pwdSaving}
+                className="px-3 py-1.5 text-sm bg-gray-900 text-white rounded-lg disabled:opacity-50"
+                onClick={() => void saveSetPassword()}
+              >
+                {pwdSaving ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {assignUserId != null && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4 z-50">

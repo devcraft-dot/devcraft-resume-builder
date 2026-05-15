@@ -1,10 +1,12 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import func, select
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session
-from starlette.responses import Response
+from starlette.responses import JSONResponse, Response
 
 from app.api.routes.admin import router as admin_router
 from app.api.routes.auth import router as auth_router
@@ -20,6 +22,8 @@ from app.models.user import User
 
 import app.models  # noqa: F401 — register all tables
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
@@ -31,6 +35,23 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
+
+
+@app.exception_handler(ProgrammingError)
+async def sqlalchemy_programming_error_handler(_request: Request, exc: ProgrammingError):
+    """Postgres undefined_column etc. → clear 503 instead of opaque 500 (common after auth migration)."""
+    logger.exception("SQLAlchemy ProgrammingError: %s", exc)
+    orig = getattr(exc, "orig", None)
+    msg = (str(orig) if orig is not None else str(exc)).lower()
+    detail = "Database query failed."
+    if "undefinedcolumn" in msg or ("column" in msg and "does not exist" in msg):
+        detail = (
+            "Database schema is out of date for this API build. On Postgres, run "
+            "migrations/002_users_password_jwt.sql (see file comments), or apply "
+            "migrations/001_add_auth_and_profiles.sql on a fresh database. Then redeploy."
+        )
+    return JSONResponse(status_code=503, content={"detail": detail})
+
 
 # allow_credentials=True is incompatible with allow_origins=["*"] (Starlette/FastAPI).
 # Chrome extensions send Origin: chrome-extension://<id>; ensure ACAO is always present

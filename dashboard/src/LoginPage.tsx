@@ -48,8 +48,12 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
       <div className="w-full max-w-md bg-white border border-gray-200 rounded-xl shadow-sm p-8">
         <h1 className="text-xl font-semibold text-gray-900">Admin sign-in</h1>
         <p className="text-sm text-gray-500 mt-2">
-          Use the username and password for an admin account. The first admin is created from server
-          env:{" "}
+          This page is for <strong>administrators</strong> only. Regular users created in the
+          dashboard sign in inside the <strong>Chrome extension</strong> (Account / Settings → Sign
+          in), not here.
+        </p>
+        <p className="text-sm text-gray-500 mt-2">
+          Use an admin username and password. The first admin is created from server env:{" "}
           <code className="text-xs bg-gray-100 px-1 rounded">BOOTSTRAP_ADMIN_USERNAME</code> /{" "}
           <code className="text-xs bg-gray-100 px-1 rounded">BOOTSTRAP_ADMIN_PASSWORD</code> (plus{" "}
           <code className="text-xs bg-gray-100 px-1 rounded">JWT_SECRET_KEY</code>). If the UI is on

@@ -99,22 +99,164 @@ $("#btn-sync-profiles")?.addEventListener("click", async () => {
   }
 });
 
+const HISTORY_PAGE_SIZE = 100;
+
+function startOfLocalDay(d) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x.getTime();
+}
+
+function passesHistoryDateFilter(iso, filter) {
+  if (!filter || filter === "all") return true;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return true;
+  const sod = startOfLocalDay(new Date());
+  const dayMs = 86400000;
+  if (filter === "today") return t >= sod && t < sod + dayMs;
+  if (filter === "yesterday") {
+    const yStart = sod - dayMs;
+    return t >= yStart && t < sod;
+  }
+  if (filter === "7d") return t >= sod - 7 * dayMs;
+  if (filter === "30d") return t >= sod - 30 * dayMs;
+  return true;
+}
+
+function localDayKey(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** @param {{ created_at: string }[]} items */
+function partitionHistoryByLocalDay(items) {
+  const groups = [];
+  let curKey = null;
+  let bucket = null;
+  for (const g of items) {
+    const key = localDayKey(g.created_at);
+    if (!key) continue;
+    if (key !== curKey) {
+      curKey = key;
+      bucket = { dayKey: key, items: [] };
+      groups.push(bucket);
+    }
+    bucket.items.push(g);
+  }
+  return groups;
+}
+
+function formatHistoryCellDateTime(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" });
+}
+
+function formatHistoryDayHeader(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+}
+
 async function renderHistory() {
-  const pre = $("#history-log");
-  if (!pre) return;
-  pre.textContent = "Loading…";
+  const wrap = $("#history-table-wrap");
+  const countEl = $("#history-count");
+  if (!wrap) return;
+  wrap.textContent = "Loading…";
+  if (countEl) countEl.textContent = "";
   try {
-    const data = await ResumeAuth.fetchMyGenerations(API_URL, 1, 30);
-    const lines = (data.items || []).map((g) => {
-      const when = g.created_at ? new Date(g.created_at).toLocaleString() : "";
-      const link = g.resume_drive_url ? ` | ${g.resume_drive_url}` : "";
-      return `[${when}] ${g.stage} | ${g.title} @ ${g.company_name || "?"}${link}`;
+    const order = $("#history-order")?.value || "desc";
+    const dateFilter = $("#history-date-filter")?.value || "all";
+    const data = await ResumeAuth.fetchMyGenerations(API_URL, 1, HISTORY_PAGE_SIZE, order);
+    const loaded = data.items || [];
+    const filtered = loaded.filter((g) => passesHistoryDateFilter(g.created_at, dateFilter));
+
+    if (countEl) {
+      const f = filtered.length;
+      const L = loaded.length;
+      if (!L) countEl.textContent = "0 resumes in this list.";
+      else if (dateFilter === "all" || f === L)
+        countEl.textContent = `${f} resume${f === 1 ? "" : "s"} (all loaded, up to ${HISTORY_PAGE_SIZE}).`;
+      else
+        countEl.textContent = `${f} resume${f === 1 ? "" : "s"} match this filter · ${L} loaded (up to ${HISTORY_PAGE_SIZE}; widen range or Refresh if older rows are missing).`;
+    }
+
+    if (!loaded.length) {
+      wrap.innerHTML = "<p style='padding:8px;color:#6b7280'>No generations yet.</p>";
+      return;
+    }
+
+    if (!filtered.length) {
+      wrap.innerHTML =
+        "<p style='padding:8px;color:#6b7280'>No generations match this filter. Choose “All dates” or a wider range.</p>";
+      return;
+    }
+
+    const head = `<table style="width:100%;border-collapse:collapse">
+      <thead><tr style="background:#f9fafb;text-align:left;font-weight:600">
+        <th style="padding:6px;width:28px"><input type="checkbox" id="history-select-all" title="Select all" /></th>
+        <th style="padding:6px;white-space:nowrap">When</th>
+        <th style="padding:6px">Title</th>
+        <th style="padding:6px">Company</th>
+        <th style="padding:6px">Stage</th>
+      </tr></thead><tbody>`;
+
+    const parts = [];
+    for (const { items: dayItems } of partitionHistoryByLocalDay(filtered)) {
+      const first = dayItems[0];
+      const label = formatHistoryDayHeader(first.created_at);
+      parts.push(
+        `<tr style="background:#eef2ff;border-top:1px solid #c7d2fe"><td colspan="5" style="padding:6px 8px;font-size:11px;font-weight:600;color:#3730a3">${esc(label)} — ${dayItems.length} resume${dayItems.length === 1 ? "" : "s"}</td></tr>`,
+      );
+      for (const g of dayItems) {
+        parts.push(`<tr style="border-top:1px solid #e5e7eb">
+        <td style="padding:6px"><input type="checkbox" class="history-cb" data-id="${g.id}" /></td>
+        <td style="padding:6px;white-space:nowrap;font-variant-numeric:tabular-nums">${esc(formatHistoryCellDateTime(g.created_at))}</td>
+        <td style="padding:6px;word-break:break-word">${esc(g.title)}</td>
+        <td style="padding:6px;word-break:break-word">${esc(g.company_name || "")}</td>
+        <td style="padding:6px">${esc(g.stage)}</td>
+      </tr>`);
+      }
+    }
+
+    wrap.innerHTML = head + parts.join("") + "</tbody></table>";
+    $("#history-select-all")?.addEventListener("change", (e) => {
+      const on = e.target.checked;
+      wrap.querySelectorAll(".history-cb").forEach((cb) => {
+        cb.checked = on;
+      });
     });
-    pre.textContent = lines.length ? lines.join("\n\n") : "No generations yet.";
   } catch (e) {
-    pre.textContent = e?.message || "Failed to load history";
+    wrap.textContent = e?.message || "Failed to load history";
+    if (countEl) countEl.textContent = "";
   }
 }
+
+$("#history-order")?.addEventListener("change", () => renderHistory());
+
+$("#history-date-filter")?.addEventListener("change", () => renderHistory());
+
+$("#btn-history-delete-selected")?.addEventListener("click", async () => {
+  const wrap = $("#history-table-wrap");
+  if (!wrap) return;
+  const ids = [];
+  wrap.querySelectorAll(".history-cb:checked").forEach((cb) => {
+    const id = Number(cb.getAttribute("data-id"));
+    if (id) ids.push(id);
+  });
+  if (!ids.length) {
+    alert("Select at least one row.");
+    return;
+  }
+  if (!confirm(`Delete ${ids.length} generation(s)?`)) return;
+  try {
+    await ResumeAuth.bulkDeleteMyGenerations(API_URL, ids);
+    await renderHistory();
+  } catch (e) {
+    alert(e?.message || "Delete failed");
+  }
+});
 
 $("#btn-refresh-history")?.addEventListener("click", () => renderHistory());
 
@@ -365,6 +507,8 @@ $("#btn-autofill-job-tab")?.addEventListener("click", async () => {
 
 /* ─── Run ────────────────────────────────────────────────────────── */
 let running = false;
+/** Last successful /api/generate/manual id (for linking application snip upload). */
+let lastManualGenerationId = null;
 
 $("#btn-start")?.addEventListener("click", async () => {
   if (running) return;
@@ -419,6 +563,7 @@ $("#btn-start")?.addEventListener("click", async () => {
       setStatus(`Generating ${label}…`, "run");
       try {
         const gen = await postGenerateManual(profile, job);
+        lastManualGenerationId = gen?.id ?? null;
         generated++;
         generationResults.push({ profileLabel: label, gen });
         renderDownloads(generationResults);
@@ -536,7 +681,11 @@ function initScreenshotUpload() {
     if (btn) btn.disabled = true;
     setStatus("Uploading application screenshot…", "run");
     try {
-      const data = await postUploadApplicationScreenshot(screenshotBlob, { title, company });
+      const data = await postUploadApplicationScreenshot(screenshotBlob, {
+        title,
+        company,
+        generationId: lastManualGenerationId,
+      });
       const url = String(data?.drive_url || "").trim();
       const resEl = $("#screenshot-result");
       if (resEl && url) {

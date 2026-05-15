@@ -13,7 +13,7 @@ import {
   fetchGenerations,
   patchGeneration,
 } from "./api/client";
-import type { Generation } from "./api/types";
+import type { Generation, GenerationSnip } from "./api/types";
 import { STAGES } from "./api/types";
 
 const PAGE_SIZE = 20;
@@ -278,6 +278,132 @@ function FilesMenu({
   );
 }
 
+/** Application snips linked to this generation (Manual JD uploads). */
+function SnipsMenu({
+  row,
+  isOpen,
+  onToggle,
+  onClose,
+}: {
+  row: Generation;
+  isOpen: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+}) {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [panelPos, setPanelPos] = useState({ top: 0, left: 0, width: 320 });
+
+  const snips: GenerationSnip[] = row.application_snips ?? [];
+  if (!snips.length) return <span className="text-gray-300">—</span>;
+
+  const updatePanelPosition = useCallback(() => {
+    const btn = triggerRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const width = Math.min(320, Math.max(260, window.innerWidth - 24));
+    let left = rect.left;
+    if (left + width > window.innerWidth - 12) {
+      left = window.innerWidth - 12 - width;
+    }
+    if (left < 12) left = 12;
+    setPanelPos({ top: rect.bottom + 8, left, width });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    updatePanelPosition();
+    window.addEventListener("resize", updatePanelPosition);
+    return () => window.removeEventListener("resize", updatePanelPosition);
+  }, [isOpen, updatePanelPosition, row.id]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    function onDocMouseDown(e: MouseEvent) {
+      const t = e.target as Node;
+      if (triggerRef.current?.contains(t)) return;
+      if (panelRef.current?.contains(t)) return;
+      onClose();
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("mousedown", onDocMouseDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onDocMouseDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isOpen, onClose]);
+
+  const panel = isOpen ? (
+    <div
+      ref={panelRef}
+      style={{
+        position: "fixed",
+        top: panelPos.top,
+        left: panelPos.left,
+        width: panelPos.width,
+        zIndex: 9999,
+      }}
+      className="max-h-[min(70vh,calc(100dvh-2rem))] overflow-y-auto rounded-xl border border-gray-200 bg-white p-3 text-sm shadow-xl ring-1 ring-gray-900/10"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+        Application snips ({snips.length})
+      </p>
+      <div className="grid gap-3">
+        {snips.map((s) => (
+          <a
+            key={s.id}
+            href={s.drive_url}
+            target="_blank"
+            rel="noreferrer"
+            className="flex gap-2 rounded-lg border border-gray-100 p-2 hover:bg-gray-50"
+          >
+            {s.thumbnail_url ? (
+              <img
+                src={s.thumbnail_url}
+                alt=""
+                className="h-14 w-20 shrink-0 rounded object-cover bg-gray-100"
+              />
+            ) : (
+              <div className="h-14 w-20 shrink-0 rounded bg-gray-100" />
+            )}
+            <span className="min-w-0 text-xs text-gray-700 break-words">
+              {new Date(s.created_at).toLocaleString()}
+              <br />
+              <span className="font-medium text-gray-900">{s.filename}</span>
+            </span>
+          </a>
+        ))}
+      </div>
+    </div>
+  ) : null;
+
+  return (
+    <div className="relative">
+      <button
+        ref={triggerRef}
+        type="button"
+        aria-expanded={isOpen}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle();
+        }}
+        className={`w-full max-w-full rounded-md border px-2 py-2 text-xs font-semibold shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
+          isOpen
+            ? "border-violet-300 bg-violet-50 text-violet-900"
+            : "border-gray-200 bg-gray-50 text-gray-800 hover:bg-gray-100"
+        }`}
+      >
+        Snips ({snips.length})
+      </button>
+      {panel ? createPortal(panel, document.body) : null}
+    </div>
+  );
+}
+
 function JdLink({ url }: { url: string }) {
   if (!url) return <span className="text-gray-300">—</span>;
   return (
@@ -318,9 +444,16 @@ export function Dashboard({
   const [error, setError] = useState("");
   /** Only one Files menu open at a time (avoids stacked popovers). */
   const [openFilesRowId, setOpenFilesRowId] = useState<number | null>(null);
+  const [openSnipsRowId, setOpenSnipsRowId] = useState<number | null>(null);
   const closeFilesMenu = useCallback(() => setOpenFilesRowId(null), []);
+  const closeSnipsMenu = useCallback(() => setOpenSnipsRowId(null), []);
   const toggleFilesMenu = useCallback((id: number) => {
+    setOpenSnipsRowId(null);
     setOpenFilesRowId((cur) => (cur === id ? null : id));
+  }, []);
+  const toggleSnipsMenu = useCallback((id: number) => {
+    setOpenFilesRowId(null);
+    setOpenSnipsRowId((cur) => (cur === id ? null : id));
   }, []);
 
   const load = useCallback(async () => {
@@ -354,11 +487,21 @@ export function Dashboard({
     ) {
       setOpenFilesRowId(null);
     }
-  }, [rows, openFilesRowId]);
+    if (
+      openSnipsRowId != null &&
+      !rows.some((r) => r.id === openSnipsRowId)
+    ) {
+      setOpenSnipsRowId(null);
+    }
+  }, [rows, openFilesRowId, openSnipsRowId]);
 
-  async function handlePatch(id: number, field: string, value: string) {
+  async function handlePatch(
+    id: number,
+    field: keyof Generation | "stage",
+    value: string | boolean,
+  ) {
     try {
-      const updated = await patchGeneration(id, { [field]: value });
+      const updated = await patchGeneration(id, { [field]: value } as Partial<Generation>);
       setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : "Update failed");
@@ -431,21 +574,25 @@ export function Dashboard({
       <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-visible">
         <table className="w-full table-fixed text-left text-sm leading-normal border-collapse">
           <colgroup>
-            <col className="w-[104px]" />
-            <col className="w-[120px]" />
-            <col className="w-[128px]" />
-            <col className="w-[26%]" />
-            <col className="w-[20%]" />
-            <col className="w-[88px]" />
+            <col className="w-[96px]" />
+            <col className="w-[100px]" />
+            <col className="w-[100px]" />
+            <col className="w-[112px]" />
             <col className="w-[22%]" />
-            <col className="w-[44px]" />
-            <col className="w-[108px]" />
-            <col className="w-[168px]" />
-            <col className="w-[44px]" />
+            <col className="w-[16%]" />
+            <col className="w-[80px]" />
+            <col className="w-[18%]" />
+            <col className="w-[40px]" />
+            <col className="w-[96px]" />
+            <col className="w-[88px]" />
+            <col className="w-[56px]" />
+            <col className="w-[140px]" />
+            <col className="w-[40px]" />
           </colgroup>
           <thead>
             <tr className="bg-gray-50 text-xs font-semibold text-gray-600 uppercase tracking-wide">
               <th className="px-3 py-3">Date</th>
+              <th className="px-3 py-3">User</th>
               <th className="px-3 py-3">Profile</th>
               <th className="px-3 py-3">Stage</th>
               <th className="px-3 py-3">Title</th>
@@ -456,6 +603,10 @@ export function Dashboard({
                 JD
               </th>
               <th className="px-2 py-3">Files</th>
+              <th className="px-2 py-3">Snips</th>
+              <th className="px-2 py-3 text-center" title="Admin reviewed">
+                OK
+              </th>
               <th className="px-2 py-3">Model</th>
               <th className="px-1 py-3" aria-label="Delete" />
             </tr>
@@ -465,6 +616,12 @@ export function Dashboard({
               <tr key={row.id} className="hover:bg-gray-50/80 align-top">
                 <td className="px-3 py-2.5 whitespace-nowrap text-gray-600 text-sm">
                   {formatDate(row.created_at)}
+                </td>
+                <td
+                  className="px-3 py-2.5 text-xs font-mono text-gray-800 truncate"
+                  title={row.generated_by_username || ""}
+                >
+                  {row.generated_by_username || "—"}
                 </td>
                 <td
                   className="px-3 py-2.5 text-sm font-medium truncate"
@@ -525,6 +682,25 @@ export function Dashboard({
                     onClose={closeFilesMenu}
                   />
                 </td>
+                <td className="px-2 py-2.5 min-w-0 align-middle">
+                  <SnipsMenu
+                    row={row}
+                    isOpen={openSnipsRowId === row.id}
+                    onToggle={() => toggleSnipsMenu(row.id)}
+                    onClose={closeSnipsMenu}
+                  />
+                </td>
+                <td className="px-2 py-2.5 text-center align-middle">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    checked={!!row.admin_checked}
+                    title="Admin checked"
+                    onChange={(e) =>
+                      void handlePatch(row.id, "admin_checked", e.target.checked)
+                    }
+                  />
+                </td>
                 <td
                   className="px-2 py-2.5 text-xs font-mono text-gray-700 leading-snug break-words hyphens-auto min-w-0"
                   title={row.model_name}
@@ -557,7 +733,7 @@ export function Dashboard({
             {!loading && rows.length === 0 && (
               <tr>
                 <td
-                  colSpan={11}
+                  colSpan={14}
                   className="text-center py-12 text-gray-400 text-sm"
                 >
                   No generations found

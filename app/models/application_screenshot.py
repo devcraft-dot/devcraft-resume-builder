@@ -19,6 +19,9 @@ class ApplicationScreenshot(Base):
     __table_args__ = (Index("ix_application_screenshots_created_at", "created_at"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    generation_id: Mapped[int | None] = mapped_column(
+        ForeignKey("generations.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     user_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
@@ -33,3 +36,6 @@ class ApplicationScreenshot(Base):
     file_mime: Mapped[str] = mapped_column(String(80), default="")
 
     user: Mapped["User | None"] = relationship()
+    generation: Mapped["Generation | None"] = relationship(
+        back_populates="application_screenshots",
+    )

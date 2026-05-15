@@ -1,4 +1,4 @@
-export interface ApplicationScreenshot {
+export interface GenerationSnip {
   id: number;
   created_at: string;
   drive_url: string;
@@ -7,14 +7,6 @@ export interface ApplicationScreenshot {
   company_name: string;
   file_mime: string;
   thumbnail_url: string;
-}
-
-export interface ApplicationScreenshotList {
-  items: ApplicationScreenshot[];
-  total: number;
-  page: number;
-  page_size: number;
-  pages: number;
 }
 
 export interface Generation {
@@ -31,6 +23,10 @@ export interface Generation {
   questions_drive_url: string;
   jd_drive_url: string;
   model_name: string;
+  user_id?: number | null;
+  generated_by_username?: string | null;
+  admin_checked?: boolean;
+  application_snips?: GenerationSnip[];
 }
 
 export interface GenerationList {

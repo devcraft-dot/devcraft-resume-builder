@@ -1,11 +1,14 @@
--- Resume-builder: username/password + JWT auth, registered profiles, per-user generations.
--- Run once against your Postgres (e.g. Neon) if the DB already existed before this feature.
--- Fresh installs can rely on SQLAlchemy create_all instead.
+-- Resume-builder: Postgres schema aligned with SQLAlchemy models (JWT auth, profiles, generations, snips).
 --
--- Run as normal SQL only. Do not wrap the whole script in EXPLAIN (use Run / execute).
+-- Greenfield: run 000_drop_all_tables.sql (optional), then this file. Do not wrap the whole script in EXPLAIN.
 --
--- Includes core tables `generations` and `application_screenshots` (resume pipeline + uploads).
--- Source of truth in code: app/models/generation.py, app/models/application_screenshot.py
+-- Existing DB on an older schema: this file’s CREATE IF NOT EXISTS + ALTER ADD IF NOT EXISTS sections
+-- catch up most drift; also run 002_users_password_jwt.sql if users still use token_hash, and
+-- 003_generation_admin_checked_screenshot_link.sql if you never merged those columns into 001.
+--
+-- Code source of truth:
+--   app/models/user.py, registered_profile.py, user_profile_assignment.py
+--   app/models/generation.py, application_screenshot.py
 
 -- ---------------------------------------------------------------------------
 -- users
@@ -51,7 +54,7 @@ CREATE INDEX IF NOT EXISTS ix_user_profile_assignments_user_id ON user_profile_a
 CREATE INDEX IF NOT EXISTS ix_user_profile_assignments_profile_id ON user_profile_assignments (profile_id);
 
 -- ---------------------------------------------------------------------------
--- generations (resume generation rows — API /extensions write here)
+-- generations (resume rows — API + extensions)
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS generations (
     id SERIAL PRIMARY KEY,
@@ -67,7 +70,8 @@ CREATE TABLE IF NOT EXISTS generations (
     resume_drive_url VARCHAR(2000) NOT NULL DEFAULT '',
     questions_drive_url VARCHAR(2000) NOT NULL DEFAULT '',
     jd_drive_url VARCHAR(2000) NOT NULL DEFAULT '',
-    model_name VARCHAR(100) NOT NULL DEFAULT ''
+    model_name VARCHAR(100) NOT NULL DEFAULT '',
+    admin_checked BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE INDEX IF NOT EXISTS ix_generations_created_at ON generations (created_at);
@@ -76,20 +80,21 @@ CREATE INDEX IF NOT EXISTS ix_generations_profile_name ON generations (profile_n
 CREATE INDEX IF NOT EXISTS ix_generations_model_name ON generations (model_name);
 CREATE INDEX IF NOT EXISTS ix_generations_url ON generations (url);
 
--- Legacy DBs: table existed before user_id column
+-- Legacy DBs: generations existed before user_id
 ALTER TABLE generations ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users (id) ON DELETE SET NULL;
 
 CREATE INDEX IF NOT EXISTS ix_generations_user_id ON generations (user_id);
 CREATE INDEX IF NOT EXISTS ix_generations_user_created_at ON generations (user_id, created_at);
 
--- Dedup scope per authenticated user (NULL user_id rows remain allowed for legacy data)
+-- Dedup per user (Postgres allows multiple NULL user_id with same url/profile for legacy rows)
 CREATE UNIQUE INDEX IF NOT EXISTS ix_generations_user_url_profile ON generations (user_id, url, profile_name);
 
 -- ---------------------------------------------------------------------------
--- application_screenshots (Manual JD extension uploads)
+-- application_screenshots (Manual JD snips; optional link to a generation row)
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS application_screenshots (
     id SERIAL PRIMARY KEY,
+    generation_id INTEGER REFERENCES generations (id) ON DELETE SET NULL,
     user_id INTEGER REFERENCES users (id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     drive_url VARCHAR(2000) NOT NULL,
@@ -100,7 +105,14 @@ CREATE TABLE IF NOT EXISTS application_screenshots (
 );
 
 CREATE INDEX IF NOT EXISTS ix_application_screenshots_created_at ON application_screenshots (created_at);
+CREATE INDEX IF NOT EXISTS ix_application_screenshots_generation_id ON application_screenshots (generation_id);
 
 ALTER TABLE application_screenshots ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users (id) ON DELETE SET NULL;
+ALTER TABLE application_screenshots ADD COLUMN IF NOT EXISTS generation_id INTEGER REFERENCES generations (id) ON DELETE SET NULL;
 
 CREATE INDEX IF NOT EXISTS ix_application_screenshots_user_id ON application_screenshots (user_id);
+
+-- ---------------------------------------------------------------------------
+-- Idempotent catch-up (older generations rows without admin_checked)
+-- ---------------------------------------------------------------------------
+ALTER TABLE generations ADD COLUMN IF NOT EXISTS admin_checked BOOLEAN NOT NULL DEFAULT FALSE;

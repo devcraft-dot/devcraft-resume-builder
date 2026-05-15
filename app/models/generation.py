@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
@@ -49,4 +51,9 @@ class Generation(Base):
 
     model_name: Mapped[str] = mapped_column(String(100), default="")
 
+    admin_checked: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+
     user: Mapped["User | None"] = relationship(back_populates="generations")
+    application_screenshots: Mapped[list["ApplicationScreenshot"]] = relationship(
+        back_populates="generation",
+    )

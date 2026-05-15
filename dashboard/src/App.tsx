@@ -3,21 +3,14 @@ import { AnalyticsView } from "./AnalyticsView";
 import { Dashboard } from "./Dashboard";
 import { LoginPage } from "./LoginPage";
 import { ProfilesView } from "./ProfilesView";
-import { ScreenshotsView } from "./ScreenshotsView";
 import { UsersView } from "./UsersView";
 import { clearToken, getToken } from "./auth";
 import { fetchMe } from "./api/client";
 
-type NavKey =
-  | "generations"
-  | "analytics"
-  | "screenshots"
-  | "users"
-  | "profiles";
+type NavKey = "generations" | "analytics" | "users" | "profiles";
 
 const NAV: { key: NavKey; label: string }[] = [
   { key: "generations", label: "Resumes" },
-  { key: "screenshots", label: "Application snips" },
   { key: "analytics", label: "Analytics" },
   { key: "users", label: "Users" },
   { key: "profiles", label: "Profiles" },
@@ -111,7 +104,6 @@ export default function App() {
             onClearStageFilter={() => setResumeStageFilter(null)}
           />
         )}
-        {nav === "screenshots" && <ScreenshotsView />}
         {nav === "analytics" && (
           <AnalyticsView onViewResumesForStage={goToResumesForStage} />
         )}

@@ -359,10 +359,29 @@
   <div id="panel-history" class="panel">
     <div class="run-context-card">
       <div class="run-context-title">Your generation history</div>
-      <p class="run-context-hint">Recent resumes created with your account.</p>
+      <p class="run-context-hint">Grouped by calendar day (local time) with date/time on each row for daily reporting. Filter by date range; the counter shows how many rows match.</p>
+      <p id="history-count" class="run-context-hint" style="margin-top:8px;font-weight:600;color:#111827"></p>
     </div>
-    <button type="button" id="btn-refresh-history" class="btn-api-errors">Refresh</button>
-    <pre id="history-log" class="api-error-pre" style="margin-top:10px">Load history after signing in.</pre>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px">
+      <label style="font-size:12px;color:#374151">Show
+        <select id="history-date-filter" style="margin-left:4px;padding:4px 8px;border-radius:6px;border:1px solid #d1d5db">
+          <option value="all">All dates (loaded)</option>
+          <option value="today">Today</option>
+          <option value="yesterday">Yesterday</option>
+          <option value="7d">Last 7 days</option>
+          <option value="30d">Last 30 days</option>
+        </select>
+      </label>
+      <label style="font-size:12px;color:#374151">Order
+        <select id="history-order" style="margin-left:4px;padding:4px 8px;border-radius:6px;border:1px solid #d1d5db">
+          <option value="desc">Newest first</option>
+          <option value="asc">Oldest first</option>
+        </select>
+      </label>
+      <button type="button" id="btn-history-delete-selected" class="btn-api-errors btn-api-errors-danger">Delete selected</button>
+      <button type="button" id="btn-refresh-history" class="btn-api-errors">Refresh</button>
+    </div>
+    <div id="history-table-wrap" class="api-error-pre" style="margin-top:10px;max-height:400px;overflow:auto">Sign in to load history.</div>
   </div>
 
   <script src="config.js"></script>

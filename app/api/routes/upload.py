@@ -13,6 +13,7 @@ from sqlalchemy import func, select
 
 from app.core.deps import AdminUser, CurrentUser, DbSession
 from app.models.application_screenshot import ApplicationScreenshot
+from app.models.generation import Generation
 from app.schemas.application_screenshot import ApplicationScreenshotList, ApplicationScreenshotRead
 from app.services.drive_service import (
     ALLOWED_IMAGE_TYPES,
@@ -23,6 +24,31 @@ from app.services.drive_service import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["upload"])
+
+
+def _resolve_generation_id_for_screenshot(
+    db,
+    *,
+    user_id: int,
+    title: str,
+    company_name: str,
+    generation_id: int | None,
+) -> int | None:
+    if generation_id is not None:
+        g = db.get(Generation, generation_id)
+        if g is not None and g.user_id == user_id:
+            return g.id
+    t = (title or "").strip().lower()
+    c = (company_name or "").strip().lower()
+    if not t and not c:
+        return None
+    stmt = select(Generation.id).where(Generation.user_id == user_id)
+    if t:
+        stmt = stmt.where(func.lower(Generation.title) == t)
+    if c:
+        stmt = stmt.where(func.lower(Generation.company_name) == c)
+    stmt = stmt.order_by(Generation.created_at.desc()).limit(1)
+    return db.scalar(stmt)
 
 
 def _safe_snippet(s: str, max_len: int = 40) -> str:
@@ -38,6 +64,7 @@ async def upload_application_screenshot(
     file: UploadFile = File(...),
     title: str = Query("", max_length=500),
     company_name: str = Query("", max_length=500),
+    generation_id: int | None = Query(None, ge=1),
 ):
     """
     Accept a pasted snip or image file (PNG / JPEG / WebP), store as a native Drive file.
@@ -74,8 +101,17 @@ async def upload_application_screenshot(
             "Drive upload failed or is not configured (set DRIVE_TOKEN_JSON and folder id on the server).",
         )
 
+    gid = _resolve_generation_id_for_screenshot(
+        db,
+        user_id=user.id,
+        title=title,
+        company_name=company_name,
+        generation_id=generation_id,
+    )
+
     row = ApplicationScreenshot(
         user_id=user.id,
+        generation_id=gid,
         drive_url=url,
         filename=fn,
         job_title=(title or "").strip()[:500],

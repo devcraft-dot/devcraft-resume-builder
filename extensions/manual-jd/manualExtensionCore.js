@@ -163,9 +163,14 @@
   async function postUploadApplicationScreenshot(blob, meta = {}) {
     const title = String(meta.title || "").trim().slice(0, 500);
     const company_name = String(meta.company || "").trim().slice(0, 500);
+    const generation_id =
+      meta.generationId != null && meta.generationId !== ""
+        ? Number(meta.generationId)
+        : null;
     const params = new URLSearchParams();
     if (title) params.set("title", title);
     if (company_name) params.set("company_name", company_name);
+    if (generation_id && generation_id > 0) params.set("generation_id", String(generation_id));
     const qs = params.toString();
     const path = `/api/upload/application-screenshot${qs ? `?${qs}` : ""}`;
     const fd = new FormData();

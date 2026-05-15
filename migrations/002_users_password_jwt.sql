@@ -1,5 +1,8 @@
 -- Upgrade path: API-token `users` table → username + password_hash (JWT auth in app).
 --
+-- New databases: use migrations/001_add_auth_and_profiles.sql only (creates users with username +
+-- password_hash). Skip this file unless you are migrating an existing DB that still has token_hash.
+--
 -- You cannot derive passwords from old API token hashes.
 --
 -- ═══════════════════════════════════════════════════════════════════════════

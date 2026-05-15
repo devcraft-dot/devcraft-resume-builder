@@ -5,7 +5,7 @@ import math
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select, tuple_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.core.deps import AdminUser, CurrentUser, DbSession, resolve_assigned_profile
 from app.models.generation import Generation
@@ -23,6 +23,8 @@ from app.schemas.generate import (
     GenerationRead,
     ManualGenerateRequest,
     canonical_url_for_manual_entry,
+    generation_read_from_orm,
+    load_generation_for_read,
 )
 from app.services.document_service import build_answers_docx, build_jd_docx, build_resume_docx
 from app.services.drive_service import upload_buffers_parallel
@@ -43,7 +45,7 @@ def _run_generate(
     user: User,
     profile: RegisteredProfile,
     db: Session,
-) -> Generation:
+) -> GenerationRead:
     model_key = profile.model
     if model_key not in ALLOWED_MODELS:
         raise HTTPException(400, f"Invalid model on profile. Choose from: {list(ALLOWED_MODELS)}")
@@ -59,7 +61,10 @@ def _run_generate(
         )
     )
     if existing:
-        return existing
+        full = load_generation_for_read(db, existing.id)
+        if full is None:
+            raise HTTPException(500, "Failed to load generation")
+        return generation_read_from_orm(full, db)
 
     try:
         ai = generate_resume(
@@ -133,7 +138,10 @@ def _run_generate(
     except Exception:
         logger.exception("Failed to append Sheets row (generation saved to DB)")
 
-    return gen
+    full = load_generation_for_read(db, gen.id)
+    if full is None:
+        raise HTTPException(500, "Generation saved but could not be reloaded")
+    return generation_read_from_orm(full, db)
 
 
 @router.post("/generate", response_model=GenerationRead)
@@ -240,7 +248,10 @@ def list_generations(
     q: str | None = Query(None, description="Search title or company"),
     stage: str | None = Query(None, description="Filter by pipeline stage"),
 ):
-    stmt = select(Generation)
+    stmt = select(Generation).options(
+        joinedload(Generation.user),
+        selectinload(Generation.application_screenshots),
+    )
     count_stmt = select(func.count()).select_from(Generation)
 
     if stage and stage.strip():
@@ -262,10 +273,10 @@ def list_generations(
         stmt.order_by(Generation.created_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
-    ).all()
+    ).unique().all()
 
     return GenerationListResponse(
-        items=[GenerationRead.model_validate(r) for r in rows],
+        items=[generation_read_from_orm(r, db) for r in rows],
         total=total,
         page=page,
         page_size=page_size,
@@ -275,10 +286,10 @@ def list_generations(
 
 @router.get("/generations/{gen_id}", response_model=GenerationRead)
 def get_generation(gen_id: int, _admin: AdminUser, db: DbSession):
-    gen = db.get(Generation, gen_id)
+    gen = load_generation_for_read(db, gen_id)
     if not gen:
         raise HTTPException(404, "Generation not found")
-    return gen
+    return generation_read_from_orm(gen, db)
 
 
 @router.patch("/generations/{gen_id}", response_model=GenerationRead)
@@ -294,14 +305,19 @@ def patch_generation(
 
     data = payload.model_dump(exclude_unset=True)
     if not data:
-        return gen
+        gen_out = load_generation_for_read(db, gen_id)
+        if not gen_out:
+            raise HTTPException(404, "Generation not found")
+        return generation_read_from_orm(gen_out, db)
 
     for key, value in data.items():
         setattr(gen, key, value)
     db.add(gen)
     db.commit()
-    db.refresh(gen)
-    return gen
+    gen_out = load_generation_for_read(db, gen_id)
+    if not gen_out:
+        raise HTTPException(404, "Generation not found")
+    return generation_read_from_orm(gen_out, db)
 
 
 @router.delete("/generations/{gen_id}", status_code=204)

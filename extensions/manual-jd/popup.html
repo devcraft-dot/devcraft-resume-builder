@@ -256,9 +256,28 @@
   </div>
 
   <div id="panel-history" class="panel">
-    <p class="hint">Your recent generations on this account.</p>
-    <button type="button" id="btn-refresh-history">Refresh</button>
-    <pre id="history-log" style="margin-top:10px;font-size:11px;white-space:pre-wrap;max-height:400px;overflow:auto"></pre>
+    <p class="hint">Resumes grouped by calendar day (local time) with date and time on each row — useful for daily counts. Use the date filter and counter below; select rows to delete.</p>
+    <p id="history-count" class="hint" style="margin-top:6px;font-weight:600;color:#111827"></p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px">
+      <label style="font-size:12px;color:#374151">Show
+        <select id="history-date-filter" style="margin-left:4px;padding:4px 8px;border-radius:6px;border:1px solid #d1d5db">
+          <option value="all">All dates (loaded)</option>
+          <option value="today">Today</option>
+          <option value="yesterday">Yesterday</option>
+          <option value="7d">Last 7 days</option>
+          <option value="30d">Last 30 days</option>
+        </select>
+      </label>
+      <label style="font-size:12px;color:#374151">Order
+        <select id="history-order" style="margin-left:4px;padding:4px 8px;border-radius:6px;border:1px solid #d1d5db">
+          <option value="desc">Newest first</option>
+          <option value="asc">Oldest first</option>
+        </select>
+      </label>
+      <button type="button" id="btn-history-delete-selected" style="padding:6px 10px;border-radius:6px;border:1px solid #fecaca;background:#fef2f2;color:#991b1b;font-size:12px;font-weight:600;cursor:pointer">Delete selected</button>
+      <button type="button" id="btn-refresh-history" style="padding:6px 10px;border-radius:6px;border:1px solid #d1d5db;background:#fff;font-size:12px;cursor:pointer">Refresh</button>
+    </div>
+    <div id="history-table-wrap" style="margin-top:10px;font-size:11px;max-height:400px;overflow:auto">Sign in to load history.</div>
   </div>
 
   <script src="config.js"></script>

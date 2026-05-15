@@ -1,6 +1,5 @@
 import { getToken, onUnauthorized, setToken } from "../auth";
 import type {
-  ApplicationScreenshotList,
   AssignedProfile,
   DashboardAnalytics,
   Generation,
@@ -87,16 +86,6 @@ export function fetchMe() {
 
 export function fetchDashboardAnalytics() {
   return request<DashboardAnalytics>("/api/dashboard/analytics");
-}
-
-export function fetchApplicationScreenshots(page: number, pageSize: number) {
-  const params = new URLSearchParams({
-    page: String(page),
-    page_size: String(pageSize),
-  });
-  return request<ApplicationScreenshotList>(
-    `/api/application-screenshots?${params}`,
-  );
 }
 
 export function fetchGenerations(

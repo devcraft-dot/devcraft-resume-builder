@@ -1,7 +1,15 @@
 import hashlib
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field
+
+from app.schemas.application_screenshot import ApplicationScreenshotRead
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
+
+    from app.models.generation import Generation
 
 
 ALLOWED_MODELS = ("gpt-5.4", "gpt-5.4-mini", "deepseek", "deepseek-reasoner")
@@ -72,6 +80,10 @@ class GenerationRead(BaseModel):
     questions_drive_url: str
     jd_drive_url: str
     model_name: str
+    user_id: int | None = None
+    generated_by_username: str | None = None
+    admin_checked: bool = False
+    application_snips: list[ApplicationScreenshotRead] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}
 
@@ -82,6 +94,7 @@ class GenerationPatch(BaseModel):
     company_name: str | None = Field(None, max_length=500)
     salary_range: str | None = Field(None, max_length=200)
     note: str | None = Field(None, max_length=2000)
+    admin_checked: bool | None = None
 
 
 class CheckUrlsRequest(BaseModel):
@@ -116,3 +129,58 @@ class GenerationListResponse(BaseModel):
     page: int
     page_size: int
     pages: int
+
+
+class BulkDeleteGenerationsRequest(BaseModel):
+    ids: list[int] = Field(..., min_length=1, max_length=200)
+
+
+def load_generation_for_read(db: "Session", gen_id: int) -> "Generation | None":
+    from sqlalchemy import select
+    from sqlalchemy.orm import joinedload, selectinload
+
+    from app.models.generation import Generation
+
+    return db.scalars(
+        select(Generation)
+        .options(
+            joinedload(Generation.user),
+            selectinload(Generation.application_screenshots),
+        )
+        .where(Generation.id == gen_id)
+    ).unique().first()
+
+
+def generation_read_from_orm(gen: "Generation", db: "Session | None" = None) -> GenerationRead:
+    from sqlalchemy import select
+
+    from app.models.user import User
+
+    username: str | None = None
+    if gen.user is not None:
+        username = gen.user.username
+    elif gen.user_id and db is not None:
+        username = db.scalar(select(User.username).where(User.id == gen.user_id))
+
+    snips = list(gen.application_screenshots) if gen.application_screenshots else []
+    snips.sort(key=lambda s: s.created_at, reverse=True)
+
+    return GenerationRead(
+        id=gen.id,
+        created_at=gen.created_at,
+        profile_name=gen.profile_name,
+        stage=gen.stage,
+        title=gen.title,
+        company_name=gen.company_name,
+        salary_range=gen.salary_range,
+        note=gen.note,
+        url=gen.url,
+        resume_drive_url=gen.resume_drive_url,
+        questions_drive_url=gen.questions_drive_url,
+        jd_drive_url=gen.jd_drive_url,
+        model_name=gen.model_name,
+        user_id=gen.user_id,
+        generated_by_username=username,
+        admin_checked=bool(gen.admin_checked),
+        application_snips=[ApplicationScreenshotRead.model_validate(s) for s in snips],
+    )

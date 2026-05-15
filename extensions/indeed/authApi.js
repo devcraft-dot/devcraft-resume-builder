@@ -124,10 +124,11 @@ async function getServerProfiles() {
   return Array.isArray(list) ? list : [];
 }
 
-async function fetchMyGenerations(baseUrl, page = 1, pageSize = 20) {
+async function fetchMyGenerations(baseUrl, page = 1, pageSize = 20, order = "desc") {
   const params = new URLSearchParams({
     page: String(page),
     page_size: String(pageSize),
+    order: order === "asc" ? "asc" : "desc",
   });
   const res = await apiFetch(baseUrl, `/api/me/generations?${params}`);
   if (res.status === 401) {
@@ -138,6 +139,24 @@ async function fetchMyGenerations(baseUrl, page = 1, pageSize = 20) {
     throw new Error(`API ${res.status}: ${text.slice(0, 500)}`);
   }
   return res.json();
+}
+
+async function bulkDeleteMyGenerations(baseUrl, ids) {
+  if (!ids?.length) return { deleted: 0 };
+  const headers = await authHeaders({ "Content-Type": "application/json" });
+  const res = await fetch(`${baseUrl}/api/me/generations/bulk-delete`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ ids }),
+  });
+  if (res.status === 401) {
+    throw new Error("Session expired — sign in again");
+  }
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText);
+    throw new Error(`API ${res.status}: ${text.slice(0, 500)}`);
+  }
+  return true;
 }
 
 async function verifyToken(baseUrl) {
@@ -162,6 +181,7 @@ globalThis.ResumeAuth = {
   syncServerProfiles,
   getServerProfiles,
   fetchMyGenerations,
+  bulkDeleteMyGenerations,
   verifyToken,
   mapServerProfile,
 };

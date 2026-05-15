@@ -14,6 +14,7 @@ from app.api.routes.upload import router as upload_router
 from app.core.bootstrap import bootstrap_admin_if_needed
 from app.core.config import settings
 from app.core.db import get_db
+from app.core.token_util import normalize_api_token
 from app.models.user import User
 
 import app.models  # noqa: F401 — register all tables
@@ -70,11 +71,22 @@ def api_ready(db: Session = Depends(get_db)):
         db.scalar(select(func.count()).select_from(User).where(User.role == "admin")) or 0
     )
     user_n = int(db.scalar(select(func.count()).select_from(User)) or 0)
+    env_token = normalize_api_token(settings.bootstrap_admin_token)
+    hints: list[str] = []
+    if admin_n == 0 and env_token:
+        hints.append("No admin row yet; first /api/me or /api/generate will run bootstrap on this instance.")
+    if admin_n > 0 and env_token:
+        hints.append(
+            "If login fails with Invalid token: an admin already exists with a different secret. "
+            "Set BOOTSTRAP_REPLACE_ADMIN=true once, redeploy, then log in with BOOTSTRAP_ADMIN_TOKEN."
+        )
     return {
         "status": "ok",
         "admin_users": admin_n,
         "total_users": user_n,
-        "bootstrap_admin_env_set": bool((settings.bootstrap_admin_token or "").strip()),
+        "bootstrap_admin_env_set": bool(env_token),
+        "bootstrap_replace_admin_env_set": bool(settings.bootstrap_replace_admin),
+        "hints": hints,
     }
 
 

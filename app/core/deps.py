@@ -10,7 +10,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.auth import verify_api_token
+from app.core.bootstrap import bootstrap_admin_if_needed
 from app.core.db import get_db
+from app.core.token_util import normalize_api_token
 from app.models.registered_profile import RegisteredProfile
 from app.models.user import User
 from app.models.user_profile_assignment import UserProfileAssignment
@@ -34,11 +36,14 @@ def _extract_api_token(
     """Bearer from HTTPBearer, raw Authorization line, or X-Resume-Auth (SPA / proxy fallback)."""
     t = _extract_token(credentials)
     if t:
-        return t
+        out = normalize_api_token(t)
+        return out or None
     raw = (request.headers.get("Authorization") or "").strip()
     if raw.lower().startswith("bearer "):
-        return raw[7:].strip() or None
-    return (request.headers.get("X-Resume-Auth") or "").strip() or None
+        out = normalize_api_token(raw[7:])
+        return out or None
+    out = normalize_api_token(request.headers.get("X-Resume-Auth") or "")
+    return out or None
 
 
 def get_current_user(
@@ -48,6 +53,8 @@ def get_current_user(
         HTTPAuthorizationCredentials | None, Depends(_bearer)
     ] = None,
 ) -> User:
+    # Vercel: lifespan may not have run yet on this instance; ensures admin exists before verify.
+    bootstrap_admin_if_needed()
     token = _extract_api_token(request, credentials)
     if not token:
         raise HTTPException(
@@ -70,6 +77,7 @@ def get_current_user_optional(
         HTTPAuthorizationCredentials | None, Depends(_bearer)
     ] = None,
 ) -> User | None:
+    bootstrap_admin_if_needed()
     token = _extract_api_token(request, credentials)
     if not token:
         return None

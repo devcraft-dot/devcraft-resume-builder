@@ -9,13 +9,14 @@ from sqlalchemy import func, select
 from app.core.auth import generate_api_token, hash_api_token
 from app.core.config import settings
 from app.core.db import _session_factory
+from app.core.token_util import normalize_api_token
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
 
 def bootstrap_admin_if_needed() -> None:
-    token = (settings.bootstrap_admin_token or "").strip()
+    token = normalize_api_token(settings.bootstrap_admin_token)
     if not token:
         return
 

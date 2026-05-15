@@ -256,29 +256,29 @@ async function renderHistory() {
     }
 
     if (!loaded.length) {
-      wrap.innerHTML = "<p style='padding:8px;color:#6b7280;font-size:12px'>No generations yet.</p>";
+      wrap.innerHTML = '<p class="empty-msg">No generations yet.</p>';
       return;
     }
 
     if (!notDismissed.length) {
       wrap.innerHTML =
-        "<p style='padding:8px;color:#6b7280;font-size:12px'>All loaded rows are hidden in this extension only. Your generations are still on the server. Use “Show hidden again” to restore the list.</p>";
+        '<p class="empty-msg">All loaded rows are hidden in this extension only. Your generations are still on the server. Use “Show hidden again” to restore the list.</p>';
       return;
     }
 
     if (!filtered.length) {
       wrap.innerHTML =
-        "<p style='padding:8px;color:#6b7280;font-size:12px'>No generations match this filter. Choose “All dates” or a wider range.</p>";
+        '<p class="empty-msg">No generations match this filter. Choose “All dates” or a wider range.</p>';
       return;
     }
 
-    const head = `<table class="history-table" style="width:100%;border-collapse:collapse;font-size:12px">
-      <thead><tr style="background:#f9fafb;text-align:left">
-        <th style="padding:6px 8px;width:28px"><input type="checkbox" id="history-select-all" title="Select all" /></th>
-        <th style="padding:6px 8px;white-space:nowrap">When</th>
-        <th style="padding:6px 8px">Title</th>
-        <th style="padding:6px 8px">Company</th>
-        <th style="padding:6px 8px">Stage</th>
+    const head = `<table class="hist-table">
+      <thead class="hist-thead"><tr>
+        <th class="hist-th" style="width:28px"><input type="checkbox" id="history-select-all" title="Select all" /></th>
+        <th class="hist-th">When</th>
+        <th class="hist-th">Title</th>
+        <th class="hist-th">Company</th>
+        <th class="hist-th">Stage</th>
       </tr></thead><tbody>`;
 
     const parts = [];
@@ -286,15 +286,15 @@ async function renderHistory() {
       const first = dayItems[0];
       const label = formatHistoryDayHeader(first.created_at);
       parts.push(
-        `<tr style="background:#eef2ff;border-top:1px solid #c7d2fe"><td colspan="5" style="padding:6px 10px;font-size:11px;font-weight:600;color:#3730a3">${escHtml(label)} — ${dayItems.length} resume${dayItems.length === 1 ? "" : "s"}</td></tr>`,
+        `<tr class="hist-day"><td colspan="5">${escHtml(label)} — ${dayItems.length} resume${dayItems.length === 1 ? "" : "s"}</td></tr>`,
       );
       for (const g of dayItems) {
-        parts.push(`<tr style="border-top:1px solid #e5e7eb">
-        <td style="padding:6px 8px"><input type="checkbox" class="history-cb" data-id="${g.id}" /></td>
-        <td style="padding:6px 8px;white-space:nowrap;font-variant-numeric:tabular-nums">${escHtml(formatHistoryCellDateTime(g.created_at))}</td>
-        <td style="padding:6px 8px;word-break:break-word">${escHtml(g.title)}</td>
-        <td style="padding:6px 8px;word-break:break-word">${escHtml(g.company_name || "")}</td>
-        <td style="padding:6px 8px"><span style="font-weight:600">${escHtml(g.stage)}</span></td>
+        parts.push(`<tr class="hist-row">
+        <td><input type="checkbox" class="history-cb" data-id="${g.id}" /></td>
+        <td class="hist-time">${escHtml(formatHistoryCellDateTime(g.created_at))}</td>
+        <td style="word-break:break-word">${escHtml(g.title)}</td>
+        <td style="word-break:break-word">${escHtml(g.company_name || "")}</td>
+        <td><span style="font-weight:700;color:var(--text)">${escHtml(g.stage)}</span></td>
       </tr>`);
       }
     }

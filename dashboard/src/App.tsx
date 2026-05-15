@@ -47,8 +47,9 @@ export default function App() {
 
   if (authed === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Loading…
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 text-slate-500">
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" />
+        <p className="text-sm font-medium">Loading dashboard…</p>
       </div>
     );
   }
@@ -58,28 +59,34 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between max-w-screen-2xl mx-auto w-full">
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900">
-              Resume Builder Dashboard
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/75 backdrop-blur-md shadow-sm">
+        <div className="mx-auto flex w-full max-w-screen-2xl flex-col gap-5 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-violet-600/90">
+              Admin
+            </p>
+            <h1 className="mt-0.5 text-2xl font-bold tracking-tight text-slate-900">
+              Resume Builder
             </h1>
-            <p className="text-sm text-gray-500 mt-0.5">
-              Admins manage the system here. End users sign in only in the Chrome extensions.
+            <p className="mt-1 max-w-xl text-sm leading-relaxed text-slate-500">
+              Manage users and profiles here. End users sign in only in the Chrome extensions.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <nav className="flex flex-wrap gap-2" aria-label="Main">
+          <div className="flex flex-col gap-3 sm:items-end">
+            <nav
+              className="flex flex-wrap gap-1 rounded-2xl bg-slate-100/90 p-1 ring-1 ring-slate-200/80"
+              aria-label="Main"
+            >
               {NAV.map(({ key, label }) => (
                 <button
                   key={key}
                   type="button"
                   onClick={() => setNav(key)}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg border transition ${
+                  className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
                     nav === key
-                      ? "bg-gray-900 text-white border-gray-900"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                      ? "bg-white text-slate-900 shadow-md ring-1 ring-slate-200/80"
+                      : "text-slate-600 hover:bg-white/60 hover:text-slate-900"
                   }`}
                 >
                   {label}
@@ -89,14 +96,14 @@ export default function App() {
             <button
               type="button"
               onClick={handleLogout}
-              className="px-3 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="dash-btn self-stretch sm:self-auto"
             >
               Sign out
             </button>
           </div>
         </div>
       </header>
-      <main className="p-6 max-w-screen-2xl mx-auto w-full">
+      <main className="mx-auto w-full max-w-screen-2xl px-4 py-8 sm:px-8">
         {nav === "generations" && (
           <Dashboard
             key={resumeStageFilter ?? "__all__"}

@@ -71,55 +71,74 @@ export function ProfilesView() {
     }
   }
 
-  if (loading) return <p className="text-gray-500">Loading profiles…</p>;
-  if (error) return <p className="text-red-600">{error}</p>;
+  if (loading)
+    return (
+      <div className="flex items-center gap-3 text-sm font-medium text-slate-500">
+        <span className="h-5 w-5 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" />
+        Loading profiles…
+      </div>
+    );
+  if (error)
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+        {error}
+      </div>
+    );
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Registered profiles</h2>
-        <button
-          type="button"
-          onClick={startCreate}
-          className="px-4 py-2 text-sm font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-800"
-        >
+    <div className="space-y-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-violet-600/90">
+            Content
+          </p>
+          <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
+            Registered profiles
+          </h2>
+          <p className="mt-2 max-w-xl text-sm text-slate-600">
+            Candidate templates used by the extensions for generation.
+          </p>
+        </div>
+        <button type="button" onClick={startCreate} className="dash-btn dash-btn-primary shrink-0">
           New profile
         </button>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="overflow-hidden rounded-2xl bg-white/95 shadow-xl shadow-slate-900/5 ring-1 ring-slate-200/80 backdrop-blur-sm">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-left text-gray-600">
+          <thead className="border-b border-slate-200 bg-slate-50/95 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
             <tr>
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Model</th>
-              <th className="px-4 py-3">Updated</th>
-              <th className="px-4 py-3">Actions</th>
+              <th className="px-5 py-4">Name</th>
+              <th className="px-5 py-4">Model</th>
+              <th className="px-5 py-4">Updated</th>
+              <th className="px-5 py-4">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-100">
             {profiles.map((p) => (
-              <tr key={p.id} className="border-t border-gray-100">
-                <td className="px-4 py-3">{p.name}</td>
-                <td className="px-4 py-3">{p.model}</td>
-                <td className="px-4 py-3">
+              <tr key={p.id} className="transition hover:bg-violet-50/50">
+                <td className="px-5 py-4 font-medium text-slate-900">{p.name}</td>
+                <td className="px-5 py-4 font-mono text-xs text-slate-600">{p.model}</td>
+                <td className="px-5 py-4 text-slate-600">
                   {new Date(p.updated_at).toLocaleDateString()}
                 </td>
-                <td className="px-4 py-3 space-x-2">
-                  <button
-                    type="button"
-                    className="text-blue-600 hover:underline"
-                    onClick={() => startEdit(p.id)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className="text-red-600 hover:underline"
-                    onClick={() => handleDelete(p.id)}
-                  >
-                    Delete
-                  </button>
+                <td className="px-5 py-4">
+                  <div className="flex flex-wrap gap-x-3 gap-y-1">
+                    <button
+                      type="button"
+                      className="text-sm font-semibold text-violet-700 underline-offset-2 hover:underline"
+                      onClick={() => startEdit(p.id)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="text-sm font-semibold text-red-600 underline-offset-2 hover:underline"
+                      onClick={() => handleDelete(p.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -128,24 +147,28 @@ export function ProfilesView() {
       </div>
 
       {editing && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl p-6 max-w-lg w-full shadow-lg max-h-[90vh] overflow-y-auto">
-            <h3 className="font-semibold mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-200/80 sm:p-8">
+            <h3 className="text-lg font-bold text-slate-900">
               {editing.id > 0 ? "Edit profile" : "New profile"}
             </h3>
-            <div className="space-y-3">
+            <div className="mt-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Name
+                </label>
                 <input
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="dash-input"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Model
+                </label>
                 <select
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="dash-input bg-white"
                   value={form.model}
                   onChange={(e) => setForm({ ...form, model: e.target.value })}
                 >
@@ -157,29 +180,21 @@ export function ProfilesView() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Profile text
                 </label>
                 <textarea
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[200px] font-mono"
+                  className="dash-input min-h-[220px] font-mono text-xs leading-relaxed"
                   value={form.profile_text}
                   onChange={(e) => setForm({ ...form, profile_text: e.target.value })}
                 />
               </div>
             </div>
-            <div className="flex gap-2 mt-4 justify-end">
-              <button
-                type="button"
-                className="px-3 py-1.5 text-sm border rounded-lg"
-                onClick={() => setEditing(null)}
-              >
+            <div className="mt-8 flex justify-end gap-3">
+              <button type="button" className="dash-btn" onClick={() => setEditing(null)}>
                 Cancel
               </button>
-              <button
-                type="button"
-                className="px-3 py-1.5 text-sm bg-gray-900 text-white rounded-lg"
-                onClick={handleSave}
-              >
+              <button type="button" className="dash-btn dash-btn-primary" onClick={handleSave}>
                 Save
               </button>
             </div>

@@ -57,7 +57,7 @@ function EditableCell({
   if (!editing) {
     return (
       <span
-        className="cursor-pointer hover:bg-gray-100 px-0.5 rounded block text-sm leading-snug line-clamp-2 break-words"
+        className="cursor-pointer hover:bg-violet-50/80 px-1 rounded-lg block text-sm leading-snug line-clamp-2 break-words"
         onDoubleClick={() => setEditing(true)}
         title="Double-click to edit"
       >
@@ -69,7 +69,7 @@ function EditableCell({
   return (
     <input
       autoFocus
-      className="border border-blue-400 rounded px-2 py-1 text-sm w-full min-w-0 outline-none"
+      className="border border-violet-300 rounded-xl px-2 py-1 text-sm w-full min-w-0 outline-none focus:ring-2 focus:ring-violet-400/50"
       value={draft}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={() => {
@@ -411,7 +411,7 @@ function JdLink({ url }: { url: string }) {
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex text-blue-600 hover:text-blue-800"
+      className="inline-flex text-violet-600 hover:text-violet-800"
       title="Open job posting"
       onClick={(e) => e.stopPropagation()}
     >
@@ -520,13 +520,13 @@ export function Dashboard({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 rounded-2xl bg-white/90 p-4 shadow-lg shadow-slate-900/5 ring-1 ring-slate-200/80 backdrop-blur-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
           <input
             type="text"
             placeholder="Search title or company…"
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-60 max-w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="dash-input w-full max-w-xs sm:w-60"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -534,11 +534,11 @@ export function Dashboard({
             }}
           />
           {stageFilter ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-800 border border-indigo-200">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-900">
               Stage: {stageFilter}
               <button
                 type="button"
-                className="ml-1 rounded-full p-0.5 hover:bg-indigo-200 text-indigo-900"
+                className="ml-0.5 rounded-full p-0.5 text-violet-700 transition hover:bg-violet-200/80"
                 title="Clear stage filter"
                 onClick={() => onClearStageFilter?.()}
               >
@@ -546,11 +546,12 @@ export function Dashboard({
               </button>
             </span>
           ) : null}
-          <span className="text-sm text-gray-500">
+          <span className="text-sm font-medium tabular-nums text-slate-500">
             {total} result{total !== 1 ? "s" : ""}
           </span>
           {loading && (
-            <span className="text-sm text-blue-500 animate-pulse">
+            <span className="inline-flex items-center gap-2 text-sm font-medium text-violet-600">
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" />
               Loading…
             </span>
           )}
@@ -559,20 +560,20 @@ export function Dashboard({
           type="button"
           onClick={() => load()}
           disabled={loading}
-          className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 transition shrink-0"
+          className="dash-btn shrink-0"
         >
           {loading ? "Refreshing…" : "Refresh"}
         </button>
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-700 text-sm rounded-lg px-4 py-2">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
           {error}
         </div>
       )}
 
-      <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-visible">
-        <table className="w-full table-fixed text-left text-sm leading-normal border-collapse">
+      <div className="overflow-visible rounded-2xl bg-white/95 shadow-xl shadow-slate-900/5 ring-1 ring-slate-200/80 backdrop-blur-sm">
+        <table className="w-full table-fixed border-collapse text-left text-sm leading-normal">
           <colgroup>
             <col className="w-[96px]" />
             <col className="w-[100px]" />
@@ -590,7 +591,7 @@ export function Dashboard({
             <col className="w-[40px]" />
           </colgroup>
           <thead>
-            <tr className="bg-gray-50 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+            <tr className="border-b border-slate-200/90 bg-slate-50/95 text-[11px] font-bold uppercase tracking-wider text-slate-500">
               <th className="px-3 py-3">Date</th>
               <th className="px-3 py-3">User</th>
               <th className="px-3 py-3">Profile</th>
@@ -611,10 +612,10 @@ export function Dashboard({
               <th className="px-1 py-3" aria-label="Delete" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 text-gray-800">
+          <tbody className="divide-y divide-slate-100 text-slate-800">
             {rows.map((row) => (
-              <tr key={row.id} className="hover:bg-gray-50/80 align-top">
-                <td className="px-3 py-2.5 whitespace-nowrap text-gray-600 text-sm">
+              <tr key={row.id} className="align-top transition hover:bg-violet-50/40">
+                <td className="px-3 py-2.5 whitespace-nowrap text-sm text-slate-500">
                   {formatDate(row.created_at)}
                 </td>
                 <td
@@ -635,7 +636,7 @@ export function Dashboard({
                     onChange={(e) =>
                       handlePatch(row.id, "stage", e.target.value)
                     }
-                    className={`w-full max-w-full text-xs font-semibold rounded-lg px-2 py-1.5 border-0 cursor-pointer shadow-sm focus:ring-2 focus:ring-blue-400 focus:ring-offset-0 ${STAGE_COLORS[row.stage] || "bg-gray-100 text-gray-700"}`}
+                    className={`w-full max-w-full cursor-pointer rounded-lg border-0 px-2 py-1.5 text-xs font-semibold shadow-sm transition focus:ring-2 focus:ring-violet-400/50 focus:ring-offset-0 ${STAGE_COLORS[row.stage] || "bg-slate-100 text-slate-700"}`}
                   >
                     {STAGES.map((s) => (
                       <option key={s} value={s}>
@@ -693,7 +694,7 @@ export function Dashboard({
                 <td className="px-2 py-2.5 text-center align-middle">
                   <input
                     type="checkbox"
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500/40"
                     checked={!!row.admin_checked}
                     title="Admin checked"
                     onChange={(e) =>
@@ -734,7 +735,7 @@ export function Dashboard({
               <tr>
                 <td
                   colSpan={14}
-                  className="text-center py-12 text-gray-400 text-sm"
+                  className="text-center py-12 text-sm font-medium text-slate-400"
                 >
                   No generations found
                 </td>
@@ -745,8 +746,8 @@ export function Dashboard({
       </div>
 
       {pages > 1 && (
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-500">
+        <div className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-white/80 px-4 py-3 text-sm shadow-sm">
+          <span className="font-medium text-slate-500">
             Page {page} of {pages}
           </span>
           <div className="flex gap-2">
@@ -754,7 +755,7 @@ export function Dashboard({
               type="button"
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
-              className="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              className="dash-btn px-4 py-2 text-sm disabled:pointer-events-none disabled:opacity-40"
             >
               Previous
             </button>
@@ -762,7 +763,7 @@ export function Dashboard({
               type="button"
               disabled={page >= pages}
               onClick={() => setPage((p) => p + 1)}
-              className="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              className="dash-btn px-4 py-2 text-sm disabled:pointer-events-none disabled:opacity-40"
             >
               Next
             </button>

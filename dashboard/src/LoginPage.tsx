@@ -44,7 +44,13 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
       <div className="w-full max-w-md bg-white border border-gray-200 rounded-xl shadow-sm p-8">
         <h1 className="text-xl font-semibold text-gray-900">Admin sign-in</h1>
         <p className="text-sm text-gray-500 mt-2">
-          Paste the API token issued when your admin account was created.
+          Paste the same value you set in{" "}
+          <code className="text-xs bg-gray-100 px-1 rounded">BOOTSTRAP_ADMIN_TOKEN</code>{" "}
+          (or a token shown once when an admin was created). The dashboard must call your API:
+          set{" "}
+          <code className="text-xs bg-gray-100 px-1 rounded">VITE_API_URL</code> to your FastAPI
+          origin (e.g. <code className="text-xs">https://…vercel.app</code>) if the UI is not
+          same-origin.
         </p>
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>

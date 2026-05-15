@@ -49,6 +49,7 @@ export default function App() {
   function handleLogout() {
     clearToken();
     setAuthed(false);
+    window.location.reload();
   }
 
   if (authed === null) {

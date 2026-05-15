@@ -21,6 +21,16 @@ def bootstrap_admin_if_needed() -> None:
 
     db = _session_factory()()
     try:
+        if settings.bootstrap_replace_admin:
+            admins = db.scalars(select(User).where(User.role == "admin")).all()
+            for u in admins:
+                db.delete(u)
+            db.commit()
+            logger.warning(
+                "BOOTSTRAP_REPLACE_ADMIN: removed %d admin user(s); creating new admin from token",
+                len(admins),
+            )
+
         admin_count = int(
             db.scalar(select(func.count()).select_from(User).where(User.role == "admin"))
             or 0

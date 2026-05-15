@@ -1,0 +1,10 @@
+-- Destructive: removes all resume-builder application tables and data (including generations).
+-- Run only when you intend a full reset. Then run 001_add_auth_and_profiles.sql to recreate
+-- users, profiles, assignments, generations, and application_screenshots.
+-- Run as normal SQL; do not wrap in EXPLAIN.
+
+DROP TABLE IF EXISTS user_profile_assignments CASCADE;
+DROP TABLE IF EXISTS generations CASCADE;
+DROP TABLE IF EXISTS application_screenshots CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS registered_profiles CASCADE;

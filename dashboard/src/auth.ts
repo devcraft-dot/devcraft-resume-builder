@@ -13,7 +13,7 @@ export function clearToken(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
 
+/** Clear token after 401. Avoid reload so login form can show an error message. */
 export function onUnauthorized(): void {
   clearToken();
-  window.location.reload();
 }

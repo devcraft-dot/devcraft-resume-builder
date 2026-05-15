@@ -29,6 +29,8 @@ class Settings(BaseSettings):
 
     # First admin: set once, then rotate token via dashboard
     bootstrap_admin_token: str = ""
+    # If true: delete all admin users, then create one from bootstrap_admin_token (recovery if locked out).
+    bootstrap_replace_admin: bool = False
 
     model_config = SettingsConfigDict(
         env_file=str(_APP_DIR / ".env") if (_APP_DIR / ".env").exists() else None,

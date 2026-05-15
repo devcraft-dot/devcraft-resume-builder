@@ -257,7 +257,7 @@ def list_generations(
     if auth_enabled() and not access.is_admin and access.extension is None:
         raise HTTPException(401, "Authentication required")
     stmt = select(Generation)
-    count_stmt = select(func.count()).select_from(Generation)
+    count_stmt = select(func.count(Generation.id)).select_from(Generation)
 
     if auth_enabled() and access.extension is not None and not access.is_admin:
         stmt = stmt.where(Generation.client_username == access.extension.username)

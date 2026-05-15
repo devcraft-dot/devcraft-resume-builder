@@ -163,7 +163,7 @@ def list_application_screenshots(
     if auth_enabled() and not access.is_admin and access.extension is None:
         raise HTTPException(401, "Authentication required")
     stmt = select(ApplicationScreenshot)
-    count_stmt = select(func.count()).select_from(ApplicationScreenshot)
+    count_stmt = select(func.count(ApplicationScreenshot.id)).select_from(ApplicationScreenshot)
     if auth_enabled() and access.extension is not None and not access.is_admin:
         stmt = stmt.where(ApplicationScreenshot.client_username == access.extension.username)
         count_stmt = count_stmt.where(ApplicationScreenshot.client_username == access.extension.username)

@@ -1,6 +1,10 @@
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.exceptions import ResponseValidationError
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+from sqlalchemy import func, select
+from sqlalchemy.exc import ProgrammingError, SQLAlchemyError
+from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse, Response
 
 from app.api.routes.admin_profiles import router as admin_profiles_router
@@ -9,7 +13,9 @@ from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.generate import router as generate_router
 from app.api.routes.upload import router as upload_router
 from app.core.config import settings
+from app.core.db import get_db
 from app.cors_utils import access_control_allow_origin
+from app.models.generation import Generation
 
 import app.models.application_screenshot as _application_screenshot_model  # noqa: F401
 import app.models.generation as _generation_model  # noqa: F401 — register tables
@@ -34,6 +40,27 @@ async def ensure_cors_allow_origin(request: Request, call_next):
     """Set CORS on every response, including 500s (unhandled errors skip inner CORSMiddleware response path)."""
     try:
         response = await call_next(request)
+    except HTTPException as exc:
+        response = JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail},
+        )
+    except ProgrammingError as exc:
+        logger.exception("Database schema error on %s %s", request.method, request.url.path)
+        detail = str(exc.orig if hasattr(exc, "orig") else exc)[:400]
+        response = JSONResponse(
+            status_code=503,
+            content={
+                "detail": "Database schema error — redeploy the API or run migrations.",
+                "error": detail,
+            },
+        )
+    except SQLAlchemyError:
+        logger.exception("Database error on %s %s", request.method, request.url.path)
+        response = JSONResponse(
+            status_code=503,
+            content={"detail": "Database error"},
+        )
     except Exception:
         logger.exception("Unhandled error on %s %s", request.method, request.url.path)
         response = JSONResponse(
@@ -56,8 +83,56 @@ async def ensure_cors_allow_origin(request: Request, call_next):
 
 
 @app.get("/health")
-def health():
-    return {"status": "ok"}
+def health(db: Session = Depends(get_db)):
+    """Liveness + lightweight DB/schema check (runs ensure_schema via get_db)."""
+    try:
+        db.scalar(select(func.count(Generation.id)).select_from(Generation))
+        return {"status": "ok", "db": "ok"}
+    except HTTPException:
+        raise
+    except (ProgrammingError, SQLAlchemyError) as e:
+        logger.exception("health db check failed")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "degraded",
+                "db": "error",
+                "detail": str(e.orig if hasattr(e, "orig") else e)[:400],
+            },
+        )
+    except Exception as e:
+        logger.exception("health db check failed")
+        return JSONResponse(
+            status_code=503,
+            content={"status": "degraded", "db": "error", "detail": str(e)[:400]},
+        )
+
+
+@app.exception_handler(ProgrammingError)
+async def sqlalchemy_programming_error_handler(request: Request, exc: ProgrammingError):
+    logger.exception("SQL programming error on %s %s", request.method, request.url.path)
+    detail = str(exc.orig if hasattr(exc, "orig") else exc)[:400]
+    return JSONResponse(
+        status_code=503,
+        content={
+            "detail": "Database schema error — redeploy the API or run migrations.",
+            "error": detail,
+        },
+    )
+
+
+@app.exception_handler(ResponseValidationError)
+async def response_validation_error_handler(request: Request, exc: ResponseValidationError):
+    logger.error(
+        "Response validation error on %s %s: %s",
+        request.method,
+        request.url.path,
+        exc.errors(),
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Response serialization failed", "errors": exc.errors()[:5]},
+    )
 
 
 @app.options("/{full_path:path}")

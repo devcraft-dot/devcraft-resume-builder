@@ -55,6 +55,9 @@ def require_extension_or_admin(
     When auth is enabled: require either valid X-Admin-Key (dashboard) or Bearer extension JWT.
     """
     if not auth_enabled():
+        # JWT off: still honor X-Admin-Key so the dashboard can use admin routes.
+        if admin_key_valid(x_admin_key):
+            return ApiAccess(extension=None, is_admin=True)
         return ApiAccess(extension=None, is_admin=False)
     if admin_key_valid(x_admin_key):
         return ApiAccess(extension=None, is_admin=True)

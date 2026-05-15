@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class RegisteredProfileRead(BaseModel):
@@ -12,6 +12,11 @@ class RegisteredProfileRead(BaseModel):
     profile_text: str
 
     model_config = {"from_attributes": True}
+
+    @field_validator("name", "profile_text", mode="before")
+    @classmethod
+    def _null_str_to_empty(cls, v):
+        return "" if v is None else v
 
 
 class RegisteredProfileCreate(BaseModel):

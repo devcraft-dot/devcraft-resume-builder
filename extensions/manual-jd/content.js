@@ -7,6 +7,8 @@
   if (!/^https?:\/\//i.test(href)) return;
   if (/^https?:\/\/(chrome\.google\.com|chromewebstore\.google\.com)\//i.test(href)) return;
 
+  const { fetchHealth } = ManualJD;
+
   const host = document.createElement("div");
   host.id = HOST_ID;
   (document.body || document.documentElement).appendChild(host);
@@ -98,6 +100,7 @@
       background: #0f172a;
       color: #f8fafc;
       font-size: 12px;
+      line-height: 1.4;
       box-shadow: 0 8px 24px rgba(0,0,0,0.25);
       opacity: 0;
       transform: translateY(8px);
@@ -115,8 +118,14 @@
   wrap.innerHTML = `
     <div class="dock">
       <div class="rail-wrap" id="rail">
-        <button type="button" class="rail-btn" id="btn-autofill" title="Autofill from Greenhouse / Ashby job tab (opens side panel)">
-          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15l2 2 4-4"/></svg>
+        <button type="button" class="rail-btn" id="btn-book" title="Send selected text to Manual JD side panel">
+          <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8"/><path d="M8 11h6"/></svg>
+        </button>
+        <button type="button" class="rail-btn" id="btn-signal" title="Check API health">
+          <svg viewBox="0 0 24 24"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"/><path d="M9 10h.01"/><path d="M15 10h.01"/><path d="M9.5 15a3.5 3.5 0 0 0 5 0"/></svg>
+        </button>
+        <button type="button" class="rail-btn" id="btn-grid" title="Show saved profiles summary">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         </button>
         <button type="button" class="rail-btn primary-ring" id="btn-main" title="Open Manual JD side panel">
           <span class="inner"><img src="${extIcon}" alt="" /></span>
@@ -137,18 +146,51 @@
     toastTimer = setTimeout(() => toastEl.classList.remove("show"), ms);
   }
 
-  function sendOpen(msg, onFail) {
+  function sendOpen(msg) {
     chrome.runtime.sendMessage(msg, (res) => {
       const err = chrome.runtime.lastError?.message;
       if (err || !res?.ok) {
         showToast(err || res?.error || "Could not complete action", 5000);
-        onFail?.();
       }
     });
   }
 
-  root.getElementById("btn-autofill").addEventListener("click", () => {
-    sendOpen({ action: "autofillJobTabAndOpenPanel" });
+  root.getElementById("btn-book").addEventListener("click", (e) => {
+    if (e.shiftKey) {
+      sendOpen({ action: "autofillJobTabAndOpenPanel" });
+      return;
+    }
+    const text = String(window.getSelection?.()?.toString() || "").trim();
+    if (!text) {
+      showToast("Select job description text on the page first.", 4000);
+      return;
+    }
+    sendOpen({ action: "stashSelectionAndOpenPanel", text });
+  });
+
+  root.getElementById("btn-signal").addEventListener("click", async () => {
+    showToast("Checking API…", 1200);
+    try {
+      const h = await fetchHealth();
+      const status = String(h?.status || h?.detail || "ok").trim();
+      showToast(`API OK (${status})`, 3500);
+    } catch (e) {
+      showToast(e?.message || String(e), 5000);
+    }
+  });
+
+  root.getElementById("btn-grid").addEventListener("click", () => {
+    chrome.storage.sync.get(["profiles"], (d) => {
+      const list = Array.isArray(d.profiles) ? d.profiles : [];
+      const withText = list.filter((p) => String(p?.text || "").trim());
+      if (!list.length) {
+        showToast("No profiles in sync storage. Open side panel → Profiles.", 4500);
+        return;
+      }
+      const names = withText.map((p) => (p.name || "default").trim() || "default").slice(0, 5);
+      const more = withText.length > 5 ? ` +${withText.length - 5} more` : "";
+      showToast(`${withText.length}/${list.length} profiles ready: ${names.join(", ")}${more}`, 5000);
+    });
   });
 
   root.getElementById("btn-main").addEventListener("click", () => {

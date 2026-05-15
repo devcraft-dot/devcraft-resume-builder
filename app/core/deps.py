@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
@@ -27,15 +27,33 @@ def _extract_token(credentials: HTTPAuthorizationCredentials | None) -> str | No
     return token or None
 
 
+def _extract_api_token(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None,
+) -> str | None:
+    """Bearer from HTTPBearer, raw Authorization line, or X-Resume-Auth (SPA / proxy fallback)."""
+    t = _extract_token(credentials)
+    if t:
+        return t
+    raw = (request.headers.get("Authorization") or "").strip()
+    if raw.lower().startswith("bearer "):
+        return raw[7:].strip() or None
+    return (request.headers.get("X-Resume-Auth") or "").strip() or None
+
+
 def get_current_user(
+    request: Request,
     db: DbSession,
     credentials: Annotated[
         HTTPAuthorizationCredentials | None, Depends(_bearer)
     ] = None,
 ) -> User:
-    token = _extract_token(credentials)
+    token = _extract_api_token(request, credentials)
     if not token:
-        raise HTTPException(401, "Missing or invalid Authorization header")
+        raise HTTPException(
+            401,
+            "Missing API token. Send Authorization: Bearer <token> or X-Resume-Auth: <token>.",
+        )
 
     users = db.scalars(select(User).where(User.is_active.is_(True))).all()
     for user in users:
@@ -46,12 +64,13 @@ def get_current_user(
 
 
 def get_current_user_optional(
+    request: Request,
     db: DbSession,
     credentials: Annotated[
         HTTPAuthorizationCredentials | None, Depends(_bearer)
     ] = None,
 ) -> User | None:
-    token = _extract_token(credentials)
+    token = _extract_api_token(request, credentials)
     if not token:
         return None
     users = db.scalars(select(User).where(User.is_active.is_(True))).all()

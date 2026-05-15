@@ -28,6 +28,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getToken();
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
+    /* Some hosts/proxies mishandle Authorization on cross-origin SPA requests. */
+    headers.set("X-Resume-Auth", token);
   }
   const res = await fetch(`${BASE}${path}`, {
     ...init,

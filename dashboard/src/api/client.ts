@@ -6,7 +6,12 @@ import type {
   RegisteredProfile,
 } from "./types";
 
-const BASE = import.meta.env.VITE_API_URL || "";
+/** Normalized API origin from Vite env (no trailing slash). Empty = same-origin (dev proxy or static host). */
+export function getApiOrigin(): string {
+  return (import.meta.env.VITE_API_URL || "").trim().replace(/\/$/, "");
+}
+
+const BASE = getApiOrigin();
 
 const ADMIN_KEY_KEY = "rb_admin_api_key";
 const EXTENSION_TOKEN_KEY = "rb_extension_token";
@@ -14,7 +19,24 @@ const DASHBOARD_MODE_KEY = "rb_dashboard_mode";
 
 export type DashboardAuthMode = "admin" | "extension";
 
-/** How the dashboard is authenticated (admin key vs extension JWT). */
+function formatNetworkError(cause: unknown): Error {
+  const devNoBase =
+    import.meta.env.DEV &&
+    !BASE &&
+    " Leave VITE_API_URL unset and run `npm run dev` — /api is proxied to VITE_API_PROXY_TARGET (default http://127.0.0.1:8000). Start uvicorn there.";
+  const prodNoBase =
+    import.meta.env.PROD &&
+    !BASE &&
+    " Rebuild the dashboard with VITE_API_URL set to your API origin (e.g. https://your-api.vercel.app).";
+  const baseHint = BASE
+    ? ` Request URL base: ${BASE}. Check CORS, SSL, and that the server is up.`
+    : import.meta.env.DEV
+      ? devNoBase
+      : prodNoBase;
+  const inner = cause instanceof Error ? cause.message : String(cause);
+  return new Error(`Cannot reach the API (${inner}).${baseHint}`);
+}
+
 export function getDashboardAuthMode(): DashboardAuthMode | null {
   const mode = localStorage.getItem(DASHBOARD_MODE_KEY);
   const admin = (localStorage.getItem(ADMIN_KEY_KEY) || "").trim();
@@ -84,7 +106,12 @@ function applyDashboardAuth(headers: Headers): void {
 export type AuthConfig = { auth_required: boolean };
 
 export async function fetchAuthConfig(): Promise<AuthConfig> {
-  const res = await fetch(`${BASE}/api/auth/config`);
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}/api/auth/config`);
+  } catch (e) {
+    throw formatNetworkError(e);
+  }
   if (!res.ok) throw new Error(`${res.status}`);
   return res.json();
 }
@@ -109,11 +136,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   ) {
     headers.set("Content-Type", "application/json");
   }
-  const res = await fetch(`${BASE}${path}`, {
-    ...init,
-    method,
-    headers,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      ...init,
+      method,
+      headers,
+    });
+  } catch (e) {
+    throw formatNetworkError(e);
+  }
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
     throw new Error(`${res.status}: ${text}`);

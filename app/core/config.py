@@ -32,8 +32,9 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 60 * 24 * 7
     # Dashboard + admin API: header X-Admin-Key must match to manage server profiles / see all data.
     admin_api_key: str = ""
-    # Optional: require same value in POST /api/auth/extension-token body mint_secret (shared with extension).
-    extension_mint_secret: str = ""
+    # Optional: comma-separated extra browser origins (dashboard on another domain).
+    # Example: https://devcraft-resume-builder-dashboard.vercel.app
+    cors_allow_origins: str = ""
 
     model_config = SettingsConfigDict(
         env_file=str(_APP_DIR / ".env") if (_APP_DIR / ".env").exists() else None,

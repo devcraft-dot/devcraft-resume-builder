@@ -218,4 +218,6 @@ GOOGLE_DRIVE_FOLDER_ID=1abc...
 GOOGLE_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"...","private_key":"..."}
 DRIVE_TOKEN_JSON={"token":"...","refresh_token":"...","client_id":"...","client_secret":"..."}
 GOOGLE_SHEETS_ID=1xyz...
+# Optional: dashboard on another origin (comma-separated). *.vercel.app is allowed by default.
+# CORS_ALLOW_ORIGINS=https://your-dashboard.vercel.app
 ```

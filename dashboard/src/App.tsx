@@ -9,6 +9,7 @@ import {
   fetchAuthWhoami,
   fetchDashboardAnalytics,
   fetchRegisteredProfiles,
+  getApiOrigin,
   getDashboardAuthMode,
   setDashboardAdminSession,
   setDashboardExtensionSession,
@@ -249,8 +250,12 @@ function OptionalCredentialsStrip({
         <p className="text-sm text-amber-950 mb-3">
           <strong>No JWT on the API</strong> (<code className="text-xs bg-white/80 px-1 rounded">JWT_SECRET</code>{" "}
           unset), so you were not sent through the full login screen. You can still use the dashboard
-          for public routes. To open <strong>Server profiles</strong> or send{" "}
-          <code className="text-xs bg-white/80 px-1 rounded">X-Admin-Key</code>, save your{" "}
+          for public routes. If you see &quot;Cannot reach the API&quot;, set{" "}
+          <code className="text-xs bg-white/80 px-1 rounded">VITE_API_URL</code> for production builds, or run{" "}
+          <code className="text-xs bg-white/80 px-1 rounded">npm run dev</code> so{" "}
+          <code className="text-xs bg-white/80 px-1 rounded">/api</code> proxies to your FastAPI server (default{" "}
+          <code className="text-xs bg-white/80 px-1 rounded">http://127.0.0.1:8000</code>). To open{" "}
+          <strong>Server profiles</strong> or send <code className="text-xs bg-white/80 px-1 rounded">X-Admin-Key</code>, save your{" "}
           <code className="text-xs bg-white/80 px-1 rounded">ADMIN_API_KEY</code> below.
         </p>
         <div className="flex flex-wrap gap-2 mb-3">
@@ -352,10 +357,12 @@ export default function App() {
   const [sessionOk, setSessionOk] = useState(false);
   const [whoami, setWhoami] = useState<WhoAmIResponse | null>(null);
   const [credentialsTick, setCredentialsTick] = useState(0);
+  const [configError, setConfigError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      setConfigError(null);
       try {
         const cfg = await fetchAuthConfig();
         if (cancelled) return;
@@ -388,10 +395,11 @@ export default function App() {
           return;
         }
         setSessionOk(false);
-      } catch {
+      } catch (e) {
         if (cancelled) return;
+        setConfigError(e instanceof Error ? e.message : String(e));
         setAuthRequired(false);
-        setSessionOk(true);
+        setSessionOk(false);
       }
     })();
     return () => {
@@ -443,6 +451,30 @@ export default function App() {
       setNav("generations");
     }
   }, [dashMode, nav]);
+
+  if (configError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="max-w-lg bg-white border border-red-200 rounded-xl p-8 shadow-sm">
+          <h1 className="text-lg font-semibold text-red-900">Cannot reach the API</h1>
+          <p className="text-sm text-gray-700 mt-3 whitespace-pre-wrap break-words">{configError}</p>
+          <p className="text-xs text-gray-500 mt-4">
+            Current API base:{" "}
+            <code className="text-xs bg-gray-100 px-1 rounded">
+              {getApiOrigin() || "(same origin — Vite dev proxies /api by default)"}
+            </code>
+          </p>
+          <button
+            type="button"
+            className="mt-6 w-full py-2.5 text-sm font-semibold rounded-lg bg-gray-900 text-white hover:bg-gray-800"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (authRequired === null) {
     return (

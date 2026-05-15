@@ -8,6 +8,7 @@ import {
   fetchAuthConfig,
   fetchAuthWhoami,
   fetchDashboardAnalytics,
+  fetchRegisteredProfiles,
   getDashboardAuthMode,
   setDashboardAdminSession,
   setDashboardExtensionSession,
@@ -85,10 +86,11 @@ function DashboardLoginScreen({ onLoggedIn }: { onLoggedIn: () => void }) {
       <div className="w-full max-w-lg bg-white border border-gray-200 rounded-xl shadow-sm p-8">
         <h1 className="text-lg font-semibold text-gray-900">Dashboard access</h1>
         <p className="text-sm text-gray-500 mt-1 mb-6">
-          Choose how you sign in. <strong>Admin</strong> uses the server{" "}
-          <code className="text-xs bg-gray-100 px-1 rounded">ADMIN_API_KEY</code> and sees all data.
-          <strong> Extension user</strong> pastes the same JWT the Manual JD extension stores (minted
-          from Profiles) — you only see generations and screenshots tied to your extension username.
+          This screen appears because the API has <code className="text-xs bg-gray-100 px-1 rounded">JWT_SECRET</code>{" "}
+          set (the server requires auth). Choose how you sign in: <strong>Admin</strong> uses the server{" "}
+          <code className="text-xs bg-gray-100 px-1 rounded">ADMIN_API_KEY</code> and sees all data.{" "}
+          <strong>Extension user</strong> pastes the same JWT the Manual JD extension stores (minted from
+          Profiles) — you only see generations and screenshots tied to your extension username.
         </p>
 
         <div className="flex rounded-lg border border-gray-200 p-1 mb-6 bg-gray-50">
@@ -178,6 +180,169 @@ function DashboardLoginScreen({ onLoggedIn }: { onLoggedIn: () => void }) {
   );
 }
 
+function OptionalCredentialsStrip({
+  onCredentialsChanged,
+}: {
+  onCredentialsChanged: () => void;
+}) {
+  const [authTab, setAuthTab] = useState<"admin" | "extension">("admin");
+  const [adminKey, setAdminKey] = useState("");
+  const [extToken, setExtToken] = useState("");
+  const [msg, setMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setAdminKey(localStorage.getItem("rb_admin_api_key") || "");
+    setExtToken(localStorage.getItem("rb_extension_token") || "");
+  }, []);
+
+  async function saveAdmin() {
+    setMsg(null);
+    setBusy(true);
+    try {
+      const k = adminKey.trim();
+      if (!k) {
+        setDashboardAdminSession(null);
+        setMsg("Admin key cleared from this browser.");
+        onCredentialsChanged();
+        return;
+      }
+      setDashboardAdminSession(k);
+      await fetchRegisteredProfiles();
+      setMsg("Admin key saved. Server profiles and admin-scoped requests will use it.");
+      onCredentialsChanged();
+    } catch (e) {
+      setDashboardAdminSession(null);
+      setMsg(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveExtension() {
+    setMsg(null);
+    setBusy(true);
+    try {
+      const t = extToken.trim();
+      if (!t) {
+        setDashboardExtensionSession(null);
+        setMsg("Extension token cleared.");
+        onCredentialsChanged();
+        return;
+      }
+      setDashboardExtensionSession(t);
+      setMsg(
+        "Token stored in this browser. It is sent as Bearer on requests; scoped data only applies when the API has JWT_SECRET set.",
+      );
+      onCredentialsChanged();
+    } catch (e) {
+      setDashboardExtensionSession(null);
+      setMsg(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="border-b border-amber-200 bg-amber-50 px-6 py-4">
+      <div className="max-w-screen-2xl mx-auto">
+        <p className="text-sm text-amber-950 mb-3">
+          <strong>No JWT on the API</strong> (<code className="text-xs bg-white/80 px-1 rounded">JWT_SECRET</code>{" "}
+          unset), so you were not sent through the full login screen. You can still use the dashboard
+          for public routes. To open <strong>Server profiles</strong> or send{" "}
+          <code className="text-xs bg-white/80 px-1 rounded">X-Admin-Key</code>, save your{" "}
+          <code className="text-xs bg-white/80 px-1 rounded">ADMIN_API_KEY</code> below.
+        </p>
+        <div className="flex flex-wrap gap-2 mb-3">
+          <button
+            type="button"
+            onClick={() => setAuthTab("admin")}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md border ${
+              authTab === "admin"
+                ? "bg-amber-900 text-white border-amber-900"
+                : "bg-white text-amber-900 border-amber-300"
+            }`}
+          >
+            Admin API key
+          </button>
+          <button
+            type="button"
+            onClick={() => setAuthTab("extension")}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md border ${
+              authTab === "extension"
+                ? "bg-amber-900 text-white border-amber-900"
+                : "bg-white text-amber-900 border-amber-300"
+            }`}
+          >
+            Extension JWT (optional)
+          </button>
+        </div>
+        {authTab === "admin" ? (
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-end max-w-3xl">
+            <div className="flex-1 min-w-0">
+              <label className="block text-xs font-medium text-amber-900 uppercase tracking-wide mb-1">
+                ADMIN_API_KEY (same as server env)
+              </label>
+              <input
+                type="password"
+                className="w-full border border-amber-300 rounded-lg px-3 py-2 text-sm font-mono bg-white"
+                value={adminKey}
+                onChange={(e) => setAdminKey(e.target.value)}
+                autoComplete="off"
+                placeholder="Paste admin key, then Save"
+              />
+            </div>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void saveAdmin()}
+              className="px-4 py-2 text-sm font-semibold rounded-lg bg-amber-900 text-white hover:bg-amber-800 disabled:opacity-50 shrink-0"
+            >
+              {busy ? "…" : "Save admin key"}
+            </button>
+          </div>
+        ) : (
+          <div className="max-w-3xl space-y-2">
+            <label className="block text-xs font-medium text-amber-900 uppercase tracking-wide">
+              Extension JWT (only validated when API has JWT_SECRET)
+            </label>
+            <textarea
+              className="w-full border border-amber-300 rounded-lg px-3 py-2 text-sm font-mono min-h-[72px] bg-white"
+              value={extToken}
+              onChange={(e) => setExtToken(e.target.value)}
+              spellCheck={false}
+            />
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void saveExtension()}
+              className="px-4 py-2 text-sm font-semibold rounded-lg bg-amber-900 text-white hover:bg-amber-800 disabled:opacity-50"
+            >
+              {busy ? "…" : "Save extension token"}
+            </button>
+          </div>
+        )}
+        {msg && (
+          <p className="text-xs text-amber-950 mt-2 whitespace-pre-wrap break-words">{msg}</p>
+        )}
+        <button
+          type="button"
+          className="mt-2 text-xs text-amber-800 underline"
+          onClick={() => {
+            clearDashboardSession();
+            setAdminKey("");
+            setExtToken("");
+            setMsg("All saved credentials cleared.");
+            onCredentialsChanged();
+          }}
+        >
+          Clear all saved credentials
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [nav, setNav] = useState<NavKey>("generations");
   const [resumeStageFilter, setResumeStageFilter] = useState<string | null>(
@@ -186,6 +351,7 @@ export default function App() {
   const [authRequired, setAuthRequired] = useState<boolean | null>(null);
   const [sessionOk, setSessionOk] = useState(false);
   const [whoami, setWhoami] = useState<WhoAmIResponse | null>(null);
+  const [credentialsTick, setCredentialsTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -253,7 +419,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [sessionOk, authRequired]);
+  }, [sessionOk, authRequired, credentialsTick]);
 
   function goToResumesForStage(stage: string) {
     setResumeStageFilter(stage);
@@ -264,8 +430,13 @@ export default function App() {
     setSessionOk(true);
   }
 
-  const dashMode = sessionOk && authRequired ? getDashboardAuthMode() : null;
-  const navItems = dashMode === "extension" ? NAV_EXTENSION : NAV_ADMIN;
+  const dashMode = sessionOk ? getDashboardAuthMode() : null;
+  const navItems =
+    dashMode === "extension"
+      ? NAV_EXTENSION
+      : dashMode === "admin"
+        ? NAV_ADMIN
+        : NAV_ADMIN.filter((x) => x.key !== "profiles");
 
   useEffect(() => {
     if (dashMode === "extension" && nav === "profiles") {
@@ -287,6 +458,11 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {sessionOk && !authRequired && (
+        <OptionalCredentialsStrip
+          onCredentialsChanged={() => setCredentialsTick((x) => x + 1)}
+        />
+      )}
       <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between max-w-screen-2xl mx-auto w-full">
           <div>
@@ -297,11 +473,13 @@ export default function App() {
               Generations, application screenshots, and pipeline analytics
               {dashMode === "admin" ? " (admin: server profiles too)" : ""}
             </p>
-            {authRequired && dashMode === "admin" && (
+            {dashMode === "admin" && (
               <p className="text-xs text-gray-600 mt-2">
-                Signed in as <strong>admin</strong> —{" "}
-                <code className="text-xs bg-gray-100 px-1 rounded">X-Admin-Key</code> on every
-                request; you see all users&apos; data.
+                <strong>Admin key</strong> is stored — sent as{" "}
+                <code className="text-xs bg-gray-100 px-1 rounded">X-Admin-Key</code>
+                {authRequired
+                  ? " on every request (full access)."
+                  : " for admin routes (e.g. Server profiles)."}
               </p>
             )}
             {authRequired && dashMode === "extension" && whoami && (
@@ -315,17 +493,18 @@ export default function App() {
             )}
           </div>
           <div className="flex flex-col sm:items-end gap-2">
-            {authRequired && (
+            {(authRequired || dashMode) && (
               <button
                 type="button"
                 onClick={() => {
                   clearDashboardSession();
-                  setSessionOk(false);
                   setWhoami(null);
+                  setCredentialsTick((x) => x + 1);
+                  if (authRequired) setSessionOk(false);
                 }}
                 className="text-xs font-medium text-gray-600 hover:text-gray-900 underline"
               >
-                Sign out
+                {authRequired ? "Sign out" : "Clear saved credentials"}
               </button>
             )}
             <nav className="flex flex-wrap gap-2" aria-label="Main">

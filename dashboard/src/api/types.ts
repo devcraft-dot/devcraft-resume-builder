@@ -90,25 +90,19 @@ export interface DashboardAnalytics {
 
 export interface MeUser {
   id: number;
+  username: string;
   display_name: string;
   role: string;
 }
 
 export interface User {
   id: number;
+  username: string;
   display_name: string;
   role: string;
   is_active: boolean;
   created_at: string;
   profile_ids: number[];
-}
-
-export interface UserCreateResponse extends User {
-  api_token: string;
-}
-
-export interface TokenRotateResponse {
-  api_token: string;
 }
 
 export interface RegisteredProfileSummary {

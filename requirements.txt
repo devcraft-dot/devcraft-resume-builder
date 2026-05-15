@@ -12,4 +12,6 @@ google-api-python-client>=2.0
 google-auth>=2.0
 google-auth-oauthlib>=1.0
 gspread>=6.0
-passlib[bcrypt]>=1.7
+PyJWT>=2.8,<3.0
+# bcrypt 4.1+ removed __about__; keep <4.1 for broad tooling compatibility.
+bcrypt>=4.0.1,<4.1

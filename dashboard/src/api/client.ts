@@ -1,4 +1,4 @@
-import { getToken, onUnauthorized } from "../auth";
+import { getToken, onUnauthorized, setToken } from "../auth";
 import type {
   ApplicationScreenshotList,
   AssignedProfile,
@@ -8,12 +8,45 @@ import type {
   MeUser,
   RegisteredProfile,
   RegisteredProfileSummary,
-  TokenRotateResponse,
   User,
-  UserCreateResponse,
 } from "./types";
 
 const BASE = import.meta.env.VITE_API_URL || "";
+
+async function parseErrorMessage(res: Response): Promise<string> {
+  const text = await res.text().catch(() => res.statusText);
+  try {
+    const j = JSON.parse(text) as { detail?: unknown };
+    if (typeof j.detail === "string") return j.detail;
+    if (Array.isArray(j.detail)) {
+      const parts = j.detail.map((x: { msg?: string }) => x?.msg).filter(Boolean);
+      if (parts.length) return parts.join("; ");
+    }
+  } catch {
+    /* */
+  }
+  return `${res.status}: ${text}`;
+}
+
+export async function login(username: string, password: string): Promise<MeUser> {
+  const headers = new Headers();
+  headers.set("Content-Type", "application/json");
+  const res = await fetch(`${BASE}/api/auth/login`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ username, password }),
+  });
+  if (!res.ok) {
+    throw new Error(await parseErrorMessage(res));
+  }
+  const data = (await res.json()) as {
+    access_token: string;
+    token_type?: string;
+    user: MeUser;
+  };
+  setToken(data.access_token);
+  return data.user;
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const method = (init?.method ?? "GET").toUpperCase();
@@ -97,10 +130,12 @@ export function fetchAdminUsers() {
 }
 
 export function createAdminUser(data: {
+  username: string;
+  password: string;
   display_name: string;
   role: "admin" | "user";
 }) {
-  return request<UserCreateResponse>("/api/admin/users", {
+  return request<User>("/api/admin/users", {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -108,7 +143,9 @@ export function createAdminUser(data: {
 
 export function patchAdminUser(
   id: number,
-  data: Partial<Pick<User, "display_name" | "is_active" | "role">>,
+  data: Partial<
+    Pick<User, "display_name" | "is_active" | "role"> & { password?: string }
+  >,
 ) {
   return request<User>(`/api/admin/users/${id}`, {
     method: "PATCH",
@@ -116,9 +153,10 @@ export function patchAdminUser(
   });
 }
 
-export function rotateAdminUserToken(id: number) {
-  return request<TokenRotateResponse>(`/api/admin/users/${id}/rotate-token`, {
+export function setAdminUserPassword(id: number, password: string) {
+  return request<User>(`/api/admin/users/${id}/set-password`, {
     method: "POST",
+    body: JSON.stringify({ password }),
   });
 }
 

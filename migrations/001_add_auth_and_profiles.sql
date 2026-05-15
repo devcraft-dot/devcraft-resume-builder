@@ -1,4 +1,4 @@
--- Resume-builder: API token auth, registered profiles, per-user generations.
+-- Resume-builder: username/password + JWT auth, registered profiles, per-user generations.
 -- Run once against your Postgres (e.g. Neon) if the DB already existed before this feature.
 -- Fresh installs can rely on SQLAlchemy create_all instead.
 --
@@ -12,14 +12,15 @@
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
+    username VARCHAR(100) NOT NULL,
     display_name VARCHAR(200) NOT NULL,
     role VARCHAR(20) NOT NULL DEFAULT 'user',
-    token_hash VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS ix_users_token_hash ON users (token_hash);
+CREATE UNIQUE INDEX IF NOT EXISTS ix_users_username ON users (username);
 CREATE INDEX IF NOT EXISTS ix_users_role ON users (role);
 
 -- ---------------------------------------------------------------------------

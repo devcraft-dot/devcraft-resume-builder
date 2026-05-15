@@ -39,7 +39,7 @@ function renderProfilesList() {
   container.innerHTML = "";
   if (!profiles.length) {
     const li = document.createElement("li");
-    li.textContent = "No profiles — save token and sync";
+    li.textContent = "No profiles — sign in under Account and sync";
     container.appendChild(li);
     return;
   }
@@ -56,17 +56,36 @@ async function loadProfiles() {
   renderProfilesList();
 }
 
-async function loadTokenField() {
-  const token = await ResumeAuth.getApiToken();
-  const el = $("#api-token");
-  if (el) el.value = token;
+async function loadAuthFields() {
+  const u = await ResumeAuth.getSavedUsername();
+  const ue = $("#auth-username");
+  const pe = $("#auth-password");
+  if (ue) ue.value = u || "";
+  if (pe) pe.value = "";
 }
 
-$("#btn-save-token")?.addEventListener("click", async () => {
-  const token = $("#api-token")?.value?.trim() || "";
-  await ResumeAuth.setApiToken(token);
+$("#btn-sign-in")?.addEventListener("click", async () => {
   const st = $("#sync-status");
-  if (st) st.textContent = token ? "Token saved" : "Token cleared";
+  const username = $("#auth-username")?.value?.trim() || "";
+  const password = $("#auth-password")?.value || "";
+  if (!username || !password) {
+    if (st) st.textContent = "Enter username and password";
+    return;
+  }
+  try {
+    await ResumeAuth.login(API_URL, username, password);
+    const pe = $("#auth-password");
+    if (pe) pe.value = "";
+    if (st) st.textContent = "Signed in";
+  } catch (e) {
+    if (st) st.textContent = e?.message || "Sign-in failed";
+  }
+});
+
+$("#btn-sign-out")?.addEventListener("click", async () => {
+  await ResumeAuth.signOut();
+  const st = $("#sync-status");
+  if (st) st.textContent = "Signed out";
 });
 
 $("#btn-sync-profiles")?.addEventListener("click", async () => {
@@ -366,7 +385,7 @@ $("#btn-start")?.addEventListener("click", async () => {
 
   const usable = profiles.filter((p) => p.id);
   if (!usable.length) {
-    setStatus('No profiles — open Account, save API token, and sync from server.', "err");
+    setStatus("No profiles — open Account, sign in, and sync from server.", "err");
     return;
   }
 
@@ -556,7 +575,7 @@ function applyPendingJdFromRail() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  loadTokenField();
+  loadAuthFields();
   loadProfiles();
   applyPendingJdFromRail();
   initScreenshotUpload();

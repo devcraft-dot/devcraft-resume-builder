@@ -4,7 +4,7 @@ import {
   fetchAdminProfiles,
   fetchAdminUsers,
   patchAdminUser,
-  rotateAdminUserToken,
+  setAdminUserPassword,
   setAdminUserProfiles,
 } from "./api/client";
 import type { RegisteredProfileSummary, User } from "./api/types";
@@ -14,7 +14,7 @@ export function UsersView() {
   const [profiles, setProfiles] = useState<RegisteredProfileSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [newToken, setNewToken] = useState<string | null>(null);
+  const [banner, setBanner] = useState<string | null>(null);
   const [assignUserId, setAssignUserId] = useState<number | null>(null);
   const [selectedProfileIds, setSelectedProfileIds] = useState<number[]>([]);
 
@@ -37,31 +37,46 @@ export function UsersView() {
   }, [load]);
 
   async function handleCreate() {
-    const name = prompt("Display name for new user:");
-    if (!name?.trim()) return;
+    const username = prompt("Username (letters, digits, _ or -):", "")?.trim().toLowerCase();
+    if (!username) return;
+    const password = prompt("Initial password (min 8 characters):", "");
+    if (!password || password.length < 8) {
+      alert("Password must be at least 8 characters.");
+      return;
+    }
+    const name = prompt("Display name:", username)?.trim();
+    if (!name) return;
     const role =
       prompt("Role: admin or user", "user")?.trim().toLowerCase() === "admin"
         ? "admin"
         : "user";
     try {
-      const created = await createAdminUser({
-        display_name: name.trim(),
+      await createAdminUser({
+        username,
+        password,
+        display_name: name,
         role,
       });
-      setNewToken(created.api_token);
+      setBanner(`Created user “${username}”. Share the password you set with them securely.`);
       await load();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Create failed");
     }
   }
 
-  async function handleRotate(id: number) {
-    if (!confirm("Rotate token? The old token stops working immediately.")) return;
+  async function handleSetPassword(id: number) {
+    const pw = prompt("New password (min 8 characters):", "");
+    if (!pw || pw.length < 8) {
+      alert("Password must be at least 8 characters.");
+      return;
+    }
+    if (!confirm("Set a new password? The user must use the new password on next sign-in."))
+      return;
     try {
-      const res = await rotateAdminUserToken(id);
-      setNewToken(res.api_token);
+      await setAdminUserPassword(id, pw);
+      setBanner("Password updated.");
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Rotate failed");
+      alert(e instanceof Error ? e.message : "Update failed");
     }
   }
 
@@ -106,25 +121,13 @@ export function UsersView() {
         </button>
       </div>
 
-      {newToken && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm">
-          <p className="font-medium text-amber-900">
-            Copy this token now — it won’t be shown again:
-          </p>
-          <code className="block mt-2 break-all text-xs bg-white p-2 rounded border">
-            {newToken}
-          </code>
+      {banner && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-sm text-emerald-900">
+          <p>{banner}</p>
           <button
             type="button"
-            className="mt-2 text-amber-800 underline"
-            onClick={() => navigator.clipboard.writeText(newToken)}
-          >
-            Copy to clipboard
-          </button>
-          <button
-            type="button"
-            className="ml-4 text-amber-800 underline"
-            onClick={() => setNewToken(null)}
+            className="mt-2 text-emerald-800 underline"
+            onClick={() => setBanner(null)}
           >
             Dismiss
           </button>
@@ -135,7 +138,8 @@ export function UsersView() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-left text-gray-600">
             <tr>
-              <th className="px-4 py-3">Name</th>
+              <th className="px-4 py-3">Username</th>
+              <th className="px-4 py-3">Display name</th>
               <th className="px-4 py-3">Role</th>
               <th className="px-4 py-3">Active</th>
               <th className="px-4 py-3">Profiles</th>
@@ -145,6 +149,7 @@ export function UsersView() {
           <tbody>
             {users.map((u) => (
               <tr key={u.id} className="border-t border-gray-100">
+                <td className="px-4 py-3 font-mono text-xs">{u.username}</td>
                 <td className="px-4 py-3">{u.display_name}</td>
                 <td className="px-4 py-3">{u.role}</td>
                 <td className="px-4 py-3">{u.is_active ? "Yes" : "No"}</td>
@@ -160,9 +165,9 @@ export function UsersView() {
                   <button
                     type="button"
                     className="text-blue-600 hover:underline"
-                    onClick={() => handleRotate(u.id)}
+                    onClick={() => handleSetPassword(u.id)}
                   >
-                    Rotate token
+                    Set password
                   </button>
                   <button
                     type="button"
@@ -224,4 +229,3 @@ export function UsersView() {
     </div>
   );
 }
-

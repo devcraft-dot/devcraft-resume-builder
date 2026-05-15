@@ -227,7 +227,7 @@
     <div class="controls">
       <button type="button" class="btn-start" id="btn-start">Start</button>
     </div>
-    <div id="status-msg" class="status-msg">Ready. Save your API token under Account and sync assigned profiles.</div>
+    <div id="status-msg" class="status-msg">Ready. Sign in under Account and sync assigned profiles.</div>
     <div id="downloads-section" class="dl-section" style="display: none;">
       <label>Downloads</label>
       <div id="downloads-list"></div>
@@ -236,10 +236,16 @@
 
   <div id="panel-settings" class="panel">
     <div class="field">
-      <label>API token</label>
-      <input type="password" id="api-token" placeholder="rb_…" autocomplete="off" />
+      <label>Username</label>
+      <input type="text" id="auth-username" placeholder="your username" autocomplete="username" />
     </div>
-    <button type="button" class="primary" id="btn-save-token" style="margin-bottom:8px">Save token</button>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="auth-password" placeholder="password" autocomplete="current-password" />
+      <p class="hint">After sign-in, a short-lived JWT is stored locally (not your raw password).</p>
+    </div>
+    <button type="button" class="primary" id="btn-sign-in" style="margin-bottom:8px">Sign in</button>
+    <button type="button" id="btn-sign-out" style="margin-bottom:8px">Sign out</button>
     <button type="button" id="btn-sync-profiles">Sync profiles from server</button>
     <span id="sync-status" class="save-status"></span>
     <p class="hint" style="margin-top:12px">Assigned profiles (read-only):</p>

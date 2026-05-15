@@ -1,22 +1,39 @@
 /**
- * API token auth + authenticated fetch for Resume Builder extensions.
+ * JWT auth (username/password login) + authenticated fetch for Resume Builder extensions.
  */
-const API_TOKEN_KEY = "apiToken";
+const ACCESS_TOKEN_KEY = "apiToken";
+const USERNAME_PREF_KEY = "resumeAuthUsername";
 const SERVER_PROFILES_KEY = "serverProfiles";
 
-async function getApiToken() {
-  const r = await chrome.storage.local.get(API_TOKEN_KEY);
-  return String(r[API_TOKEN_KEY] || "").trim();
+async function getAccessToken() {
+  const r = await chrome.storage.local.get(ACCESS_TOKEN_KEY);
+  return String(r[ACCESS_TOKEN_KEY] || "").trim();
 }
 
-async function setApiToken(token) {
-  await chrome.storage.local.set({ [API_TOKEN_KEY]: String(token || "").trim() });
+async function setAccessToken(token) {
+  await chrome.storage.local.set({
+    [ACCESS_TOKEN_KEY]: String(token || "").trim(),
+  });
+}
+
+async function getSavedUsername() {
+  const r = await chrome.storage.local.get(USERNAME_PREF_KEY);
+  return String(r[USERNAME_PREF_KEY] || "").trim();
+}
+
+async function setSavedUsername(username) {
+  await chrome.storage.local.set({
+    [USERNAME_PREF_KEY]: String(username || "").trim().toLowerCase(),
+  });
 }
 
 async function authHeaders(extra) {
   const headers = new Headers(extra || {});
-  const token = await getApiToken();
-  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const token = await getAccessToken();
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+    headers.set("X-Resume-Auth", token);
+  }
   return headers;
 }
 
@@ -33,6 +50,45 @@ async function apiFetch(baseUrl, path, init = {}) {
   return res;
 }
 
+function parseLoginError(text) {
+  try {
+    const j = JSON.parse(text);
+    if (typeof j.detail === "string") return j.detail;
+  } catch {
+    /* */
+  }
+  return text?.slice(0, 500) || "Sign-in failed";
+}
+
+async function login(baseUrl, username, password) {
+  const u = String(username || "").trim().toLowerCase();
+  const res = await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: u, password: String(password || "") }),
+  });
+  const text = await res.text().catch(() => res.statusText);
+  if (!res.ok) {
+    throw new Error(parseLoginError(text));
+  }
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error("Invalid response from server");
+  }
+  if (!data?.access_token) {
+    throw new Error("Invalid response from server");
+  }
+  await setAccessToken(data.access_token);
+  if (u) await setSavedUsername(u);
+  return data.user || null;
+}
+
+async function signOut() {
+  await setAccessToken("");
+}
+
 function mapServerProfile(p) {
   return {
     id: p.id,
@@ -46,7 +102,7 @@ function mapServerProfile(p) {
 async function fetchMyProfiles(baseUrl) {
   const res = await apiFetch(baseUrl, "/api/me/profiles");
   if (res.status === 401) {
-    throw new Error("Invalid or expired API token — check Settings");
+    throw new Error("Session expired — sign in again under Settings");
   }
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
@@ -75,7 +131,7 @@ async function fetchMyGenerations(baseUrl, page = 1, pageSize = 20) {
   });
   const res = await apiFetch(baseUrl, `/api/me/generations?${params}`);
   if (res.status === 401) {
-    throw new Error("Invalid or expired API token");
+    throw new Error("Session expired — sign in again");
   }
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
@@ -91,10 +147,16 @@ async function verifyToken(baseUrl) {
 }
 
 globalThis.ResumeAuth = {
-  API_TOKEN_KEY,
+  ACCESS_TOKEN_KEY,
+  USERNAME_PREF_KEY,
   SERVER_PROFILES_KEY,
-  getApiToken,
-  setApiToken,
+  getAccessToken,
+  setAccessToken,
+  getApiToken: getAccessToken,
+  setApiToken: setAccessToken,
+  getSavedUsername,
+  login,
+  signOut,
   apiFetch,
   fetchMyProfiles,
   syncServerProfiles,

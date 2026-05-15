@@ -27,9 +27,14 @@ class Settings(BaseSettings):
     google_service_account_json: str = ""
     google_sheet_worksheet: str = "Sheet1"
 
-    # First admin: set once, then rotate token via dashboard
-    bootstrap_admin_token: str = ""
-    # If true: delete all admin users, then create one from bootstrap_admin_token (recovery if locked out).
+    # JWT for dashboard + extensions (HS256)
+    jwt_secret_key: str = ""
+    jwt_expire_minutes: int = 60 * 24 * 7  # 7 days
+
+    # First admin when DB has none: plaintext password from env (quoted once in Vercel is OK).
+    bootstrap_admin_username: str = "admin"
+    bootstrap_admin_password: str = ""
+    # If true: delete all admin users, then create one from bootstrap username/password (recovery).
     bootstrap_replace_admin: bool = False
 
     model_config = SettingsConfigDict(

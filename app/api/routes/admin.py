@@ -6,18 +6,17 @@ from fastapi import APIRouter, HTTPException
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.auth import generate_api_token, hash_api_token
 from app.core.deps import AdminUser, DbSession
+from app.core.passwords import hash_password
 from app.models.registered_profile import RegisteredProfile
 from app.models.user import User
 from app.models.user_profile_assignment import UserProfileAssignment
 from app.schemas.auth import (
-    TokenRotateResponse,
     UserCreate,
-    UserCreateResponse,
     UserPatch,
     UserProfilesUpdate,
     UserRead,
+    UserSetPassword,
 )
 from app.schemas.registered_profile import (
     RegisteredProfileCreate,
@@ -26,7 +25,6 @@ from app.schemas.registered_profile import (
     RegisteredProfileSummary,
     validate_model,
 )
-from app.core.bootstrap import create_user_with_token
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -35,6 +33,7 @@ def _user_to_read(user: User) -> UserRead:
     profile_ids = [a.profile_id for a in (user.profile_assignments or [])]
     return UserRead(
         id=user.id,
+        username=user.username,
         display_name=user.display_name,
         role=user.role,
         is_active=user.is_active,
@@ -65,21 +64,26 @@ def list_users(_admin: AdminUser, db: DbSession) -> list[UserRead]:
     return [_user_to_read(u) for u in users]
 
 
-@router.post("/users", response_model=UserCreateResponse)
+@router.post("/users", response_model=UserRead)
 def create_user(
     payload: UserCreate,
     _admin: AdminUser,
     db: DbSession,
-) -> UserCreateResponse:
-    user, plain = create_user_with_token(
-        display_name=payload.display_name,
+) -> UserRead:
+    uname = payload.username.strip().lower()
+    if db.scalar(select(User.id).where(User.username == uname)):
+        raise HTTPException(400, "Username already taken")
+    user = User(
+        username=uname,
+        display_name=payload.display_name.strip() or "User",
         role=payload.role,
-        db=db,
+        password_hash=hash_password(payload.password),
+        is_active=True,
     )
+    db.add(user)
     db.commit()
     db.refresh(user)
-    base = _user_to_read(user)
-    return UserCreateResponse(**base.model_dump(), api_token=plain)
+    return _user_to_read(_load_user(db, user.id))
 
 
 @router.patch("/users/{user_id}", response_model=UserRead)
@@ -91,26 +95,30 @@ def patch_user(
 ) -> UserRead:
     user = _load_user(db, user_id)
     data = payload.model_dump(exclude_unset=True)
+    new_pw = data.pop("password", None)
     for key, value in data.items():
         setattr(user, key, value)
+    if new_pw is not None:
+        user.password_hash = hash_password(new_pw)
     db.add(user)
     db.commit()
     db.refresh(user)
     return _user_to_read(_load_user(db, user_id))
 
 
-@router.post("/users/{user_id}/rotate-token", response_model=TokenRotateResponse)
-def rotate_user_token(
+@router.post("/users/{user_id}/set-password", response_model=UserRead)
+def set_user_password(
     user_id: int,
+    payload: UserSetPassword,
     _admin: AdminUser,
     db: DbSession,
-) -> TokenRotateResponse:
+) -> UserRead:
     user = _load_user(db, user_id)
-    plain = generate_api_token()
-    user.token_hash = hash_api_token(plain)
+    user.password_hash = hash_password(payload.password)
     db.add(user)
     db.commit()
-    return TokenRotateResponse(api_token=plain)
+    db.refresh(user)
+    return _user_to_read(_load_user(db, user_id))
 
 
 @router.put("/users/{user_id}/profiles", response_model=UserRead)

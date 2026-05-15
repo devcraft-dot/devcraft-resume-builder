@@ -1,4 +1,4 @@
-"""Bootstrap first admin user from BOOTSTRAP_ADMIN_TOKEN env."""
+"""Bootstrap first admin user from BOOTSTRAP_ADMIN_USERNAME / BOOTSTRAP_ADMIN_PASSWORD."""
 
 from __future__ import annotations
 
@@ -6,9 +6,9 @@ import logging
 
 from sqlalchemy import func, select
 
-from app.core.auth import generate_api_token, hash_api_token
 from app.core.config import settings
 from app.core.db import _session_factory
+from app.core.passwords import hash_password
 from app.core.token_util import normalize_api_token
 from app.models.user import User
 
@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 
 def bootstrap_admin_if_needed() -> None:
-    token = normalize_api_token(settings.bootstrap_admin_token)
-    if not token:
+    pwd = normalize_api_token(settings.bootstrap_admin_password)
+    if not pwd:
         return
 
     db = _session_factory()()
@@ -28,7 +28,7 @@ def bootstrap_admin_if_needed() -> None:
                 db.delete(u)
             db.commit()
             logger.warning(
-                "BOOTSTRAP_REPLACE_ADMIN: removed %d admin user(s); creating new admin from token",
+                "BOOTSTRAP_REPLACE_ADMIN: removed %d admin user(s); creating new admin from env",
                 len(admins),
             )
 
@@ -39,37 +39,23 @@ def bootstrap_admin_if_needed() -> None:
         if admin_count > 0:
             return
 
+        uname = (settings.bootstrap_admin_username or "admin").strip().lower()
+        if not uname:
+            uname = "admin"
+
         db.add(
             User(
+                username=uname,
                 display_name="Admin",
                 role="admin",
-                token_hash=hash_api_token(token),
+                password_hash=hash_password(pwd),
                 is_active=True,
             )
         )
         db.commit()
-        logger.info("Bootstrap admin user created from BOOTSTRAP_ADMIN_TOKEN")
+        logger.info("Bootstrap admin user created (%s)", uname)
     except Exception:
         db.rollback()
         logger.exception("Failed to bootstrap admin user")
     finally:
         db.close()
-
-
-def create_user_with_token(
-    *,
-    display_name: str,
-    role: str,
-    db,
-) -> tuple[User, str]:
-    """Create user and return (user, plaintext_token)."""
-    plain = generate_api_token()
-    user = User(
-        display_name=display_name.strip() or "User",
-        role=role,
-        token_hash=hash_api_token(plain),
-        is_active=True,
-    )
-    db.add(user)
-    db.flush()
-    return user, plain

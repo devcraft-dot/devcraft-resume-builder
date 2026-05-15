@@ -1,6 +1,6 @@
-const TOKEN_KEY = "api_token";
+const TOKEN_KEY = "access_token";
 
-/** Match server token_util: trim + strip wrapping quotes from Vercel/UI paste. */
+/** Trim + strip wrapping quotes (common when pasting from env UIs). */
 export function normalizeStoredToken(raw: string): string {
   let s = raw.trim().replace(/^\ufeff/, "");
   if (s.length >= 2) {

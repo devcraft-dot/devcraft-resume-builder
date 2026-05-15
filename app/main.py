@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from starlette.responses import Response
 
 from app.api.routes.admin import router as admin_router
+from app.api.routes.auth import router as auth_router
 from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.generate import router as generate_router
 from app.api.routes.me import router as me_router
@@ -71,21 +72,27 @@ def api_ready(db: Session = Depends(get_db)):
         db.scalar(select(func.count()).select_from(User).where(User.role == "admin")) or 0
     )
     user_n = int(db.scalar(select(func.count()).select_from(User)) or 0)
-    env_token = normalize_api_token(settings.bootstrap_admin_token)
+    env_bootstrap = bool(normalize_api_token(settings.bootstrap_admin_password))
+    jwt_ok = bool((settings.jwt_secret_key or "").strip())
     hints: list[str] = []
-    if admin_n == 0 and env_token:
-        hints.append("No admin row yet; first /api/me or /api/generate will run bootstrap on this instance.")
-    if admin_n > 0 and env_token:
+    if admin_n == 0 and env_bootstrap:
         hints.append(
-            "If login fails with Invalid token: an admin already exists with a different secret. "
-            "Set BOOTSTRAP_REPLACE_ADMIN=true once, redeploy, then log in with BOOTSTRAP_ADMIN_TOKEN."
+            "No admin row yet; call POST /api/auth/login (or wait for lifespan bootstrap on cold start)."
         )
+    if admin_n > 0 and env_bootstrap:
+        hints.append(
+            "If you cannot sign in: use the correct username/password, or set BOOTSTRAP_REPLACE_ADMIN=true "
+            "once with BOOTSTRAP_ADMIN_PASSWORD to reset admins."
+        )
+    if not jwt_ok:
+        hints.append("Set JWT_SECRET_KEY in the API environment (required for login tokens).")
     return {
         "status": "ok",
         "admin_users": admin_n,
         "total_users": user_n,
-        "bootstrap_admin_env_set": bool(env_token),
+        "bootstrap_admin_password_env_set": env_bootstrap,
         "bootstrap_replace_admin_env_set": bool(settings.bootstrap_replace_admin),
+        "jwt_secret_configured": jwt_ok,
         "hints": hints,
     }
 
@@ -111,6 +118,7 @@ async def cors_preflight(full_path: str, request: Request) -> Response:
     )
 
 
+app.include_router(auth_router)
 app.include_router(generate_router)
 app.include_router(dashboard_router)
 app.include_router(upload_router)

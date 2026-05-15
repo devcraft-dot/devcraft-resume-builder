@@ -336,11 +336,16 @@
   <!-- ─── Settings Panel ─── -->
   <div id="panel-settings" class="panel">
     <div class="field">
-      <label>API token</label>
-      <input type="password" id="api-token" placeholder="rb_…" autocomplete="off" />
-      <div class="hint">Issued by your admin. Stored locally on this device.</div>
+      <label>Username</label>
+      <input type="text" id="auth-username" placeholder="your username" autocomplete="username" />
     </div>
-    <button type="button" id="btn-save-token" class="btn-save" style="margin-bottom:10px">Save token</button>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="auth-password" placeholder="password" autocomplete="current-password" />
+      <div class="hint">Stored locally: a JWT after sign-in (not your raw password).</div>
+    </div>
+    <button type="button" id="btn-sign-in" class="btn-save" style="margin-bottom:8px">Sign in</button>
+    <button type="button" id="btn-sign-out" class="btn-reset" style="margin-bottom:10px">Sign out</button>
     <button type="button" id="btn-sync-profiles" class="btn-add-profile">Sync profiles from server</button>
     <div id="sync-status" class="save-status"></div>
     <div class="run-context-title" style="margin-top:14px">Assigned profiles (read-only)</div>
@@ -353,7 +358,7 @@
       <p class="run-context-hint">Recent resumes created with your account.</p>
     </div>
     <button type="button" id="btn-refresh-history" class="btn-api-errors">Refresh</button>
-    <pre id="history-log" class="api-error-pre" style="margin-top:10px">Load history after saving your token.</pre>
+    <pre id="history-log" class="api-error-pre" style="margin-top:10px">Load history after signing in.</pre>
   </div>
 
   <script src="config.js"></script>

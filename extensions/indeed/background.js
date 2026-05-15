@@ -939,7 +939,7 @@ async function runLoop() {
 
   const profiles = await getProfiles();
   if (!profiles.length) {
-    state.lastError = "No profiles — set API token and sync in Settings";
+    state.lastError = "No profiles — sign in and sync in Settings";
     state.running = false;
     await saveState();
     broadcastState();

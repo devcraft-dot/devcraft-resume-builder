@@ -3,6 +3,7 @@ import logging
 import threading
 from functools import lru_cache
 
+from fastapi import HTTPException
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
@@ -54,12 +55,17 @@ def ensure_schema() -> None:
     with _schema_lock:
         if _schema_ready:
             return
+        url = (settings.database_url or "").strip()
+        if not url:
+            raise HTTPException(
+                status_code=503,
+                detail="DATABASE_URL is not configured on this deployment.",
+            )
         eng = _engine()
         Base.metadata.create_all(bind=eng)
-        try:
-            _patch_existing_tables(eng)
-        except Exception:
-            logger.exception("Schema patch (ALTER for new columns) failed — check DB permissions")
+        # Do not set _schema_ready until patch succeeds — otherwise a failed ALTER leaves
+        # the ORM expecting columns that do not exist and every request returns 500.
+        _patch_existing_tables(eng)
         _schema_ready = True
 
 

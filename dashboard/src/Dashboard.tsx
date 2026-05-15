@@ -20,7 +20,6 @@ const PAGE_SIZE = 20;
 
 const STAGE_COLORS: Record<string, string> = {
   generated: "bg-gray-100 text-gray-700",
-  applied: "bg-teal-100 text-teal-800",
   intro: "bg-blue-100 text-blue-700",
   tech: "bg-purple-100 text-purple-700",
   final: "bg-amber-100 text-amber-700",

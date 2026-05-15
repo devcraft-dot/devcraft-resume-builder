@@ -27,15 +27,6 @@ class Settings(BaseSettings):
     google_service_account_json: str = ""
     google_sheet_worksheet: str = "Sheet1"
 
-    # Auth: stateless JWT (HS256). Set JWT_SECRET in the environment (e.g. deploy secrets).
-    jwt_secret: str = ""
-    jwt_expire_minutes: int = 60 * 24 * 7
-    # Dashboard + admin API: header X-Admin-Key must match to manage server profiles / see all data.
-    admin_api_key: str = ""
-    # Optional: comma-separated extra browser origins (dashboard on another domain).
-    # Example: https://devcraft-resume-builder-dashboard.vercel.app
-    cors_allow_origins: str = ""
-
     model_config = SettingsConfigDict(
         env_file=str(_APP_DIR / ".env") if (_APP_DIR / ".env").exists() else None,
         env_file_encoding="utf-8",

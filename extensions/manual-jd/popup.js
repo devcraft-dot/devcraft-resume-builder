@@ -6,12 +6,6 @@ const {
   postUploadApplicationScreenshot,
   extractDriveFileId,
   driveExportUrl,
-  fetchAuthConfig,
-  getAccessToken,
-  setAccessToken,
-  postExtensionToken,
-  fetchAuthWhoami,
-  fetchExtensionProfiles,
 } = globalThis.ManualJD;
 
 function setStatus(text, kind) {
@@ -28,97 +22,24 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
     document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
     btn.classList.add("active");
     $(`#panel-${btn.dataset.tab}`)?.classList.add("active");
-    if (btn.dataset.tab === "run") refreshAuthBanner();
-    if (btn.dataset.tab === "settings") {
-      void refreshAuthMode().then(() => renderProfiles());
-    }
   });
 });
 
-/* ─── Profiles (chrome.storage.sync "profiles"; server-owned when JWT auth on) ─ */
+/* ─── Profiles (same storage as Indeed: chrome.storage.sync profiles) ─ */
 let profiles = [];
-/** When true (API has JWT_SECRET), names/text are read-only; mint uses all server profiles. */
-let serverLockedProfiles = false;
-
-async function refreshAuthMode() {
-  try {
-    const c = await fetchAuthConfig();
-    serverLockedProfiles = !!c?.auth_required;
-  } catch {
-    serverLockedProfiles = false;
-  }
-  const localRow = document.getElementById("profiles-local-actions");
-  if (localRow) localRow.style.display = serverLockedProfiles ? "none" : "flex";
-  const syncHint = document.getElementById("profiles-sync-hint");
-  const apiHint = document.getElementById("profiles-api-hint");
-  if (syncHint) {
-    syncHint.textContent = serverLockedProfiles
-      ? "When the API uses JWT_SECRET, profile names and resume text are defined by an admin on the server — read-only here. You can still pick the AI model per profile for generation."
-      : "Profiles are shared with the Indeed extension. Edit here or there — same storage key.";
-  }
-  if (apiHint) {
-    apiHint.textContent = serverLockedProfiles
-      ? "Enter your extension username, then Get API token (loads every server-registered profile). Refresh from server after an admin changes profiles."
-      : "When the server has JWT_SECRET, use Get API token and Refresh from server. Otherwise edit profiles below and Save.";
-  }
-}
 
 function esc(s) {
   return (s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-}
-
-function collectProfileModelsOnly() {
-  document.querySelectorAll(".p-model").forEach((el) => {
-    const i = parseInt(el.dataset.idx, 10);
-    if (!Number.isNaN(i) && profiles[i]) profiles[i].model = el.value;
-  });
-}
-
-function persistProfilesToSync() {
-  const un = ($("#ext-client-username")?.value || "").trim();
-  chrome.storage.sync.set({ profiles, manualJd_clientUsername: un });
 }
 
 function renderProfiles() {
   const container = $("#profiles-container");
   if (!container) return;
   container.innerHTML = "";
-  if (serverLockedProfiles && !profiles.length) {
-    const empty = document.createElement("div");
-    empty.className = "profiles-empty-hint";
-    empty.textContent =
-      "No profiles loaded yet. Enter your extension username and click Get API token (or Refresh from server if you already have a token).";
-    container.appendChild(empty);
-    return;
-  }
   profiles.forEach((p, i) => {
     const card = document.createElement("div");
     card.className = "profile-card";
-    if (serverLockedProfiles) {
-      card.innerHTML = `
-      <div class="card-header">
-        <span class="card-title">Profile #${i + 1}</span>
-      </div>
-      <div class="field">
-        <label>Profile name</label>
-        <div class="profile-readonly-name">${esc((p.name || "").trim() || "—")}</div>
-      </div>
-      <div class="field">
-        <label>AI model</label>
-        <select class="p-model" data-idx="${i}">
-          <option value="gpt-5.4-mini" ${p.model === "gpt-5.4-mini" ? "selected" : ""}>GPT-5.4 Mini</option>
-          <option value="gpt-5.4" ${p.model === "gpt-5.4" ? "selected" : ""}>GPT-5.4</option>
-          <option value="deepseek" ${p.model === "deepseek" ? "selected" : ""}>DeepSeek Chat</option>
-          <option value="deepseek-reasoner" ${p.model === "deepseek-reasoner" ? "selected" : ""}>DeepSeek Reasoner</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Profile text (from server)</label>
-        <div class="profile-readonly-text">${esc(p.text || "")}</div>
-      </div>
-    `;
-    } else {
-      card.innerHTML = `
+    card.innerHTML = `
       <div class="card-header">
         <span class="card-title">Profile #${i + 1}</span>
         ${profiles.length > 1 ? `<button type="button" class="btn-delete" data-idx="${i}" title="Delete">&times;</button>` : ""}
@@ -141,32 +62,18 @@ function renderProfiles() {
         <textarea class="p-text" data-idx="${i}" placeholder="Full resume / profile text…">${esc(p.text)}</textarea>
       </div>
     `;
-    }
     container.appendChild(card);
   });
 
-  if (!serverLockedProfiles) {
-    container.querySelectorAll(".btn-delete").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        profiles.splice(parseInt(btn.dataset.idx, 10), 1);
-        renderProfiles();
-      });
-    });
-  }
-
-  container.querySelectorAll(".p-model").forEach((el) => {
-    el.addEventListener("change", () => {
-      collectProfileModelsOnly();
-      persistProfilesToSync();
+  container.querySelectorAll(".btn-delete").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      profiles.splice(parseInt(btn.dataset.idx, 10), 1);
+      renderProfiles();
     });
   });
 }
 
 function collectProfiles() {
-  if (serverLockedProfiles) {
-    collectProfileModelsOnly();
-    return;
-  }
   document.querySelectorAll(".p-name").forEach((el) => {
     profiles[el.dataset.idx].name = el.value.trim();
   });
@@ -178,152 +85,31 @@ function collectProfiles() {
   });
 }
 
-async function loadProfiles() {
-  await refreshAuthMode();
-  await new Promise((resolve) => {
-    chrome.storage.sync.get({ profiles: [], manualJd_clientUsername: "" }, (d) => {
-      profiles = d.profiles || [];
-      if (!profiles.length && !serverLockedProfiles) {
-        profiles.push({ name: "Default", model: "gpt-5.4-mini", text: "" });
-      }
-      const u = document.getElementById("ext-client-username");
-      if (u) u.value = d.manualJd_clientUsername || "";
-      renderProfiles();
-      resolve();
-    });
-  });
-  chrome.storage.local.get({ manualJd_mintSecret: "" }, (d) => {
-    const m = document.getElementById("mint-secret");
-    if (m) m.value = d.manualJd_mintSecret || "";
+function loadProfiles() {
+  chrome.storage.sync.get({ profiles: [] }, (d) => {
+    profiles = d.profiles || [];
+    if (!profiles.length) {
+      profiles.push({ name: "Default", model: "gpt-5.4-mini", text: "" });
+    }
+    renderProfiles();
   });
 }
 
 $("#btn-add")?.addEventListener("click", () => {
-  if (serverLockedProfiles) return;
   collectProfiles();
   profiles.push({ name: "", model: "gpt-5.4-mini", text: "" });
   renderProfiles();
 });
 
-async function pullProfilesFromServer(showMessage = true) {
-  const msgEl = document.getElementById("profiles-api-msg");
-  try {
-    const cfg = await fetchAuthConfig();
-    if (!cfg?.auth_required) {
-      if (msgEl && showMessage) msgEl.textContent = "Server auth is off — nothing to pull.";
-      return;
-    }
-    const tok = await getAccessToken();
-    if (!tok) {
-      if (msgEl && showMessage) msgEl.textContent = "Get an API token first.";
-      return;
-    }
-    const rows = await fetchExtensionProfiles();
-    if (!Array.isArray(rows)) throw new Error("Unexpected response from server");
-    const prevModel = new Map(profiles.map((p) => [(String(p.name || "")).trim(), p.model]));
-    profiles = rows.map((r) => ({
-      name: String(r.name || "").trim(),
-      text: String(r.profile_text || ""),
-      model: prevModel.get(String(r.name || "").trim()) || "gpt-5.4-mini",
-    }));
-    renderProfiles();
-    persistProfilesToSync();
-    if (msgEl && showMessage) {
-      msgEl.textContent = profiles.length
-        ? `Loaded ${profiles.length} profile(s) from server.`
-        : "Server returned no profiles for this token.";
-    }
-  } catch (e) {
-    if (msgEl && showMessage) msgEl.textContent = e?.message || String(e);
-    throw e;
-  }
-}
-
-async function mintExtensionApiToken(options = {}) {
-  const silent = options.silent === true;
-  const msgEl = document.getElementById("profiles-api-msg");
-  let cfg;
-  try {
-    cfg = await fetchAuthConfig();
-  } catch (e) {
-    if (msgEl) msgEl.textContent = e?.message || String(e);
-    return false;
-  }
-  if (!cfg?.auth_required) {
-    if (msgEl && !silent) msgEl.textContent = "Server auth is off — no API token needed.";
-    return false;
-  }
-  const un = ($("#ext-client-username")?.value || "").trim();
-  if (!un) {
-    if (msgEl) msgEl.textContent = "Enter extension username first.";
-    return false;
-  }
-  if (!serverLockedProfiles) {
-    collectProfiles();
-    const names = profiles.map((p) => (p.name || "").trim()).filter(Boolean);
-    if (!names.length) {
-      if (msgEl) msgEl.textContent = "Add at least one profile with a non-empty name.";
-      return false;
-    }
-  }
-  const mintSecret = ($("#mint-secret")?.value || "").trim();
-  try {
-    const profileNamesForMint = serverLockedProfiles ? [] : profiles.map((p) => (p.name || "").trim()).filter(Boolean);
-    const data = await postExtensionToken(un, profileNamesForMint, mintSecret);
-    await setAccessToken(data.access_token);
-    let pulledOk = false;
-    try {
-      await pullProfilesFromServer(false);
-      pulledOk = true;
-    } catch (e2) {
-      if (msgEl && !silent) msgEl.textContent = `Token saved; could not refresh profiles: ${e2?.message || e2}`;
-    }
-    if (pulledOk && msgEl && !silent) msgEl.textContent = "API token saved. Profiles loaded from server.";
-    if (pulledOk && msgEl && silent) msgEl.textContent = "";
-    await refreshAuthBanner();
-    return true;
-  } catch (e) {
-    if (msgEl) msgEl.textContent = e?.message || String(e);
-    return false;
-  }
-}
-
 $("#btn-save")?.addEventListener("click", () => {
-  if (serverLockedProfiles) return;
   collectProfiles();
-  const un = ($("#ext-client-username")?.value || "").trim();
-  chrome.storage.sync.set({ profiles, manualJd_clientUsername: un }, async () => {
+  chrome.storage.sync.set({ profiles }, () => {
     const el = $("#save-status");
     if (el) {
       el.textContent = "Saved";
-      setTimeout(() => {
-        el.textContent = "";
-      }, 2000);
+      setTimeout(() => (el.textContent = ""), 2000);
     }
-    await mintExtensionApiToken({ silent: true });
   });
-});
-
-$("#btn-mint-token")?.addEventListener("click", () => {
-  mintExtensionApiToken();
-});
-
-$("#btn-pull-profiles")?.addEventListener("click", async () => {
-  const msgEl = document.getElementById("profiles-api-msg");
-  try {
-    await pullProfilesFromServer(true);
-  } catch {
-    /* message set inside */
-  }
-});
-
-$("#ext-client-username")?.addEventListener("change", () => {
-  persistProfilesToSync();
-});
-
-$("#mint-secret")?.addEventListener("change", () => {
-  const v = ($("#mint-secret")?.value || "").trim();
-  chrome.storage.local.set({ manualJd_mintSecret: v });
 });
 
 /* ─── Application questions ─────────────────────────────────────── */
@@ -552,57 +338,6 @@ function applyScrapedJobPayload(payload) {
   });
 }
 
-function tryConsumeAutofillPayload(raw) {
-  let o;
-  try {
-    o = typeof raw === "string" ? JSON.parse(raw) : raw;
-  } catch {
-    setStatus("Invalid autofill payload.", "err");
-    return;
-  }
-  const r = o?.result;
-  const board = o?.board;
-  if (!r?.ok) {
-    setStatus(r?.error || "Autofill failed.", "err");
-    return;
-  }
-  applyScrapedJobPayload(r);
-  const nq = (r.questions || []).length;
-  const bl = board === "ashby" ? "Ashby" : "Greenhouse";
-  setStatus(`${bl} autofill: ${r.title || "Job"}${r.company ? " @ " + r.company : ""} — ${nq} application field(s).`, "ok");
-}
-
-async function refreshAuthBanner() {
-  const banner = document.getElementById("auth-banner-run");
-  if (!banner) return;
-  try {
-    const cfg = await fetchAuthConfig();
-    if (!cfg?.auth_required) {
-      banner.style.display = "none";
-      return;
-    }
-    banner.style.display = "block";
-    const token = await getAccessToken();
-    if (!token) {
-      banner.className = "account-banner";
-      banner.textContent =
-        "This API requires a JWT. Open Profiles: set extension username, then Get API token (profiles come from the server).";
-      return;
-    }
-    try {
-      const w = await fetchAuthWhoami();
-      const names = Array.isArray(w.profile_names) ? w.profile_names.join(", ") : "";
-      banner.className = "account-banner ok";
-      banner.textContent = `API token OK — user ${w.username || "?"}. Allowed profiles: ${names || "(none)"}.`;
-    } catch {
-      banner.className = "account-banner";
-      banner.textContent = "API token present but invalid or expired. Mint a new token from the Profiles tab.";
-    }
-  } catch {
-    banner.style.display = "none";
-  }
-}
-
 $("#btn-autofill-job-tab")?.addEventListener("click", async () => {
   setStatus("Scraping job tab…", "run");
   try {
@@ -645,12 +380,7 @@ $("#btn-start")?.addEventListener("click", async () => {
   collectProfiles();
   const usable = profiles.filter((p) => (p.text || "").trim().length > 0);
   if (!usable.length) {
-    setStatus(
-      serverLockedProfiles
-        ? 'No profile text — open "Profiles", use Get API token, then Refresh from server.'
-        : 'No profile text — open "Profiles" and paste your resume facts.',
-      "err",
-    );
+    setStatus('No profile text — open "Profiles" and paste your resume facts.', "err");
     return;
   }
 
@@ -797,31 +527,12 @@ function initScreenshotUpload() {
     if (!screenshotBlob) return;
     const title = ($("#job-title")?.value || "").trim();
     const company = ($("#company")?.value || "").trim();
-    const jd = ($("#jd")?.value || "").trim();
-    const referenceUrl = ($("#reference-url")?.value || "").trim();
-    const salary = ($("#salary")?.value || "").trim();
     const btn = $("#btn-screenshot-upload");
     if (btn) btn.disabled = true;
     setStatus("Uploading application screenshot…", "run");
     try {
-      collectProfiles();
-      const usable = profiles.filter((p) => (p.text || "").trim().length > 0);
-      const questions = collectApplicationQuestions();
-      const job = { title, company, salary, jd, referenceUrl, questions };
-      let jobUrls = [];
-      if (title && jd && usable.length) {
-        for (const p of usable) {
-          const label = (p.name || "").trim() || "default";
-          jobUrls.push(await canonicalJobUrl(label, job));
-        }
-      }
-      const data = await postUploadApplicationScreenshot(screenshotBlob, {
-        title,
-        company,
-        jobUrls,
-      });
+      const data = await postUploadApplicationScreenshot(screenshotBlob, { title, company });
       const url = String(data?.drive_url || "").trim();
-      const nApplied = Number(data?.generations_marked_applied ?? 0);
       const resEl = $("#screenshot-result");
       if (resEl && url) {
         resEl.textContent = "";
@@ -833,20 +544,7 @@ function initScreenshotUpload() {
         a.textContent = "Open in Google Drive";
         resEl.appendChild(a);
       }
-      if (nApplied > 0) {
-        setStatus(
-          `Screenshot uploaded. Marked ${nApplied} generation row(s) as applied (was generated).`,
-          "ok",
-        );
-      } else {
-        setStatus(
-          "Screenshot uploaded to Drive." +
-            (jobUrls.length
-              ? " No matching rows in stage “generated” (generate first, or URL/profile may differ)."
-              : " Add job title + JD + profile text to link this upload to pipeline stages."),
-          jobUrls.length ? "ok" : "",
-        );
-      }
+      setStatus("Screenshot uploaded to Drive.", "ok");
     } catch (e) {
       setStatus(e?.message || String(e), "err");
       if (btn) btn.disabled = false;
@@ -855,24 +553,6 @@ function initScreenshotUpload() {
     if (btn) btn.disabled = false;
   });
 }
-
-function clearApplicationForm() {
-  ["job-title", "company", "salary", "jd", "reference-url"].forEach((id) => {
-    const el = document.getElementById(id);
-    if (el) el.value = "";
-  });
-  const qc = document.getElementById("questions-container");
-  if (qc) qc.innerHTML = "";
-  setScreenshotPreviewFromBlob(null);
-  const res = document.getElementById("screenshot-result");
-  if (res) res.textContent = "";
-  renderDownloads([]);
-  setStatus("Application form cleared.", "ok");
-}
-
-$("#btn-clear-application")?.addEventListener("click", () => {
-  clearApplicationForm();
-});
 
 function applyPendingJdFromRail() {
   chrome.storage.local.get(["manualJd_pendingJd"], (d) => {
@@ -885,38 +565,18 @@ function applyPendingJdFromRail() {
     document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
     document.querySelector('.tab-btn[data-tab="run"]')?.classList.add("active");
     document.getElementById("panel-run")?.classList.add("active");
-    if (text.trim()) setStatus("Loaded JD from a previous send-to-panel action.", "ok");
+    if (text.trim()) setStatus("Loaded JD from the page (book on the rail).", "ok");
   });
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-  await loadProfiles();
+document.addEventListener("DOMContentLoaded", () => {
+  loadProfiles();
   applyPendingJdFromRail();
   initScreenshotUpload();
-  refreshAuthBanner();
-  chrome.storage.local.get(["manualJd_autofillPayload"], (d) => {
-    const raw = d.manualJd_autofillPayload;
-    if (raw != null && String(raw).trim()) {
-      tryConsumeAutofillPayload(raw);
-      chrome.storage.local.remove(["manualJd_autofillPayload"]);
-    }
-  });
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area !== "local") return;
-  if (changes.manualJd_autofillPayload != null) {
-    const nv = changes.manualJd_autofillPayload.newValue;
-    if (nv != null && String(nv).trim()) {
-      tryConsumeAutofillPayload(nv);
-      chrome.storage.local.remove(["manualJd_autofillPayload"]);
-      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
-      document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
-      document.querySelector('.tab-btn[data-tab="run"]')?.classList.add("active");
-      document.getElementById("panel-run")?.classList.add("active");
-    }
-  }
-  if (changes.manualJd_pendingJd == null) return;
+  if (area !== "local" || changes.manualJd_pendingJd == null) return;
   const nv = changes.manualJd_pendingJd.newValue;
   if (nv != null && String(nv).trim()) {
     const ta = document.getElementById("jd");
@@ -926,6 +586,6 @@ chrome.storage.onChanged.addListener((changes, area) => {
     document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
     document.querySelector('.tab-btn[data-tab="run"]')?.classList.add("active");
     document.getElementById("panel-run")?.classList.add("active");
-    setStatus("Updated JD from send-to-panel.", "ok");
+    setStatus("Updated JD from the page (book on the rail).", "ok");
   }
 });

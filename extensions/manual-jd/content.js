@@ -100,7 +100,6 @@
       background: #0f172a;
       color: #f8fafc;
       font-size: 12px;
-      line-height: 1.4;
       box-shadow: 0 8px 24px rgba(0,0,0,0.25);
       opacity: 0;
       transform: translateY(8px);
@@ -118,13 +117,13 @@
   wrap.innerHTML = `
     <div class="dock">
       <div class="rail-wrap" id="rail">
-        <button type="button" class="rail-btn" id="btn-book" title="Send selected text to Manual JD side panel">
-          <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8"/><path d="M8 11h6"/></svg>
+        <button type="button" class="rail-btn" id="btn-selection" title="Send selection to side panel as JD">
+          <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>
         </button>
-        <button type="button" class="rail-btn" id="btn-signal" title="Check API health">
-          <svg viewBox="0 0 24 24"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"/><path d="M9 10h.01"/><path d="M15 10h.01"/><path d="M9.5 15a3.5 3.5 0 0 0 5 0"/></svg>
+        <button type="button" class="rail-btn" id="btn-health" title="Check API health">
+          <svg viewBox="0 0 24 24"><path d="M12 20a8 8 0 0 0 8-8"/><path d="M12 20a8 8 0 0 1-8-8"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></svg>
         </button>
-        <button type="button" class="rail-btn" id="btn-grid" title="Show saved profiles summary">
+        <button type="button" class="rail-btn" id="btn-profiles" title="Profiles on this device">
           <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         </button>
         <button type="button" class="rail-btn primary-ring" id="btn-main" title="Open Manual JD side panel">
@@ -146,50 +145,47 @@
     toastTimer = setTimeout(() => toastEl.classList.remove("show"), ms);
   }
 
-  function sendOpen(msg) {
+  function sendOpen(msg, onFail) {
     chrome.runtime.sendMessage(msg, (res) => {
       const err = chrome.runtime.lastError?.message;
       if (err || !res?.ok) {
-        showToast(err || res?.error || "Could not complete action", 5000);
+        showToast(err || res?.error || "Could not open side panel", 5000);
+        onFail?.();
       }
     });
   }
 
-  root.getElementById("btn-book").addEventListener("click", (e) => {
-    if (e.shiftKey) {
-      sendOpen({ action: "autofillJobTabAndOpenPanel" });
+  root.getElementById("btn-selection").addEventListener("click", () => {
+    const sel = window.getSelection?.()?.toString?.() || "";
+    const t = sel.trim();
+    if (!t) {
+      showToast("Select text on the page first, then click the book.");
       return;
     }
-    const text = String(window.getSelection?.()?.toString() || "").trim();
-    if (!text) {
-      showToast("Select job description text on the page first.", 4000);
-      return;
-    }
-    sendOpen({ action: "stashSelectionAndOpenPanel", text });
+    sendOpen({ action: "stashSelectionAndOpenPanel", text: t });
   });
 
-  root.getElementById("btn-signal").addEventListener("click", async () => {
-    showToast("Checking API…", 1200);
+  root.getElementById("btn-health").addEventListener("click", async () => {
     try {
-      const h = await fetchHealth();
-      const status = String(h?.status || h?.detail || "ok").trim();
-      showToast(`API OK (${status})`, 3500);
+      const j = await fetchHealth();
+      showToast(`API: ${j.status || "ok"}`);
     } catch (e) {
-      showToast(e?.message || String(e), 5000);
+      showToast(String(e?.message || e || "unreachable"));
     }
   });
 
-  root.getElementById("btn-grid").addEventListener("click", () => {
-    chrome.storage.sync.get(["profiles"], (d) => {
-      const list = Array.isArray(d.profiles) ? d.profiles : [];
-      const withText = list.filter((p) => String(p?.text || "").trim());
-      if (!list.length) {
-        showToast("No profiles in sync storage. Open side panel → Profiles.", 4500);
-        return;
-      }
-      const names = withText.map((p) => (p.name || "default").trim() || "default").slice(0, 5);
-      const more = withText.length > 5 ? ` +${withText.length - 5} more` : "";
-      showToast(`${withText.length}/${list.length} profiles ready: ${names.join(", ")}${more}`, 5000);
+  root.getElementById("btn-profiles").addEventListener("click", () => {
+    chrome.storage.sync.get({ profiles: [] }, (d) => {
+      const profiles = d.profiles || [];
+      const usable = profiles.filter((p) => (p.text || "").trim().length > 0);
+      const summary = profiles
+        .map((p, i) => {
+          const n = (p.name || "").trim() || `P${i + 1}`;
+          const ok = (p.text || "").trim().length > 0;
+          return `${n}${ok ? "" : " ∅"}`;
+        })
+        .join(", ");
+      showToast(`${usable.length}/${profiles.length} profiles ready: ${summary}`, 5500);
     });
   });
 

@@ -4,7 +4,6 @@ import type { DashboardAnalytics } from "./api/types";
 
 const STAGE_BAR_COLORS: Record<string, string> = {
   generated: "bg-gray-400",
-  applied: "bg-teal-500",
   intro: "bg-blue-500",
   tech: "bg-purple-500",
   final: "bg-amber-500",
@@ -53,12 +52,11 @@ export function AnalyticsView({ onViewResumesForStage }: AnalyticsViewProps) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-gray-600 max-w-2xl">
           <strong>Pass check</strong> counts rows in{" "}
-          <code className="text-xs bg-gray-100 px-1 rounded">applied</code>,{" "}
           <code className="text-xs bg-gray-100 px-1 rounded">intro</code>,{" "}
           <code className="text-xs bg-gray-100 px-1 rounded">tech</code>,{" "}
           <code className="text-xs bg-gray-100 px-1 rounded">final</code>, or{" "}
           <code className="text-xs bg-gray-100 px-1 rounded">success</code>{" "}
-          (past initial generation or application snip uploaded).{" "}
+          (past initial generation).{" "}
           <strong>generated</strong> and <strong>failed</strong> are excluded from
           that metric. Click a pipeline stage to open the Resumes list filtered to
           that stage.
@@ -164,7 +162,7 @@ export function AnalyticsView({ onViewResumesForStage }: AnalyticsViewProps) {
                   By AI model
                 </h2>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Per-stage counts; <strong>Pass</strong> = applied+intro+tech+final+success
+                  Per-stage counts; <strong>Pass</strong> = intro+tech+final+success
                 </p>
               </div>
               <div className="overflow-x-auto">
@@ -185,9 +183,6 @@ export function AnalyticsView({ onViewResumesForStage }: AnalyticsViewProps) {
                       </th>
                       <th className="px-1 py-2 font-medium text-right" title="generated">
                         gen
-                      </th>
-                      <th className="px-1 py-2 font-medium text-right" title="applied">
-                        ap
                       </th>
                       <th className="px-1 py-2 font-medium text-right" title="intro">
                         in
@@ -221,9 +216,6 @@ export function AnalyticsView({ onViewResumesForStage }: AnalyticsViewProps) {
                         </td>
                         <td className="px-1 py-2 text-right tabular-nums text-gray-600">
                           {m.generated}
-                        </td>
-                        <td className="px-1 py-2 text-right tabular-nums text-teal-700">
-                          {m.applied}
                         </td>
                         <td className="px-1 py-2 text-right tabular-nums text-gray-600">
                           {m.intro}
@@ -273,9 +265,6 @@ export function AnalyticsView({ onViewResumesForStage }: AnalyticsViewProps) {
                       <th className="px-1 py-2 font-medium text-right" title="generated">
                         gen
                       </th>
-                      <th className="px-1 py-2 font-medium text-right" title="applied">
-                        ap
-                      </th>
                       <th className="px-1 py-2 font-medium text-right" title="intro">
                         in
                       </th>
@@ -306,9 +295,6 @@ export function AnalyticsView({ onViewResumesForStage }: AnalyticsViewProps) {
                         </td>
                         <td className="px-1 py-2 text-right tabular-nums text-gray-600">
                           {p.generated}
-                        </td>
-                        <td className="px-1 py-2 text-right tabular-nums text-teal-700">
-                          {p.applied}
                         </td>
                         <td className="px-1 py-2 text-right tabular-nums text-gray-600">
                           {p.intro}

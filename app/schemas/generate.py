@@ -1,7 +1,7 @@
 import hashlib
 from datetime import datetime
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 
 ALLOWED_MODELS = ("gpt-5.4", "gpt-5.4-mini", "deepseek", "deepseek-reasoner")
@@ -65,8 +65,6 @@ class ManualGenerateRequest(BaseModel):
 class GenerationRead(BaseModel):
     id: int
     created_at: datetime
-    user_id: int | None = None
-    client_username: str | None = None
     profile_name: str
     stage: str
     title: str
@@ -80,24 +78,6 @@ class GenerationRead(BaseModel):
     model_name: str
 
     model_config = {"from_attributes": True}
-
-    @field_validator(
-        "model_name",
-        "profile_name",
-        "stage",
-        "title",
-        "company_name",
-        "salary_range",
-        "note",
-        "url",
-        "resume_drive_url",
-        "questions_drive_url",
-        "jd_drive_url",
-        mode="before",
-    )
-    @classmethod
-    def _null_str_to_empty(cls, v):
-        return "" if v is None else v
 
 
 class GenerationPatch(BaseModel):

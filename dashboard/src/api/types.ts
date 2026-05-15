@@ -20,8 +20,6 @@ export interface ApplicationScreenshotList {
 export interface Generation {
   id: number;
   created_at: string;
-  user_id?: number | null;
-  client_username?: string | null;
   profile_name: string;
   stage: string;
   title: string;
@@ -45,7 +43,6 @@ export interface GenerationList {
 
 export const STAGES = [
   "generated",
-  "applied",
   "intro",
   "tech",
   "final",
@@ -61,10 +58,9 @@ export interface StageCount {
 export interface ModelBreakdown {
   model_name: string;
   total: number;
-  /** applied + intro + tech + final + success */
+  /** intro + tech + final + success (past initial generation) */
   passed_resume_check: number;
   generated: number;
-  applied: number;
   intro: number;
   tech: number;
   final: number;
@@ -77,7 +73,6 @@ export interface ProfileBreakdown {
   total: number;
   passed_resume_check: number;
   generated: number;
-  applied: number;
   intro: number;
   tech: number;
   final: number;
@@ -91,11 +86,4 @@ export interface DashboardAnalytics {
   by_stage: StageCount[];
   by_model: ModelBreakdown[];
   by_profile: ProfileBreakdown[];
-}
-
-export interface RegisteredProfile {
-  id: number;
-  created_at: string;
-  name: string;
-  profile_text: string;
 }

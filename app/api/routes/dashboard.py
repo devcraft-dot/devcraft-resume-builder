@@ -1,10 +1,9 @@
 from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from app.core.db import get_db
-from app.core.deps import ApiAccess, auth_enabled, require_extension_or_admin
 from app.models.generation import Generation
 from app.schemas.dashboard import (
     DashboardAnalytics,
@@ -15,7 +14,7 @@ from app.schemas.dashboard import (
 
 router = APIRouter(prefix="/api", tags=["dashboard"])
 
-STAGE_ORDER = ("generated", "applied", "intro", "tech", "final", "success", "failed")
+STAGE_ORDER = ("generated", "intro", "tech", "final", "success", "failed")
 
 
 def _stage_sum(stage_value: str):
@@ -23,40 +22,24 @@ def _stage_sum(stage_value: str):
 
 
 _passed_resume_check_expr = case(
-    (Generation.stage.in_(("applied", "intro", "tech", "final", "success")), 1),
+    (Generation.stage.in_(("intro", "tech", "final", "success")), 1),
     else_=0,
 )
 
 
-def _scope_generations(access: ApiAccess, stmt):
-    if not auth_enabled():
-        return stmt
-    if access.is_admin:
-        return stmt
-    if access.extension is not None:
-        return stmt.where(Generation.client_username == access.extension.username)
-    return stmt
-
-
 @router.get("/dashboard/analytics", response_model=DashboardAnalytics)
-def dashboard_analytics(
-    db: Session = Depends(get_db),
-    access: ApiAccess = Depends(require_extension_or_admin),
-) -> DashboardAnalytics:
-    if auth_enabled() and not access.is_admin and access.extension is None:
-        raise HTTPException(401, "Authentication required")
-
-    q0 = select(func.count(Generation.id), func.sum(_passed_resume_check_expr)).select_from(Generation)
-    q0 = _scope_generations(access, q0)
-    total_g, passed_total = db.execute(q0).one()
+def dashboard_analytics(db: Session = Depends(get_db)) -> DashboardAnalytics:
+    # Single scan for total rows + "passed resume check" count (same predicate as _passed_resume_check_expr).
+    total_g, passed_total = db.execute(
+        select(func.count(Generation.id), func.sum(_passed_resume_check_expr)).select_from(Generation),
+    ).one()
     total_g = int(total_g or 0)
     passed_total = int(passed_total or 0)
 
-    q1 = _scope_generations(
-        access,
-        select(Generation.stage, func.count(Generation.id)).select_from(Generation).group_by(Generation.stage),
-    )
-    stage_rows = db.execute(q1).all()
+    stage_rows = db.execute(
+        select(Generation.stage, func.count(Generation.id))
+        .group_by(Generation.stage)
+    ).all()
     stage_map: dict[str, int] = {}
     for s, c in stage_rows:
         key = s or "(empty)"
@@ -70,32 +53,27 @@ def dashboard_analytics(
             by_stage.append(StageCount(stage=sk, count=cnt))
 
     gen = _stage_sum("generated")
-    appl = _stage_sum("applied")
     intro = _stage_sum("intro")
     tech = _stage_sum("tech")
     fin = _stage_sum("final")
     succ = _stage_sum("success")
     fail = _stage_sum("failed")
 
-    q_model = (
+    model_rows = db.execute(
         select(
             Generation.model_name,
             func.count(Generation.id),
             func.sum(_passed_resume_check_expr),
             gen,
-            appl,
             intro,
             tech,
             fin,
             succ,
             fail,
         )
-        .select_from(Generation)
         .group_by(Generation.model_name)
         .order_by(func.count(Generation.id).desc())
-    )
-    q_model = _scope_generations(access, q_model)
-    model_rows = db.execute(q_model).all()
+    ).all()
 
     by_model = [
         ModelBreakdown(
@@ -103,35 +81,30 @@ def dashboard_analytics(
             total=int(tot),
             passed_resume_check=int(pchk or 0),
             generated=int(g or 0),
-            applied=int(ap or 0),
             intro=int(i or 0),
             tech=int(t or 0),
             final=int(f or 0),
             success=int(su or 0),
             failed=int(fa or 0),
         )
-        for m, tot, pchk, g, ap, i, t, f, su, fa in model_rows
+        for m, tot, pchk, g, i, t, f, su, fa in model_rows
     ]
 
-    q_prof = (
+    profile_rows = db.execute(
         select(
             Generation.profile_name,
             func.count(Generation.id),
             func.sum(_passed_resume_check_expr),
             gen,
-            appl,
             intro,
             tech,
             fin,
             succ,
             fail,
         )
-        .select_from(Generation)
         .group_by(Generation.profile_name)
         .order_by(func.count(Generation.id).desc())
-    )
-    q_prof = _scope_generations(access, q_prof)
-    profile_rows = db.execute(q_prof).all()
+    ).all()
 
     by_profile = [
         ProfileBreakdown(
@@ -139,14 +112,13 @@ def dashboard_analytics(
             total=int(tot),
             passed_resume_check=int(pchk or 0),
             generated=int(g or 0),
-            applied=int(ap or 0),
             intro=int(i or 0),
             tech=int(t or 0),
             final=int(f or 0),
             success=int(su or 0),
             failed=int(fa or 0),
         )
-        for p, tot, pchk, g, ap, i, t, f, su, fa in profile_rows
+        for p, tot, pchk, g, i, t, f, su, fa in profile_rows
     ]
 
     return DashboardAnalytics(

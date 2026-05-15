@@ -11,7 +11,6 @@ class ModelBreakdown(BaseModel):
     total: int
     passed_resume_check: int
     generated: int
-    applied: int
     intro: int
     tech: int
     final: int
@@ -24,7 +23,6 @@ class ProfileBreakdown(BaseModel):
     total: int
     passed_resume_check: int
     generated: int
-    applied: int
     intro: int
     tech: int
     final: int
@@ -34,7 +32,7 @@ class ProfileBreakdown(BaseModel):
 
 class DashboardAnalytics(BaseModel):
     total_generations: int
-    """Rows whose stage is applied, intro, tech, final, or success."""
+    """Rows whose stage is intro, tech, final, or success."""
 
     passed_resume_check_total: int
     by_stage: list[StageCount]

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, func
+from sqlalchemy import DateTime, Index, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
@@ -23,14 +23,8 @@ class ApplicationScreenshot(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    user_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
-    )
-
     drive_url: Mapped[str] = mapped_column(String(2000))
     filename: Mapped[str] = mapped_column(String(500))
     job_title: Mapped[str] = mapped_column(String(500), default="")
     company_name: Mapped[str] = mapped_column(String(500), default="")
     file_mime: Mapped[str] = mapped_column(String(80), default="")
-
-    client_username: Mapped[str | None] = mapped_column(String(200), nullable=True, index=True)

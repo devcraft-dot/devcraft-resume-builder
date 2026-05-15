@@ -37,7 +37,7 @@
   "content_scripts": [
     {
       "matches": ["http://*/*", "https://*/*"],
-      "js": ["manualExtensionCore.js", "content.js"],
+      "js": ["authApi.js", "manualExtensionCore.js", "content.js"],
       "run_at": "document_idle"
     }
   ],

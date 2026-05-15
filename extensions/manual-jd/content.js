@@ -175,9 +175,9 @@
   });
 
   root.getElementById("btn-profiles").addEventListener("click", () => {
-    chrome.storage.sync.get({ profiles: [] }, (d) => {
-      const profiles = d.profiles || [];
-      const usable = profiles.filter((p) => (p.text || "").trim().length > 0);
+    chrome.storage.local.get({ serverProfiles: [] }, (d) => {
+      const profiles = d.serverProfiles || [];
+      const usable = profiles.filter((p) => p.id);
       const summary = profiles
         .map((p, i) => {
           const n = (p.name || "").trim() || `P${i + 1}`;

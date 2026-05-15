@@ -250,7 +250,8 @@
     <div class="tab-row">
       <button class="tab-btn active" data-tab="run">Run</button>
       <button class="tab-btn" data-tab="errors">API errors</button>
-      <button class="tab-btn" data-tab="settings">Settings</button>
+      <button class="tab-btn" data-tab="settings">Account</button>
+      <button class="tab-btn" data-tab="history">My resumes</button>
     </div>
   </div>
 
@@ -259,11 +260,11 @@
     <div class="run-context-card">
       <div class="run-context-title">Profiles for each job</div>
       <p class="run-context-hint">
-        Each collected Indeed job runs against <strong>every</strong> profile you saved in Settings.
-        Your API skips a profile when that <strong>job URL + profile name</strong> already exists.
+        Each job runs against every profile assigned to you on the server.
+        Skips when that job URL + profile already exists for your account.
       </p>
       <ul id="run-profiles-list" class="run-profiles-list"></ul>
-      <button type="button" class="btn-link-settings" id="btn-link-settings">Edit profiles in Settings →</button>
+      <button type="button" class="btn-link-settings" id="btn-link-settings">Sync profiles in Account →</button>
     </div>
 
     <div class="controls">
@@ -334,12 +335,29 @@
 
   <!-- ─── Settings Panel ─── -->
   <div id="panel-settings" class="panel">
-    <div id="profiles-container"></div>
-    <button id="btn-add" class="btn-add-profile">+ Add Profile</button>
-    <button id="btn-save" class="btn-save">Save All Settings</button>
-    <div id="save-status" class="save-status"></div>
+    <div class="field">
+      <label>API token</label>
+      <input type="password" id="api-token" placeholder="rb_…" autocomplete="off" />
+      <div class="hint">Issued by your admin. Stored locally on this device.</div>
+    </div>
+    <button type="button" id="btn-save-token" class="btn-save" style="margin-bottom:10px">Save token</button>
+    <button type="button" id="btn-sync-profiles" class="btn-add-profile">Sync profiles from server</button>
+    <div id="sync-status" class="save-status"></div>
+    <div class="run-context-title" style="margin-top:14px">Assigned profiles (read-only)</div>
+    <ul id="profiles-container" class="run-profiles-list"></ul>
   </div>
 
+  <div id="panel-history" class="panel">
+    <div class="run-context-card">
+      <div class="run-context-title">Your generation history</div>
+      <p class="run-context-hint">Recent resumes created with your account.</p>
+    </div>
+    <button type="button" id="btn-refresh-history" class="btn-api-errors">Refresh</button>
+    <pre id="history-log" class="api-error-pre" style="margin-top:10px">Load history after saving your token.</pre>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="authApi.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

@@ -8,11 +8,10 @@ import re
 from datetime import date
 from io import BytesIO
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
 
-from app.core.db import get_db
+from app.core.deps import AdminUser, CurrentUser, DbSession
 from app.models.application_screenshot import ApplicationScreenshot
 from app.schemas.application_screenshot import ApplicationScreenshotList, ApplicationScreenshotRead
 from app.services.drive_service import (
@@ -34,10 +33,11 @@ def _safe_snippet(s: str, max_len: int = 40) -> str:
 @router.post("/upload/application-screenshot")
 @router.post("/upload/application-screenshot/")
 async def upload_application_screenshot(
+    user: CurrentUser,
+    db: DbSession,
     file: UploadFile = File(...),
     title: str = Query("", max_length=500),
     company_name: str = Query("", max_length=500),
-    db: Session = Depends(get_db),
 ):
     """
     Accept a pasted snip or image file (PNG / JPEG / WebP), store as a native Drive file.
@@ -75,6 +75,7 @@ async def upload_application_screenshot(
         )
 
     row = ApplicationScreenshot(
+        user_id=user.id,
         drive_url=url,
         filename=fn,
         job_title=(title or "").strip()[:500],
@@ -91,9 +92,10 @@ async def upload_application_screenshot(
 
 @router.get("/application-screenshots", response_model=ApplicationScreenshotList)
 def list_application_screenshots(
+    _admin: AdminUser,
+    db: DbSession,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    db: Session = Depends(get_db),
 ):
     """Paginated list for the dashboard (newest first)."""
     total = int(db.scalar(select(func.count()).select_from(ApplicationScreenshot)) or 0)

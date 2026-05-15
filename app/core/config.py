@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     google_service_account_json: str = ""
     google_sheet_worksheet: str = "Sheet1"
 
+    # First admin: set once, then rotate token via dashboard
+    bootstrap_admin_token: str = ""
+
     model_config = SettingsConfigDict(
         env_file=str(_APP_DIR / ".env") if (_APP_DIR / ".env").exists() else None,
         env_file_encoding="utf-8",

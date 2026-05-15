@@ -39,9 +39,7 @@ class GenerateRequest(BaseModel):
     description_text: str = ""
     salary_range: str = Field("", max_length=200)
     questions: list[QuestionField] = Field(default_factory=list)
-    profile_name: str = Field("", max_length=200)
-    profile_text: str = Field(..., min_length=1)
-    model: str = Field("gpt-5.4-mini")
+    profile_id: int = Field(..., ge=1)
 
 
 class ManualGenerateRequest(BaseModel):
@@ -52,9 +50,7 @@ class ManualGenerateRequest(BaseModel):
     description_text: str = Field(..., min_length=1)
     salary_range: str = Field("", max_length=200)
     questions: list[QuestionField] = Field(default_factory=list)
-    profile_name: str = Field("", max_length=200)
-    profile_text: str = Field(..., min_length=1)
-    model: str = Field("gpt-5.4-mini")
+    profile_id: int = Field(..., ge=1)
     reference_url: str = Field(
         "",
         max_length=2000,
@@ -96,7 +92,7 @@ class GenerationPresenceItem(BaseModel):
     """One (job URL, profile) pair to test for an existing generation row."""
 
     url: str = Field(..., min_length=1, max_length=2000)
-    profile_name: str = Field("", max_length=200)
+    profile_id: int = Field(..., ge=1)
 
 
 class CheckGenerationKeysRequest(BaseModel):
@@ -105,6 +101,7 @@ class CheckGenerationKeysRequest(BaseModel):
 
 class GenerationPresenceResult(BaseModel):
     url: str
+    profile_id: int
     profile_name: str
     exists: bool
 

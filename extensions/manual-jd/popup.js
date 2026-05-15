@@ -22,95 +22,82 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
     document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
     btn.classList.add("active");
     $(`#panel-${btn.dataset.tab}`)?.classList.add("active");
+    if (btn.dataset.tab === "history") renderHistory();
   });
 });
 
-/* ─── Profiles (same storage as Indeed: chrome.storage.sync profiles) ─ */
+/* ─── Profiles (server-synced) ─ */
 let profiles = [];
 
 function esc(s) {
   return (s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }
 
-function renderProfiles() {
+function renderProfilesList() {
   const container = $("#profiles-container");
   if (!container) return;
   container.innerHTML = "";
+  if (!profiles.length) {
+    const li = document.createElement("li");
+    li.textContent = "No profiles — save token and sync";
+    container.appendChild(li);
+    return;
+  }
   profiles.forEach((p, i) => {
-    const card = document.createElement("div");
-    card.className = "profile-card";
-    card.innerHTML = `
-      <div class="card-header">
-        <span class="card-title">Profile #${i + 1}</span>
-        ${profiles.length > 1 ? `<button type="button" class="btn-delete" data-idx="${i}" title="Delete">&times;</button>` : ""}
-      </div>
-      <div class="field">
-        <label>Profile name</label>
-        <input type="text" class="p-name" data-idx="${i}" value="${esc(p.name)}" placeholder="Andrew Roberts" />
-      </div>
-      <div class="field">
-        <label>AI model</label>
-        <select class="p-model" data-idx="${i}">
-          <option value="gpt-5.4-mini" ${p.model === "gpt-5.4-mini" ? "selected" : ""}>GPT-5.4 Mini</option>
-          <option value="gpt-5.4" ${p.model === "gpt-5.4" ? "selected" : ""}>GPT-5.4</option>
-          <option value="deepseek" ${p.model === "deepseek" ? "selected" : ""}>DeepSeek Chat</option>
-          <option value="deepseek-reasoner" ${p.model === "deepseek-reasoner" ? "selected" : ""}>DeepSeek Reasoner</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Profile text</label>
-        <textarea class="p-text" data-idx="${i}" placeholder="Full resume / profile text…">${esc(p.text)}</textarea>
-      </div>
-    `;
-    container.appendChild(card);
+    const li = document.createElement("li");
+    li.style.padding = "6px 0";
+    li.textContent = `${(p.name || "").trim() || `Profile ${i + 1}`} — ${p.model || "gpt-5.4-mini"}`;
+    container.appendChild(li);
   });
+}
 
-  container.querySelectorAll(".btn-delete").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      profiles.splice(parseInt(btn.dataset.idx, 10), 1);
-      renderProfiles();
+async function loadProfiles() {
+  profiles = await ResumeAuth.getServerProfiles();
+  renderProfilesList();
+}
+
+async function loadTokenField() {
+  const token = await ResumeAuth.getApiToken();
+  const el = $("#api-token");
+  if (el) el.value = token;
+}
+
+$("#btn-save-token")?.addEventListener("click", async () => {
+  const token = $("#api-token")?.value?.trim() || "";
+  await ResumeAuth.setApiToken(token);
+  const st = $("#sync-status");
+  if (st) st.textContent = token ? "Token saved" : "Token cleared";
+});
+
+$("#btn-sync-profiles")?.addEventListener("click", async () => {
+  const st = $("#sync-status");
+  try {
+    profiles = await ResumeAuth.syncServerProfiles(API_URL);
+    renderProfilesList();
+    if (st) st.textContent = `Synced ${profiles.length} profile(s)`;
+  } catch (e) {
+    if (st) st.textContent = e?.message || "Sync failed";
+  }
+});
+
+async function renderHistory() {
+  const pre = $("#history-log");
+  if (!pre) return;
+  pre.textContent = "Loading…";
+  try {
+    const data = await ResumeAuth.fetchMyGenerations(API_URL, 1, 30);
+    const lines = (data.items || []).map((g) => {
+      const when = g.created_at ? new Date(g.created_at).toLocaleString() : "";
+      const link = g.resume_drive_url ? ` | ${g.resume_drive_url}` : "";
+      return `[${when}] ${g.stage} | ${g.title} @ ${g.company_name || "?"}${link}`;
     });
-  });
+    pre.textContent = lines.length ? lines.join("\n\n") : "No generations yet.";
+  } catch (e) {
+    pre.textContent = e?.message || "Failed to load history";
+  }
 }
 
-function collectProfiles() {
-  document.querySelectorAll(".p-name").forEach((el) => {
-    profiles[el.dataset.idx].name = el.value.trim();
-  });
-  document.querySelectorAll(".p-model").forEach((el) => {
-    profiles[el.dataset.idx].model = el.value;
-  });
-  document.querySelectorAll(".p-text").forEach((el) => {
-    profiles[el.dataset.idx].text = el.value.trim();
-  });
-}
-
-function loadProfiles() {
-  chrome.storage.sync.get({ profiles: [] }, (d) => {
-    profiles = d.profiles || [];
-    if (!profiles.length) {
-      profiles.push({ name: "Default", model: "gpt-5.4-mini", text: "" });
-    }
-    renderProfiles();
-  });
-}
-
-$("#btn-add")?.addEventListener("click", () => {
-  collectProfiles();
-  profiles.push({ name: "", model: "gpt-5.4-mini", text: "" });
-  renderProfiles();
-});
-
-$("#btn-save")?.addEventListener("click", () => {
-  collectProfiles();
-  chrome.storage.sync.set({ profiles }, () => {
-    const el = $("#save-status");
-    if (el) {
-      el.textContent = "Saved";
-      setTimeout(() => (el.textContent = ""), 2000);
-    }
-  });
-});
+$("#btn-refresh-history")?.addEventListener("click", () => renderHistory());
 
 /* ─── Application questions ─────────────────────────────────────── */
 function addQuestionRow(data = {}) {
@@ -377,10 +364,9 @@ $("#btn-start")?.addEventListener("click", async () => {
     return;
   }
 
-  collectProfiles();
-  const usable = profiles.filter((p) => (p.text || "").trim().length > 0);
+  const usable = profiles.filter((p) => p.id);
   if (!usable.length) {
-    setStatus('No profile text — open "Profiles" and paste your resume facts.', "err");
+    setStatus('No profiles — open Account, save API token, and sync from server.', "err");
     return;
   }
 
@@ -570,6 +556,7 @@ function applyPendingJdFromRail() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  loadTokenField();
   loadProfiles();
   applyPendingJdFromRail();
   initScreenshotUpload();

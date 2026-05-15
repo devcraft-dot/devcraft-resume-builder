@@ -1,4 +1,4 @@
-importScripts("config.js");
+importScripts("config.js", "authApi.js");
 
 const DEFAULT_STATE = {
   running: false,
@@ -44,9 +44,8 @@ async function saveState() {
 }
 
 async function getProfiles() {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get({ profiles: [] }, (d) => resolve(d.profiles || []));
-  });
+  const list = await ResumeAuth.getServerProfiles();
+  return list.filter((p) => p.id && (p.text || "").trim().length > 0);
 }
 
 function broadcastState() {
@@ -835,15 +834,12 @@ async function generateResume(job, profile) {
     description_text: job.description_text || "",
     salary_range: job.salary_range || "",
     questions: job.questions || [],
-    profile_name: profile.name || "default",
-    profile_text: profile.text || "",
-    model: profile.model || "gpt-5.4-mini",
+    profile_id: profile.id,
   };
   let res;
   try {
-    res = await fetch(`${API_URL}/api/generate`, {
+    res = await ResumeAuth.apiFetch(API_URL, "/api/generate", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
   } catch (e) {
@@ -891,14 +887,16 @@ async function generateResume(job, profile) {
  */
 async function checkGenerationKeys(jdUrl, profilesList) {
   if (!jdUrl || !profilesList?.length) return [];
-  const items = profilesList.map((p) => ({
-    url: jdUrl,
-    profile_name: (p.name || "").trim() || "default",
-  }));
+  const items = profilesList
+    .filter((p) => p.id)
+    .map((p) => ({
+      url: jdUrl,
+      profile_id: p.id,
+    }));
+  if (!items.length) return [];
   try {
-    const res = await fetch(`${API_URL}/api/check-generation-keys`, {
+    const res = await ResumeAuth.apiFetch(API_URL, "/api/check-generation-keys", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ items }),
     });
     if (!res.ok) {
@@ -941,7 +939,7 @@ async function runLoop() {
 
   const profiles = await getProfiles();
   if (!profiles.length) {
-    state.lastError = "No profiles configured — open Settings";
+    state.lastError = "No profiles — set API token and sync in Settings";
     state.running = false;
     await saveState();
     broadcastState();

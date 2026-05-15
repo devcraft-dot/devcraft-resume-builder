@@ -87,3 +87,52 @@ export interface DashboardAnalytics {
   by_model: ModelBreakdown[];
   by_profile: ProfileBreakdown[];
 }
+
+export interface MeUser {
+  id: number;
+  display_name: string;
+  role: string;
+}
+
+export interface User {
+  id: number;
+  display_name: string;
+  role: string;
+  is_active: boolean;
+  created_at: string;
+  profile_ids: number[];
+}
+
+export interface UserCreateResponse extends User {
+  api_token: string;
+}
+
+export interface TokenRotateResponse {
+  api_token: string;
+}
+
+export interface RegisteredProfileSummary {
+  id: number;
+  name: string;
+  model: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RegisteredProfile extends RegisteredProfileSummary {
+  profile_text: string;
+}
+
+export interface AssignedProfile {
+  id: number;
+  name: string;
+  model: string;
+  profile_text: string;
+}
+
+export const ALLOWED_MODELS = [
+  "gpt-5.4",
+  "gpt-5.4-mini",
+  "deepseek",
+  "deepseek-reasoner",
+] as const;

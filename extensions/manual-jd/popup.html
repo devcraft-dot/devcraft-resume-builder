@@ -168,7 +168,8 @@
     <h1>Manual JD</h1>
     <div class="tab-row">
       <button type="button" class="tab-btn active" data-tab="run">Run</button>
-      <button type="button" class="tab-btn" data-tab="settings">Profiles</button>
+      <button type="button" class="tab-btn" data-tab="settings">Account</button>
+      <button type="button" class="tab-btn" data-tab="history">My resumes</button>
     </div>
   </div>
 
@@ -226,7 +227,7 @@
     <div class="controls">
       <button type="button" class="btn-start" id="btn-start">Start</button>
     </div>
-    <div id="status-msg" class="status-msg">Ready. Same profiles as the Indeed extension (chrome.storage.sync &quot;profiles&quot;). Use the toolbar icon to open this side panel.</div>
+    <div id="status-msg" class="status-msg">Ready. Save your API token under Account and sync assigned profiles.</div>
     <div id="downloads-section" class="dl-section" style="display: none;">
       <label>Downloads</label>
       <div id="downloads-list"></div>
@@ -234,15 +235,25 @@
   </div>
 
   <div id="panel-settings" class="panel">
-    <p class="hint" style="margin-bottom: 10px;">Profiles are shared with the Indeed extension. Edit here or there — same storage key.</p>
-    <div id="profiles-container"></div>
-    <div class="btn-row">
-      <button type="button" id="btn-add">Add profile</button>
-      <button type="button" class="primary" id="btn-save">Save profiles</button>
-      <span id="save-status" class="save-status"></span>
+    <div class="field">
+      <label>API token</label>
+      <input type="password" id="api-token" placeholder="rb_…" autocomplete="off" />
     </div>
+    <button type="button" class="primary" id="btn-save-token" style="margin-bottom:8px">Save token</button>
+    <button type="button" id="btn-sync-profiles">Sync profiles from server</button>
+    <span id="sync-status" class="save-status"></span>
+    <p class="hint" style="margin-top:12px">Assigned profiles (read-only):</p>
+    <ul id="profiles-container" style="list-style:none;padding:0;margin-top:8px"></ul>
   </div>
 
+  <div id="panel-history" class="panel">
+    <p class="hint">Your recent generations on this account.</p>
+    <button type="button" id="btn-refresh-history">Refresh</button>
+    <pre id="history-log" style="margin-top:10px;font-size:11px;white-space:pre-wrap;max-height:400px;overflow:auto"></pre>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="authApi.js"></script>
   <script src="manualExtensionCore.js"></script>
   <script src="popup.js"></script>
 </body>

@@ -4,13 +4,15 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 
+from app.api.routes.admin import router as admin_router
 from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.generate import router as generate_router
+from app.api.routes.me import router as me_router
 from app.api.routes.upload import router as upload_router
+from app.core.bootstrap import bootstrap_admin_if_needed
 from app.core.config import settings
 
-import app.models.application_screenshot as _application_screenshot_model  # noqa: F401
-import app.models.generation as _generation_model  # noqa: F401 — register tables
+import app.models  # noqa: F401 — register all tables
 
 
 @asynccontextmanager
@@ -18,6 +20,7 @@ async def lifespan(_app: FastAPI):
     from app.core.db import Base, _engine
 
     Base.metadata.create_all(bind=_engine())
+    bootstrap_admin_if_needed()
     yield
 
 
@@ -69,3 +72,5 @@ async def cors_preflight(full_path: str, request: Request) -> Response:
 app.include_router(generate_router)
 app.include_router(dashboard_router)
 app.include_router(upload_router)
+app.include_router(admin_router)
+app.include_router(me_router)

@@ -51,14 +51,16 @@
 
   async function checkGenerationKeys(jdUrl, profilesList) {
     if (!jdUrl || !profilesList?.length) return [];
-    const items = profilesList.map((p) => ({
-      url: jdUrl,
-      profile_name: (p.name || "").trim() || "default",
-    }));
+    const items = profilesList
+      .filter((p) => p.id)
+      .map((p) => ({
+        url: jdUrl,
+        profile_id: p.id,
+      }));
+    if (!items.length) return [];
     try {
-      const res = await fetch(`${API_URL}/api/check-generation-keys`, {
+      const res = await ResumeAuth.apiFetch(API_URL, "/api/check-generation-keys", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items }),
       });
       if (!res.ok) {
@@ -117,16 +119,13 @@
       description_text: (job.jd || "").trim(),
       salary_range: (job.salary || "").trim(),
       questions,
-      profile_name: (profile.name || "").trim() || "default",
-      profile_text: (profile.text || "").trim(),
-      model: profile.model || "gpt-5.4-mini",
+      profile_id: profile.id,
       reference_url: (job.referenceUrl || "").trim(),
     };
     let res;
     try {
-      res = await fetch(`${API_URL}/api/generate/manual`, {
+      res = await ResumeAuth.apiFetch(API_URL, "/api/generate/manual", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
     } catch (e) {
@@ -178,7 +177,7 @@
 
     let res;
     try {
-      res = await fetch(`${API_URL}${path}`, { method: "POST", body: fd });
+      res = await ResumeAuth.apiFetch(API_URL, path, { method: "POST", body: fd });
     } catch (e) {
       const msg = e?.message || String(e);
       await appendApiErrorLog({

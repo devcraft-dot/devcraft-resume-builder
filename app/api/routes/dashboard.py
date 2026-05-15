@@ -1,9 +1,9 @@
 from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
-from app.core.db import get_db
+from app.core.deps import AdminUser, DbSession
 from app.models.generation import Generation
 from app.schemas.dashboard import (
     DashboardAnalytics,
@@ -28,7 +28,7 @@ _passed_resume_check_expr = case(
 
 
 @router.get("/dashboard/analytics", response_model=DashboardAnalytics)
-def dashboard_analytics(db: Session = Depends(get_db)) -> DashboardAnalytics:
+def dashboard_analytics(_admin: AdminUser, db: DbSession) -> DashboardAnalytics:
     # Single scan for total rows + "passed resume check" count (same predicate as _passed_resume_check_expr).
     total_g, passed_total = db.execute(
         select(func.count(Generation.id), func.sum(_passed_resume_check_expr)).select_from(Generation),

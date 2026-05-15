@@ -10,6 +10,7 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
     btn.classList.add("active");
     $(`#panel-${btn.dataset.tab}`).classList.add("active");
     if (btn.dataset.tab === "errors") renderApiErrorLog();
+    if (btn.dataset.tab === "history") renderHistory();
   });
 });
 
@@ -63,95 +64,77 @@ function renderRunProfilesSummary() {
   });
 }
 
-function loadProfiles() {
-  chrome.storage.sync.get({ profiles: [] }, (d) => {
-    profiles = d.profiles || [];
-    if (!profiles.length) {
-      profiles.push({ name: "Default", model: "gpt-5.4-mini", text: "" });
-    }
-    chrome.runtime.sendMessage({ action: "getState" }, (s) => {
-      renderProfiles();
-      renderRunProfilesSummary();
-      if (s) updateUI(s);
-      else updateStatsNoteOnly();
-    });
-  });
-}
-
-function renderProfiles() {
+function renderProfilesList() {
   const container = $("#profiles-container");
+  if (!container) return;
   container.innerHTML = "";
+  if (!profiles.length) {
+    const li = document.createElement("li");
+    li.textContent = "No profiles — save token and sync from server";
+    container.appendChild(li);
+    return;
+  }
   profiles.forEach((p, i) => {
-    const card = document.createElement("div");
-    card.className = "profile-card";
-    card.innerHTML = `
-      <div class="card-header">
-        <span class="card-title">Profile #${i + 1}</span>
-        ${profiles.length > 1 ? `<button class="btn-delete" data-idx="${i}" title="Delete">&times;</button>` : ""}
-      </div>
-      <div class="field">
-        <label>Profile Name</label>
-        <input type="text" class="p-name" data-idx="${i}" value="${esc(p.name)}" placeholder="Andrew Roberts" />
-      </div>
-      <div class="field">
-        <label>AI Model</label>
-        <select class="p-model" data-idx="${i}">
-          <option value="gpt-5.4-mini" ${p.model === "gpt-5.4-mini" ? "selected" : ""}>GPT-5.4 Mini</option>
-          <option value="gpt-5.4" ${p.model === "gpt-5.4" ? "selected" : ""}>GPT-5.4</option>
-          <option value="deepseek" ${p.model === "deepseek" ? "selected" : ""}>DeepSeek Chat</option>
-          <option value="deepseek-reasoner" ${p.model === "deepseek-reasoner" ? "selected" : ""}>DeepSeek Reasoner</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Profile Text</label>
-        <textarea class="p-text" data-idx="${i}" placeholder="Full resume / profile text…">${esc(p.text)}</textarea>
-        <div class="hint">Plain-text facts for the API. Short header lines + Experience + Education + optional bullets. See repo file templates/candidate_profile_template.txt — ATS/truthfulness rules are applied on the server.</div>
-      </div>
-    `;
-    container.appendChild(card);
-  });
-
-  container.querySelectorAll(".btn-delete").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      profiles.splice(parseInt(btn.dataset.idx), 1);
-      renderProfiles();
-      renderRunProfilesSummary();
-    });
+    const li = document.createElement("li");
+    const name = (p.name || "").trim() || `Profile ${i + 1}`;
+    li.textContent = `${name} — ${p.model || "gpt-5.4-mini"}`;
+    container.appendChild(li);
   });
 }
 
-function collectProfiles() {
-  document.querySelectorAll(".p-name").forEach((el) => {
-    profiles[el.dataset.idx].name = el.value.trim();
-  });
-  document.querySelectorAll(".p-model").forEach((el) => {
-    profiles[el.dataset.idx].model = el.value;
-  });
-  document.querySelectorAll(".p-text").forEach((el) => {
-    profiles[el.dataset.idx].text = el.value.trim();
-  });
-}
-
-function esc(s) {
-  return (s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-}
-
-$("#btn-add").addEventListener("click", () => {
-  collectProfiles();
-  profiles.push({ name: "", model: "gpt-5.4-mini", text: "" });
-  renderProfiles();
+async function loadProfiles() {
+  profiles = await ResumeAuth.getServerProfiles();
+  renderProfilesList();
   renderRunProfilesSummary();
+  chrome.runtime.sendMessage({ action: "getState" }, (s) => {
+    if (s) updateUI(s);
+    else updateStatsNoteOnly();
+  });
+}
+
+async function loadTokenField() {
+  const token = await ResumeAuth.getApiToken();
+  const el = $("#api-token");
+  if (el) el.value = token;
+}
+
+$("#btn-save-token")?.addEventListener("click", async () => {
+  const token = $("#api-token")?.value?.trim() || "";
+  await ResumeAuth.setApiToken(token);
+  const st = $("#sync-status");
+  if (st) st.textContent = token ? "Token saved" : "Token cleared";
 });
 
-$("#btn-save").addEventListener("click", () => {
-  collectProfiles();
-  chrome.storage.sync.set({ profiles }, () => {
+$("#btn-sync-profiles")?.addEventListener("click", async () => {
+  const st = $("#sync-status");
+  try {
+    profiles = await ResumeAuth.syncServerProfiles(API_URL);
+    renderProfilesList();
     renderRunProfilesSummary();
-    const el = $("#save-status");
-    el.textContent = "Saved!";
-    setTimeout(() => (el.textContent = ""), 2000);
-  });
+    if (st) st.textContent = `Synced ${profiles.length} profile(s)`;
+  } catch (e) {
+    if (st) st.textContent = e?.message || "Sync failed";
+  }
 });
+
+async function renderHistory() {
+  const pre = $("#history-log");
+  if (!pre) return;
+  pre.textContent = "Loading…";
+  try {
+    const data = await ResumeAuth.fetchMyGenerations(API_URL, 1, 30);
+    const lines = (data.items || []).map((g) => {
+      const when = g.created_at ? new Date(g.created_at).toLocaleString() : "";
+      const link = g.resume_drive_url ? ` | ${g.resume_drive_url}` : "";
+      return `[${when}] ${g.stage} | ${g.title} @ ${g.company_name || "?"}${link}`;
+    });
+    pre.textContent = lines.length ? lines.join("\n\n") : "No generations yet.";
+  } catch (e) {
+    pre.textContent = e?.message || "Failed to load history";
+  }
+}
+
+$("#btn-refresh-history")?.addEventListener("click", () => renderHistory());
 
 function updateStatsNoteOnly() {
   const note = $("#stats-note");
@@ -293,5 +276,6 @@ chrome.runtime.onMessage.addListener((msg) => {
 
 /* ─── Init ──────────────────────────────────────────────────────── */
 document.addEventListener("DOMContentLoaded", () => {
+  loadTokenField();
   loadProfiles();
 });

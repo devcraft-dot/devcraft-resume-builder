@@ -32,3 +32,5 @@ class ApplicationScreenshot(Base):
     job_title: Mapped[str] = mapped_column(String(500), default="")
     company_name: Mapped[str] = mapped_column(String(500), default="")
     file_mime: Mapped[str] = mapped_column(String(80), default="")
+
+    client_username: Mapped[str | None] = mapped_column(String(200), nullable=True, index=True)

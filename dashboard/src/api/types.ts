@@ -21,6 +21,7 @@ export interface Generation {
   id: number;
   created_at: string;
   user_id?: number | null;
+  client_username?: string | null;
   profile_name: string;
   stage: string;
   title: string;
@@ -90,4 +91,11 @@ export interface DashboardAnalytics {
   by_stage: StageCount[];
   by_model: ModelBreakdown[];
   by_profile: ProfileBreakdown[];
+}
+
+export interface RegisteredProfile {
+  id: number;
+  created_at: string;
+  name: string;
+  profile_text: string;
 }

@@ -66,6 +66,7 @@ class GenerationRead(BaseModel):
     id: int
     created_at: datetime
     user_id: int | None = None
+    client_username: str | None = None
     profile_name: str
     stage: str
     title: str

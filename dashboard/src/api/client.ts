@@ -3,19 +3,20 @@ import type {
   DashboardAnalytics,
   Generation,
   GenerationList,
+  RegisteredProfile,
 } from "./types";
 
 const BASE = import.meta.env.VITE_API_URL || "";
 
-const TOKEN_KEY = "rb_access_token";
+const ADMIN_KEY_KEY = "rb_admin_api_key";
 
-export function getStoredToken(): string {
-  return localStorage.getItem(TOKEN_KEY) || "";
+export function getStoredAdminKey(): string {
+  return localStorage.getItem(ADMIN_KEY_KEY) || "";
 }
 
-export function setStoredToken(token: string | null): void {
-  if (token) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
+export function setStoredAdminKey(key: string | null): void {
+  if (key) localStorage.setItem(ADMIN_KEY_KEY, key);
+  else localStorage.removeItem(ADMIN_KEY_KEY);
 }
 
 export type AuthConfig = { auth_required: boolean };
@@ -26,32 +27,11 @@ export async function fetchAuthConfig(): Promise<AuthConfig> {
   return res.json();
 }
 
-export type MeResponse = {
-  email: string;
-  is_admin: boolean;
-  generation_count: number;
-};
-
-export async function fetchMe(): Promise<MeResponse> {
-  return request<MeResponse>("/api/me");
-}
-
-export async function postLogin(email: string, password: string): Promise<{ access_token: string }> {
-  const res = await fetch(`${BASE}/api/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-  const text = await res.text().catch(() => res.statusText);
-  if (!res.ok) throw new Error(text || res.statusText);
-  return JSON.parse(text);
-}
-
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const method = (init?.method ?? "GET").toUpperCase();
   const headers = new Headers(init?.headers as HeadersInit | undefined);
-  const tok = getStoredToken();
-  if (tok) headers.set("Authorization", `Bearer ${tok}`);
+  const adm = getStoredAdminKey();
+  if (adm) headers.set("X-Admin-Key", adm);
   if (
     init?.body != null &&
     typeof init.body === "string" &&
@@ -110,6 +90,36 @@ export function patchGeneration(id: number, data: Partial<Generation>) {
 
 export function deleteGeneration(id: number) {
   return request<void>(`/api/generations/${id}`, { method: "DELETE" });
+}
+
+export function fetchRegisteredProfiles() {
+  return request<RegisteredProfile[]>("/api/admin/registered-profiles");
+}
+
+export function createRegisteredProfile(body: {
+  name: string;
+  profile_text: string;
+}) {
+  return request<RegisteredProfile>("/api/admin/registered-profiles", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function patchRegisteredProfile(
+  id: number,
+  body: Partial<{ name: string; profile_text: string }>,
+) {
+  return request<RegisteredProfile>(`/api/admin/registered-profiles/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export function deleteRegisteredProfile(id: number) {
+  return request<void>(`/api/admin/registered-profiles/${id}`, {
+    method: "DELETE",
+  });
 }
 
 export function extractDriveFileId(url: string): string | null {

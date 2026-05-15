@@ -43,3 +43,5 @@ class Generation(Base):
     jd_drive_url: Mapped[str] = mapped_column(String(2000), default="")
 
     model_name: Mapped[str] = mapped_column(String(100), default="")
+
+    client_username: Mapped[str | None] = mapped_column(String(200), nullable=True, index=True)

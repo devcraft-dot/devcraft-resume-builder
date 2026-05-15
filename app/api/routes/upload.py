@@ -11,13 +11,13 @@ from io import BytesIO
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from sqlalchemy import func, select
+from sqlalchemy import true as sql_true
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.core.deps import auth_enabled, get_current_user_optional
+from app.core.deps import ApiAccess, auth_enabled, require_extension_or_admin
 from app.models.application_screenshot import ApplicationScreenshot
 from app.models.generation import Generation
-from app.models.user import User
 from app.schemas.application_screenshot import ApplicationScreenshotList, ApplicationScreenshotRead
 from app.services.drive_service import (
     ALLOWED_IMAGE_TYPES,
@@ -35,10 +35,15 @@ def _safe_snippet(s: str, max_len: int = 40) -> str:
     return t or "job"
 
 
-def _gen_match_for_user(user):
-    if user is None:
-        return Generation.user_id.is_(None)
-    return Generation.user_id == user.id
+def _gen_match_for_access(access: ApiAccess):
+    """Scope generation rows when advancing stage after screenshot upload."""
+    if not auth_enabled():
+        return Generation.client_username.is_(None)
+    if access.is_admin:
+        return sql_true()
+    if access.extension is not None:
+        return Generation.client_username == access.extension.username
+    return Generation.client_username.is_(None)
 
 
 @router.post("/upload/application-screenshot")
@@ -49,15 +54,15 @@ async def upload_application_screenshot(
     company_name: str = Form(""),
     job_urls_json: str = Form(""),
     db: Session = Depends(get_db),
-    user: User | None = Depends(get_current_user_optional),
+    access: ApiAccess = Depends(require_extension_or_admin),
 ):
     """Accept a pasted snip or image file (PNG / JPEG / WebP), store as a native Drive file.
 
     Optional multipart field ``job_urls_json``: JSON array of canonical job URLs (same strings
     as stored on ``generations.url``). For each URL, if a row exists with ``stage == generated``,
-    it is advanced to ``applied`` (scoped to the current user when auth is enabled).
+    it is advanced to ``applied`` (scoped to the caller when auth is enabled).
     """
-    if auth_enabled() and user is None:
+    if auth_enabled() and not access.is_admin and access.extension is None:
         raise HTTPException(401, "Authentication required")
     title = (title or "").strip()[:500]
     company_name = (company_name or "").strip()[:500]
@@ -92,8 +97,10 @@ async def upload_application_screenshot(
             "Drive upload failed or is not configured (set DRIVE_TOKEN_JSON and folder id on the server).",
         )
 
+    cx = access.extension.username if access.extension else None
     row = ApplicationScreenshot(
-        user_id=user.id if user else None,
+        user_id=None,
+        client_username=cx,
         drive_url=url,
         filename=fn,
         job_title=title,
@@ -119,7 +126,7 @@ async def upload_application_screenshot(
                 gen = db.scalar(
                     select(Generation).where(
                         Generation.url == u,
-                        _gen_match_for_user(user),
+                        _gen_match_for_access(access),
                     )
                 )
                 if gen is not None and (gen.stage or "").strip().lower() == "generated":
@@ -150,16 +157,16 @@ def list_application_screenshots(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    user: User | None = Depends(get_current_user_optional),
+    access: ApiAccess = Depends(require_extension_or_admin),
 ):
     """Paginated list for the dashboard (newest first)."""
-    if auth_enabled() and user is None:
+    if auth_enabled() and not access.is_admin and access.extension is None:
         raise HTTPException(401, "Authentication required")
     stmt = select(ApplicationScreenshot)
     count_stmt = select(func.count()).select_from(ApplicationScreenshot)
-    if user is not None and not user.is_admin:
-        stmt = stmt.where(ApplicationScreenshot.user_id == user.id)
-        count_stmt = count_stmt.where(ApplicationScreenshot.user_id == user.id)
+    if auth_enabled() and access.extension is not None and not access.is_admin:
+        stmt = stmt.where(ApplicationScreenshot.client_username == access.extension.username)
+        count_stmt = count_stmt.where(ApplicationScreenshot.client_username == access.extension.username)
 
     total = int(db.scalar(count_stmt) or 0)
     pages = max(1, math.ceil(total / page_size)) if total else 1

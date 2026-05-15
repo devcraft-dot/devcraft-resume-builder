@@ -1,31 +1,26 @@
 import { useCallback, useEffect, useState } from "react";
 import { AnalyticsView } from "./AnalyticsView";
 import { Dashboard } from "./Dashboard";
+import { RegisteredProfilesView } from "./RegisteredProfilesView";
 import { ScreenshotsView } from "./ScreenshotsView";
 import {
   fetchAuthConfig,
-  fetchMe,
-  getStoredToken,
-  postLogin,
-  setStoredToken,
-  type MeResponse,
+  fetchDashboardAnalytics,
+  getStoredAdminKey,
+  setStoredAdminKey,
 } from "./api/client";
 
-type NavKey = "generations" | "analytics" | "screenshots";
+type NavKey = "generations" | "analytics" | "screenshots" | "profiles";
 
 const NAV: { key: NavKey; label: string }[] = [
   { key: "generations", label: "Resumes" },
   { key: "screenshots", label: "Application snips" },
   { key: "analytics", label: "Analytics" },
+  { key: "profiles", label: "Server profiles" },
 ];
 
-function LoginScreen({
-  onLoggedIn,
-}: {
-  onLoggedIn: () => void;
-}) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+function AdminKeyScreen({ onLoggedIn }: { onLoggedIn: () => void }) {
+  const [key, setKey] = useState(getStoredAdminKey());
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -33,66 +28,59 @@ function LoginScreen({
     setErr(null);
     setBusy(true);
     try {
-      const { access_token } = await postLogin(email.trim(), password);
-      setStoredToken(access_token);
+      setStoredAdminKey(key.trim() || null);
+      await fetchDashboardAnalytics();
       onLoggedIn();
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
-  }, [email, password, onLoggedIn]);
+  }, [key, onLoggedIn]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <div className="w-full max-w-md bg-white border border-gray-200 rounded-xl shadow-sm p-8">
-        <h1 className="text-lg font-semibold text-gray-900">Sign in</h1>
+        <h1 className="text-lg font-semibold text-gray-900">Dashboard access</h1>
         <p className="text-sm text-gray-500 mt-1 mb-6">
-          Stateless sign-in: the server returns a JWT; this app stores it and sends{" "}
-          <code className="text-xs bg-gray-100 px-1 rounded">Authorization: Bearer</code> on each
-          request. There is no server session. Use the same account as the Manual JD extension.
+          When the API has <code className="text-xs bg-gray-100 px-1 rounded">JWT_SECRET</code> set,
+          send the same <code className="text-xs bg-gray-100 px-1 rounded">ADMIN_API_KEY</code> value
+          from the server environment as header{" "}
+          <code className="text-xs bg-gray-100 px-1 rounded">X-Admin-Key</code>. It is stored only in
+          this browser.
         </p>
         <label className="block text-xs font-medium text-gray-600 uppercase tracking-wide mb-1">
-          Email
-        </label>
-        <input
-          type="email"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-4"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="username"
-        />
-        <label className="block text-xs font-medium text-gray-600 uppercase tracking-wide mb-1">
-          Password
+          Admin API key
         </label>
         <input
           type="password"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-4"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && submit()}
-          autoComplete="current-password"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-4 font-mono"
+          value={key}
+          onChange={(e) => setKey(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && void submit()}
+          autoComplete="off"
         />
         {err && (
           <p className="text-sm text-red-600 mb-4 whitespace-pre-wrap break-words">{err}</p>
         )}
         <button
           type="button"
-          disabled={busy}
-          onClick={submit}
+          disabled={busy || !key.trim()}
+          onClick={() => void submit()}
           className="w-full py-2.5 text-sm font-semibold rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50"
         >
-          {busy ? "Signing in…" : "Sign in"}
+          {busy ? "Checking…" : "Continue"}
         </button>
         <button
           type="button"
           className="mt-3 w-full text-sm text-gray-600 hover:text-gray-900"
           onClick={() => {
-            setStoredToken(null);
-            setErr("Session cleared.");
+            setStoredAdminKey(null);
+            setKey("");
+            setErr("Stored key cleared.");
           }}
         >
-          Clear stored token
+          Clear stored key
         </button>
       </div>
     </div>
@@ -106,7 +94,6 @@ export default function App() {
   );
   const [authRequired, setAuthRequired] = useState<boolean | null>(null);
   const [sessionOk, setSessionOk] = useState(false);
-  const [me, setMe] = useState<MeResponse | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -119,14 +106,17 @@ export default function App() {
           setSessionOk(true);
           return;
         }
-        const tok = getStoredToken();
-        if (!tok) {
+        const k = getStoredAdminKey();
+        if (!k) {
           setSessionOk(false);
           return;
         }
-        const m = await fetchMe();
-        if (cancelled) return;
-        setMe(m);
+        try {
+          await fetchDashboardAnalytics();
+        } catch {
+          setSessionOk(false);
+          return;
+        }
         setSessionOk(true);
       } catch {
         if (cancelled) return;
@@ -146,9 +136,6 @@ export default function App() {
 
   function onLoggedIn() {
     setSessionOk(true);
-    fetchMe()
-      .then(setMe)
-      .catch(() => setMe(null));
   }
 
   if (authRequired === null) {
@@ -160,7 +147,7 @@ export default function App() {
   }
 
   if (authRequired && !sessionOk) {
-    return <LoginScreen onLoggedIn={onLoggedIn} />;
+    return <AdminKeyScreen onLoggedIn={onLoggedIn} />;
   }
 
   return (
@@ -172,12 +159,13 @@ export default function App() {
               Resume Builder Dashboard
             </h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              Generations, application screenshots, and pipeline analytics
+              Generations, application screenshots, pipeline analytics, and server-registered
+              profiles
             </p>
-            {me && (
+            {authRequired && (
               <p className="text-xs text-gray-600 mt-2">
-                {me.email}
-                {me.is_admin ? " · admin" : ""} · generations: {me.generation_count}
+                Authenticated with admin API key (header{" "}
+                <code className="text-xs bg-gray-100 px-1 rounded">X-Admin-Key</code>)
               </p>
             )}
           </div>
@@ -186,13 +174,12 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => {
-                  setStoredToken(null);
+                  setStoredAdminKey(null);
                   setSessionOk(false);
-                  setMe(null);
                 }}
                 className="text-xs font-medium text-gray-600 hover:text-gray-900 underline"
               >
-                Log out
+                Clear admin key
               </button>
             )}
             <nav className="flex flex-wrap gap-2" aria-label="Main">
@@ -226,6 +213,7 @@ export default function App() {
         {nav === "analytics" && (
           <AnalyticsView onViewResumesForStage={goToResumesForStage} />
         )}
+        {nav === "profiles" && <RegisteredProfilesView />}
       </main>
     </div>
   );

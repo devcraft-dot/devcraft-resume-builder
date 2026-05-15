@@ -1,4 +1,4 @@
-"""All API endpoints — single router for the simplified resume-generation backend."""
+"""API endpoints for resume generation."""
 
 from __future__ import annotations
 
@@ -7,12 +7,13 @@ import math
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
+from sqlalchemy import true as sql_true
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.core.deps import auth_enabled, ensure_generation_owner, get_current_user_optional
+from app.core.deps import ApiAccess, auth_enabled, ensure_generation_owner, require_extension_or_admin
 from app.models.generation import Generation
-from app.models.user import User
+from app.models.registered_profile import RegisteredProfile
 from app.schemas.generate import (
     ALLOWED_MODELS,
     CheckGenerationKeysRequest,
@@ -40,13 +41,17 @@ PIPELINE_STAGES = frozenset(
 )
 
 
-def _owner_clause(user: User | None):
-    if user is None:
-        return Generation.user_id.is_(None)
-    return Generation.user_id == user.id
+def _owner_clause(access: ApiAccess):
+    if not auth_enabled():
+        return Generation.client_username.is_(None)
+    if access.is_admin:
+        return sql_true()
+    if access.extension is not None:
+        return Generation.client_username == access.extension.username
+    return Generation.client_username.is_(None)
 
 
-def _run_generate(payload: GenerateRequest, db: Session, user: User | None) -> Generation:
+def _run_generate(payload: GenerateRequest, db: Session, access: ApiAccess) -> Generation:
     if payload.model not in ALLOWED_MODELS:
         raise HTTPException(400, f"Invalid model. Choose from: {list(ALLOWED_MODELS)}")
 
@@ -56,7 +61,7 @@ def _run_generate(payload: GenerateRequest, db: Session, user: User | None) -> G
         select(Generation).where(
             Generation.url == payload.url,
             Generation.profile_name == profile_name,
-            _owner_clause(user),
+            _owner_clause(access),
         )
     )
     if existing:
@@ -86,8 +91,11 @@ def _run_generate(payload: GenerateRequest, db: Session, user: User | None) -> G
             [resume_buf, jd_buf, answers_buf]
         )
 
+        cx = access.extension.username if access.extension else None
+
         gen = Generation(
-            user_id=user.id if user else None,
+            user_id=None,
+            client_username=cx,
             profile_name=profile_name,
             stage="generated",
             title=payload.title,
@@ -136,22 +144,34 @@ def _run_generate(payload: GenerateRequest, db: Session, user: User | None) -> G
 def generate(
     payload: GenerateRequest,
     db: Session = Depends(get_db),
-    user: User | None = Depends(get_current_user_optional),
+    access: ApiAccess = Depends(require_extension_or_admin),
 ):
-    if auth_enabled() and user is None:
+    if auth_enabled() and not access.is_admin and access.extension is None:
         raise HTTPException(401, "Authentication required")
-    return _run_generate(payload, db, user)
+    return _run_generate(payload, db, access)
 
 
 @router.post("/generate/manual", response_model=GenerationRead)
 def generate_manual(
     payload: ManualGenerateRequest,
     db: Session = Depends(get_db),
-    user: User | None = Depends(get_current_user_optional),
+    access: ApiAccess = Depends(require_extension_or_admin),
 ):
-    if auth_enabled() and user is None:
+    if auth_enabled() and not access.is_admin and access.extension is None:
         raise HTTPException(401, "Authentication required")
     profile_name = (payload.profile_name or "").strip() or "default"
+    profile_text = (payload.profile_text or "").strip()
+
+    if auth_enabled() and access.extension is not None:
+        if profile_name not in access.extension.profile_names:
+            raise HTTPException(403, "Profile name not allowed for this token")
+        rp = db.scalar(select(RegisteredProfile).where(RegisteredProfile.name == profile_name))
+        if rp is None:
+            raise HTTPException(400, f"Profile {profile_name!r} is not registered on the server")
+        profile_text = (rp.profile_text or "").strip()
+        if not profile_text:
+            raise HTTPException(400, "Registered profile has empty text")
+
     canonical_url = canonical_url_for_manual_entry(
         profile_name=profile_name,
         title=payload.title,
@@ -167,19 +187,19 @@ def generate_manual(
         salary_range=payload.salary_range,
         questions=payload.questions,
         profile_name=profile_name,
-        profile_text=payload.profile_text,
+        profile_text=profile_text,
         model=payload.model,
     )
-    return _run_generate(inner, db, user)
+    return _run_generate(inner, db, access)
 
 
 @router.post("/check-generation-keys", response_model=CheckGenerationKeysResponse)
 def check_generation_keys(
     payload: CheckGenerationKeysRequest,
     db: Session = Depends(get_db),
-    user: User | None = Depends(get_current_user_optional),
+    access: ApiAccess = Depends(require_extension_or_admin),
 ) -> CheckGenerationKeysResponse:
-    if auth_enabled() and user is None:
+    if auth_enabled() and not access.is_admin and access.extension is None:
         raise HTTPException(401, "Authentication required")
     items = payload.items or []
     if not items:
@@ -192,7 +212,7 @@ def check_generation_keys(
         q = select(Generation.id).where(
             Generation.url == url,
             Generation.profile_name == pn,
-            _owner_clause(user),
+            _owner_clause(access),
         )
         exists = db.scalar(q) is not None
         out.append(GenerationPresenceResult(url=item.url, profile_name=pn, exists=exists))
@@ -203,9 +223,9 @@ def check_generation_keys(
 def check_urls(
     payload: CheckUrlsRequest,
     db: Session = Depends(get_db),
-    user: User | None = Depends(get_current_user_optional),
+    access: ApiAccess = Depends(require_extension_or_admin),
 ) -> dict[str, bool]:
-    if auth_enabled() and user is None:
+    if auth_enabled() and not access.is_admin and access.extension is None:
         raise HTTPException(401, "Authentication required")
     if not payload.urls:
         return {}
@@ -213,10 +233,14 @@ def check_urls(
     if not unique:
         return {}
     stmt = select(Generation.url).where(Generation.url.in_(unique))
-    if user is None:
-        stmt = stmt.where(Generation.user_id.is_(None))
+    if not auth_enabled():
+        stmt = stmt.where(Generation.client_username.is_(None))
+    elif access.extension is not None:
+        stmt = stmt.where(Generation.client_username == access.extension.username)
+    elif access.is_admin:
+        pass
     else:
-        stmt = stmt.where(Generation.user_id == user.id)
+        stmt = stmt.where(Generation.client_username.is_(None))
     existing = set(db.scalars(stmt).all())
     return {u: u.strip() in existing for u in payload.urls}
 
@@ -228,16 +252,16 @@ def list_generations(
     q: str | None = Query(None, description="Search title or company"),
     stage: str | None = Query(None, description="Filter by pipeline stage"),
     db: Session = Depends(get_db),
-    user: User | None = Depends(get_current_user_optional),
+    access: ApiAccess = Depends(require_extension_or_admin),
 ):
-    if auth_enabled() and user is None:
+    if auth_enabled() and not access.is_admin and access.extension is None:
         raise HTTPException(401, "Authentication required")
     stmt = select(Generation)
     count_stmt = select(func.count()).select_from(Generation)
 
-    if user is not None and not user.is_admin:
-        stmt = stmt.where(Generation.user_id == user.id)
-        count_stmt = count_stmt.where(Generation.user_id == user.id)
+    if auth_enabled() and access.extension is not None and not access.is_admin:
+        stmt = stmt.where(Generation.client_username == access.extension.username)
+        count_stmt = count_stmt.where(Generation.client_username == access.extension.username)
 
     if stage and stage.strip():
         st = stage.strip().lower()
@@ -273,14 +297,14 @@ def list_generations(
 def get_generation(
     gen_id: int,
     db: Session = Depends(get_db),
-    user: User | None = Depends(get_current_user_optional),
+    access: ApiAccess = Depends(require_extension_or_admin),
 ):
-    if auth_enabled() and user is None:
+    if auth_enabled() and not access.is_admin and access.extension is None:
         raise HTTPException(401, "Authentication required")
     gen = db.get(Generation, gen_id)
     if not gen:
         raise HTTPException(404, "Generation not found")
-    ensure_generation_owner(gen.user_id, user)
+    ensure_generation_owner(gen.client_username, access.extension, access.is_admin)
     return gen
 
 
@@ -289,14 +313,14 @@ def patch_generation(
     gen_id: int,
     payload: GenerationPatch,
     db: Session = Depends(get_db),
-    user: User | None = Depends(get_current_user_optional),
+    access: ApiAccess = Depends(require_extension_or_admin),
 ):
-    if auth_enabled() and user is None:
+    if auth_enabled() and not access.is_admin and access.extension is None:
         raise HTTPException(401, "Authentication required")
     gen = db.get(Generation, gen_id)
     if not gen:
         raise HTTPException(404, "Generation not found")
-    ensure_generation_owner(gen.user_id, user)
+    ensure_generation_owner(gen.client_username, access.extension, access.is_admin)
 
     data = payload.model_dump(exclude_unset=True)
     if not data:
@@ -314,13 +338,13 @@ def patch_generation(
 def delete_generation(
     gen_id: int,
     db: Session = Depends(get_db),
-    user: User | None = Depends(get_current_user_optional),
+    access: ApiAccess = Depends(require_extension_or_admin),
 ):
-    if auth_enabled() and user is None:
+    if auth_enabled() and not access.is_admin and access.extension is None:
         raise HTTPException(401, "Authentication required")
     gen = db.get(Generation, gen_id)
     if not gen:
         raise HTTPException(404, "Generation not found")
-    ensure_generation_owner(gen.user_id, user)
+    ensure_generation_owner(gen.client_username, access.extension, access.is_admin)
     db.delete(gen)
     db.commit()

@@ -1,64 +1,102 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from fastapi import Depends, Header, HTTPException
-from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.db import get_db
-from app.core.security import decode_access_token
-from app.models.user import User
+from app.core.security import decode_extension_principal
 
 
 def auth_enabled() -> bool:
-    """When True, protected routes require a valid Bearer JWT (signed with JWT_SECRET)."""
     return bool((settings.jwt_secret or "").strip())
 
 
-def _admin_email_set() -> set[str]:
-    raw = (settings.admin_emails or "").strip()
-    if not raw:
-        return set()
-    return {p.strip().lower() for p in raw.split(",") if p.strip()}
+def admin_key_valid(x_admin_key: str | None) -> bool:
+    expected = (settings.admin_api_key or "").strip()
+    if not expected:
+        return False
+    return (x_admin_key or "").strip() == expected
 
 
-def admin_emails_set() -> set[str]:
-    return _admin_email_set()
+@dataclass(frozen=True)
+class ExtensionCaller:
+    """Decoded extension JWT: client username + profile names allowed for this token."""
+
+    username: str
+    profile_names: frozenset[str]
 
 
-def get_current_user_optional(
+def get_extension_caller(
     authorization: str | None = Header(None, alias="Authorization"),
-    db: Session = Depends(get_db),
-) -> User | None:
-    """Identify user from JWT only — no session store."""
+) -> ExtensionCaller | None:
     if not auth_enabled():
         return None
     if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+        return None
     token = authorization[7:].strip()
     if not token:
-        raise HTTPException(status_code=401, detail="Missing token")
-    try:
-        payload = decode_access_token(token)
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid or expired token") from None
-    sub = payload.get("sub")
-    if not sub:
-        raise HTTPException(status_code=401, detail="Invalid token payload")
-    try:
-        uid = int(sub)
-    except (TypeError, ValueError):
-        raise HTTPException(status_code=401, detail="Invalid token subject")
-    user = db.get(User, uid)
-    if not user:
-        raise HTTPException(status_code=401, detail="User no longer exists")
-    return user
+        return None
+    username, names = decode_extension_principal(token)
+    return ExtensionCaller(username=username, profile_names=names)
 
 
-def ensure_generation_owner(gen_user_id: int | None, user: User | None) -> None:
-    """Raise 403 if a non-admin tries to access another user's row (when auth is on)."""
-    if not auth_enabled() or user is None:
+@dataclass(frozen=True)
+class ApiAccess:
+    extension: ExtensionCaller | None
+    is_admin: bool
+
+
+def require_extension_or_admin(
+    authorization: str | None = Header(None, alias="Authorization"),
+    x_admin_key: str | None = Header(None, alias="X-Admin-Key"),
+) -> ApiAccess:
+    """
+    When auth is enabled: require either valid X-Admin-Key (dashboard) or Bearer extension JWT.
+    """
+    if not auth_enabled():
+        return ApiAccess(extension=None, is_admin=False)
+    if admin_key_valid(x_admin_key):
+        return ApiAccess(extension=None, is_admin=True)
+    ext = get_extension_caller(authorization=authorization)
+    if ext is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Send Authorization: Bearer <extension token> or X-Admin-Key for dashboard.",
+        )
+    return ApiAccess(extension=ext, is_admin=False)
+
+
+def require_extension_token(
+    authorization: str | None = Header(None, alias="Authorization"),
+) -> ExtensionCaller:
+    """Strict: must be Bearer extension JWT (no admin key). Used for extension-only endpoints."""
+    if not auth_enabled():
+        raise HTTPException(400, "JWT_SECRET is not set — extension token not used")
+    ext = get_extension_caller(authorization=authorization)
+    if ext is None:
+        raise HTTPException(401, "Missing or invalid Authorization Bearer token")
+    return ext
+
+
+def require_admin_key(x_admin_key: str | None = Header(None, alias="X-Admin-Key")) -> None:
+    if not admin_key_valid(x_admin_key):
+        raise HTTPException(403, "Invalid or missing X-Admin-Key")
+
+
+def ensure_generation_owner(
+    gen_client_username: str | None,
+    ext: ExtensionCaller | None,
+    is_admin: bool,
+) -> None:
+    if not auth_enabled():
         return
-    if user.is_admin:
+    if is_admin:
         return
-    if gen_user_id is None or gen_user_id != user.id:
-        raise HTTPException(status_code=403, detail="Not allowed for this generation")
+    if ext is None:
+        raise HTTPException(status_code=403, detail="Not allowed")
+    owner = (gen_client_username or "").strip() or None
+    if owner is None:
+        raise HTTPException(status_code=403, detail="This row has no owner — admin only")
+    if owner != ext.username:
+        raise HTTPException(status_code=403, detail="Not your generation")

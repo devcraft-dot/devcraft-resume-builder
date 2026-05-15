@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 
+from app.api.routes.admin_profiles import router as admin_profiles_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.generate import router as generate_router
@@ -10,6 +11,7 @@ from app.core.config import settings
 
 import app.models.application_screenshot as _application_screenshot_model  # noqa: F401
 import app.models.generation as _generation_model  # noqa: F401 — register tables
+import app.models.registered_profile as _registered_profile_model  # noqa: F401
 import app.models.user as _user_model  # noqa: F401
 
 app = FastAPI(title=settings.app_name)
@@ -58,6 +60,7 @@ async def cors_preflight(full_path: str, request: Request) -> Response:
 
 
 app.include_router(auth_router)
+app.include_router(admin_profiles_router)
 app.include_router(generate_router)
 app.include_router(dashboard_router)
 app.include_router(upload_router)

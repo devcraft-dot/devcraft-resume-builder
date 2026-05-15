@@ -4,9 +4,8 @@ from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.db import get_db
-from app.core.deps import auth_enabled, get_current_user_optional
+from app.core.deps import ApiAccess, auth_enabled, require_extension_or_admin
 from app.models.generation import Generation
-from app.models.user import User
 from app.schemas.dashboard import (
     DashboardAnalytics,
     ModelBreakdown,
@@ -29,28 +28,32 @@ _passed_resume_check_expr = case(
 )
 
 
-def _scope_generations(user, stmt):
-    if user is not None and not user.is_admin:
-        return stmt.where(Generation.user_id == user.id)
+def _scope_generations(access: ApiAccess, stmt):
+    if not auth_enabled():
+        return stmt
+    if access.is_admin:
+        return stmt
+    if access.extension is not None:
+        return stmt.where(Generation.client_username == access.extension.username)
     return stmt
 
 
 @router.get("/dashboard/analytics", response_model=DashboardAnalytics)
 def dashboard_analytics(
     db: Session = Depends(get_db),
-    user: User | None = Depends(get_current_user_optional),
+    access: ApiAccess = Depends(require_extension_or_admin),
 ) -> DashboardAnalytics:
-    if auth_enabled() and user is None:
+    if auth_enabled() and not access.is_admin and access.extension is None:
         raise HTTPException(401, "Authentication required")
 
     q0 = select(func.count(Generation.id), func.sum(_passed_resume_check_expr)).select_from(Generation)
-    q0 = _scope_generations(user, q0)
+    q0 = _scope_generations(access, q0)
     total_g, passed_total = db.execute(q0).one()
     total_g = int(total_g or 0)
     passed_total = int(passed_total or 0)
 
     q1 = _scope_generations(
-        user,
+        access,
         select(Generation.stage, func.count(Generation.id)).select_from(Generation).group_by(Generation.stage),
     )
     stage_rows = db.execute(q1).all()
@@ -91,7 +94,7 @@ def dashboard_analytics(
         .group_by(Generation.model_name)
         .order_by(func.count(Generation.id).desc())
     )
-    q_model = _scope_generations(user, q_model)
+    q_model = _scope_generations(access, q_model)
     model_rows = db.execute(q_model).all()
 
     by_model = [
@@ -127,7 +130,7 @@ def dashboard_analytics(
         .group_by(Generation.profile_name)
         .order_by(func.count(Generation.id).desc())
     )
-    q_prof = _scope_generations(user, q_prof)
+    q_prof = _scope_generations(access, q_prof)
     profile_rows = db.execute(q_prof).all()
 
     by_profile = [

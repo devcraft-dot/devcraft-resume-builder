@@ -28,10 +28,12 @@ class Settings(BaseSettings):
     google_sheet_worksheet: str = "Sheet1"
 
     # Auth: stateless JWT (HS256). Set JWT_SECRET in the environment (e.g. deploy secrets).
-    # No server-side sessions — clients send Authorization: Bearer <token> on each request.
     jwt_secret: str = ""
     jwt_expire_minutes: int = 60 * 24 * 7
-    admin_emails: str = ""
+    # Dashboard + admin API: header X-Admin-Key must match to manage server profiles / see all data.
+    admin_api_key: str = ""
+    # Optional: require same value in POST /api/auth/extension-token body mint_secret (shared with extension).
+    extension_mint_secret: str = ""
 
     model_config = SettingsConfigDict(
         env_file=str(_APP_DIR / ".env") if (_APP_DIR / ".env").exists() else None,

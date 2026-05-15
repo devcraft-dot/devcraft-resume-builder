@@ -9,9 +9,9 @@ const {
   fetchAuthConfig,
   getAccessToken,
   setAccessToken,
-  postAuthLogin,
-  postAuthRegister,
-  fetchMe,
+  postExtensionToken,
+  fetchAuthWhoami,
+  fetchExtensionProfiles,
 } = globalThis.ManualJD;
 
 function setStatus(text, kind) {
@@ -28,7 +28,6 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
     document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
     btn.classList.add("active");
     $(`#panel-${btn.dataset.tab}`)?.classList.add("active");
-    if (btn.dataset.tab === "account") refreshAccountPanel();
     if (btn.dataset.tab === "run") refreshAuthBanner();
   });
 });
@@ -94,12 +93,18 @@ function collectProfiles() {
 }
 
 function loadProfiles() {
-  chrome.storage.sync.get({ profiles: [] }, (d) => {
+  chrome.storage.sync.get({ profiles: [], manualJd_clientUsername: "" }, (d) => {
     profiles = d.profiles || [];
     if (!profiles.length) {
       profiles.push({ name: "Default", model: "gpt-5.4-mini", text: "" });
     }
+    const u = document.getElementById("ext-client-username");
+    if (u) u.value = d.manualJd_clientUsername || "";
     renderProfiles();
+  });
+  chrome.storage.local.get({ manualJd_mintSecret: "" }, (d) => {
+    const m = document.getElementById("mint-secret");
+    if (m) m.value = d.manualJd_mintSecret || "";
   });
 }
 
@@ -109,15 +114,98 @@ $("#btn-add")?.addEventListener("click", () => {
   renderProfiles();
 });
 
+async function mintExtensionApiToken(options = {}) {
+  const silent = options.silent === true;
+  const msgEl = document.getElementById("profiles-api-msg");
+  let cfg;
+  try {
+    cfg = await fetchAuthConfig();
+  } catch (e) {
+    if (msgEl) msgEl.textContent = e?.message || String(e);
+    return false;
+  }
+  if (!cfg?.auth_required) {
+    if (msgEl && !silent) msgEl.textContent = "Server auth is off — no API token needed.";
+    return false;
+  }
+  collectProfiles();
+  const un = ($("#ext-client-username")?.value || "").trim();
+  if (!un) {
+    if (msgEl) msgEl.textContent = "Enter extension username first.";
+    return false;
+  }
+  const names = profiles.map((p) => (p.name || "").trim()).filter(Boolean);
+  if (!names.length) {
+    if (msgEl) msgEl.textContent = "Add at least one profile with a non-empty name (must match server).";
+    return false;
+  }
+  const mintSecret = ($("#mint-secret")?.value || "").trim();
+  try {
+    const data = await postExtensionToken(un, names, mintSecret);
+    await setAccessToken(data.access_token);
+    if (msgEl) msgEl.textContent = "API token saved.";
+    await refreshAuthBanner();
+    return true;
+  } catch (e) {
+    if (msgEl) msgEl.textContent = e?.message || String(e);
+    return false;
+  }
+}
+
 $("#btn-save")?.addEventListener("click", () => {
   collectProfiles();
-  chrome.storage.sync.set({ profiles }, () => {
+  const un = ($("#ext-client-username")?.value || "").trim();
+  chrome.storage.sync.set({ profiles, manualJd_clientUsername: un }, async () => {
     const el = $("#save-status");
     if (el) {
       el.textContent = "Saved";
-      setTimeout(() => (el.textContent = ""), 2000);
+      setTimeout(() => {
+        el.textContent = "";
+      }, 2000);
     }
+    await mintExtensionApiToken({ silent: true });
   });
+});
+
+$("#btn-mint-token")?.addEventListener("click", () => {
+  mintExtensionApiToken();
+});
+
+$("#btn-pull-profiles")?.addEventListener("click", async () => {
+  const msgEl = document.getElementById("profiles-api-msg");
+  collectProfiles();
+  try {
+    const cfg = await fetchAuthConfig();
+    if (!cfg?.auth_required) {
+      if (msgEl) msgEl.textContent = "Server auth is off — nothing to pull.";
+      return;
+    }
+    const tok = await getAccessToken();
+    if (!tok) {
+      if (msgEl) msgEl.textContent = "Get an API token first (Save profiles or Get API token).";
+      return;
+    }
+    const rows = await fetchExtensionProfiles();
+    if (!Array.isArray(rows)) throw new Error("Unexpected response from server");
+    const by = new Map(rows.map((r) => [(String(r.name || "")).trim(), String(r.profile_text || "")]));
+    let n = 0;
+    profiles.forEach((p) => {
+      const key = (p.name || "").trim();
+      if (key && by.has(key)) {
+        p.text = by.get(key);
+        n += 1;
+      }
+    });
+    renderProfiles();
+    if (msgEl) msgEl.textContent = n ? `Updated ${n} profile text(s) from server.` : "No matching profile names on the server for your cards.";
+  } catch (e) {
+    if (msgEl) msgEl.textContent = e?.message || String(e);
+  }
+});
+
+$("#mint-secret")?.addEventListener("change", () => {
+  const v = ($("#mint-secret")?.value || "").trim();
+  chrome.storage.local.set({ manualJd_mintSecret: v });
 });
 
 /* ─── Application questions ─────────────────────────────────────── */
@@ -379,44 +467,21 @@ async function refreshAuthBanner() {
     const token = await getAccessToken();
     if (!token) {
       banner.className = "account-banner";
-      banner.textContent = "This API requires sign-in. Open the Account tab to log in or register.";
-    } else {
+      banner.textContent =
+        "This API requires a JWT. Open Profiles: set extension username, then Save profiles or Get API token (profile names must exist on the server).";
+      return;
+    }
+    try {
+      const w = await fetchAuthWhoami();
+      const names = Array.isArray(w.profile_names) ? w.profile_names.join(", ") : "";
       banner.className = "account-banner ok";
-      banner.textContent = "Signed in — generations are attributed to your account.";
+      banner.textContent = `API token OK — user ${w.username || "?"}. Allowed profiles: ${names || "(none)"}.`;
+    } catch {
+      banner.className = "account-banner";
+      banner.textContent = "API token present but invalid or expired. Mint a new token from the Profiles tab.";
     }
   } catch {
     banner.style.display = "none";
-  }
-}
-
-async function refreshAccountPanel() {
-  const out = document.getElementById("account-msg");
-  const lo = document.getElementById("account-logged-out");
-  const li = document.getElementById("account-logged-in");
-  if (out) out.textContent = "";
-  try {
-    const cfg = await fetchAuthConfig();
-    const token = await getAccessToken();
-    if (!cfg?.auth_required) {
-      if (lo) lo.style.display = "block";
-      if (li) li.style.display = "none";
-      if (out) out.textContent = "Server has no JWT_SECRET — API runs without login. Add JWT_SECRET on the server to require accounts.";
-      return;
-    }
-    if (!token) {
-      if (lo) lo.style.display = "block";
-      if (li) li.style.display = "none";
-      return;
-    }
-    const me = await fetchMe();
-    if (lo) lo.style.display = "none";
-    if (li) li.style.display = "block";
-    const ul = document.getElementById("account-user-line");
-    const sl = document.getElementById("account-stats-line");
-    if (ul) ul.textContent = `Signed in as ${me.email}${me.is_admin ? " (admin)" : ""}.`;
-    if (sl) sl.textContent = `Your generation count: ${me.generation_count}`;
-  } catch (e) {
-    if (out) out.textContent = e?.message || String(e);
   }
 }
 
@@ -684,60 +749,6 @@ function clearApplicationForm() {
 
 $("#btn-clear-application")?.addEventListener("click", () => {
   clearApplicationForm();
-});
-
-$("#acc-login")?.addEventListener("click", async () => {
-  const email = ($("#acc-email")?.value || "").trim();
-  const password = $("#acc-password")?.value || "";
-  const out = document.getElementById("account-msg");
-  if (!email || !password) {
-    if (out) out.textContent = "Enter email and password.";
-    return;
-  }
-  try {
-    const data = await postAuthLogin(email, password);
-    await setAccessToken(data.access_token);
-    if (out) out.textContent = "Logged in.";
-    await refreshAccountPanel();
-    await refreshAuthBanner();
-  } catch (e) {
-    if (out) out.textContent = e?.message || String(e);
-  }
-});
-
-$("#acc-register")?.addEventListener("click", async () => {
-  const email = ($("#acc-email")?.value || "").trim();
-  const password = $("#acc-password")?.value || "";
-  const out = document.getElementById("account-msg");
-  if (!email || !password) {
-    if (out) out.textContent = "Enter email and password (min 8 characters).";
-    return;
-  }
-  if (password.length < 8) {
-    if (out) out.textContent = "Password must be at least 8 characters.";
-    return;
-  }
-  try {
-    const data = await postAuthRegister(email, password);
-    await setAccessToken(data.access_token);
-    if (out) out.textContent = "Account created and signed in.";
-    await refreshAccountPanel();
-    await refreshAuthBanner();
-  } catch (e) {
-    if (out) out.textContent = e?.message || String(e);
-  }
-});
-
-$("#acc-logout")?.addEventListener("click", async () => {
-  await setAccessToken("");
-  const out = document.getElementById("account-msg");
-  if (out) out.textContent = "Logged out.";
-  await refreshAccountPanel();
-  await refreshAuthBanner();
-});
-
-$("#acc-refresh-me")?.addEventListener("click", () => {
-  refreshAccountPanel();
 });
 
 function applyPendingJdFromRail() {

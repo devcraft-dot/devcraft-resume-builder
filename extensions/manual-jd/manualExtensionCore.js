@@ -257,33 +257,39 @@
     return res.json();
   }
 
-  async function postAuthLogin(email, password) {
-    const res = await fetch(`${API_URL}/api/auth/login`, {
+  async function postExtensionToken(username, profileNames, mintSecret) {
+    const body = {
+      username: String(username || "").trim(),
+      profile_names: Array.isArray(profileNames) ? profileNames : [],
+      mint_secret: String(mintSecret || "").trim(),
+    };
+    const res = await fetch(`${API_URL}/api/auth/extension-token`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(body),
     });
     const text = await res.text().catch(() => res.statusText);
     if (!res.ok) throw new Error(text || res.statusText);
     return JSON.parse(text);
   }
 
-  async function postAuthRegister(email, password) {
-    const res = await fetch(`${API_URL}/api/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    const text = await res.text().catch(() => res.statusText);
-    if (!res.ok) throw new Error(text || res.statusText);
-    return JSON.parse(text);
-  }
-
-  async function fetchMe() {
-    const res = await fetch(`${API_URL}/api/me`, { method: "GET", headers: await authJsonHeaders() });
+  async function fetchAuthWhoami() {
+    const res = await fetch(`${API_URL}/api/auth/whoami`, { method: "GET", headers: await authJsonHeaders() });
     if (!res.ok) {
-      const text = await res.text().catch(() => res.statusText);
-      throw new Error(text || res.statusText);
+      const t = await res.text().catch(() => res.statusText);
+      throw new Error(t || res.statusText);
+    }
+    return res.json();
+  }
+
+  async function fetchExtensionProfiles() {
+    const res = await fetch(`${API_URL}/api/extension/profiles`, {
+      method: "GET",
+      headers: await authJsonHeaders(),
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => res.statusText);
+      throw new Error(t || res.statusText);
     }
     return res.json();
   }
@@ -302,8 +308,8 @@
     getAccessToken,
     setAccessToken,
     fetchAuthConfig,
-    postAuthLogin,
-    postAuthRegister,
-    fetchMe,
+    postExtensionToken,
+    fetchAuthWhoami,
+    fetchExtensionProfiles,
   };
 })();

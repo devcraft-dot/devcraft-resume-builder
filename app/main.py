@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.responses import Response
+import logging
+from starlette.responses import JSONResponse, Response
 
 from app.api.routes.admin_profiles import router as admin_profiles_router
 from app.api.routes.auth import router as auth_router
@@ -17,8 +18,7 @@ import app.models.user as _user_model  # noqa: F401
 
 app = FastAPI(title=settings.app_name)
 
-# allow_credentials=True is incompatible with allow_origins=["*"] (Starlette/FastAPI).
-# Outer middleware overwrites Access-Control-Allow-Origin to echo known Origins (e.g. *.vercel.app).
+logger = logging.getLogger(__name__)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -31,12 +31,27 @@ app.add_middleware(
 
 @app.middleware("http")
 async def ensure_cors_allow_origin(request: Request, call_next):
-    """Always set ACAO on the final response (Vercel / proxies sometimes omit CORSMiddleware headers)."""
-    response = await call_next(request)
+    """Set CORS on every response, including 500s (unhandled errors skip inner CORSMiddleware response path)."""
+    try:
+        response = await call_next(request)
+    except Exception:
+        logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+        response = JSONResponse(
+            status_code=500,
+            content={"detail": "Internal Server Error"},
+        )
     acao = access_control_allow_origin(request)
     response.headers["Access-Control-Allow-Origin"] = acao
     if acao != "*":
         response.headers["Vary"] = "Origin"
+    response.headers.setdefault(
+        "Access-Control-Allow-Headers",
+        "Authorization, Content-Type, X-Admin-Key, Accept",
+    )
+    response.headers.setdefault(
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+    )
     return response
 
 

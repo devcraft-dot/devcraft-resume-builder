@@ -21,7 +21,8 @@ router = APIRouter(prefix="/api", tags=["auth"])
 
 class ExtensionTokenRequest(BaseModel):
     username: str = Field(..., min_length=1, max_length=200)
-    profile_names: list[str] = Field(..., min_length=1, max_length=80)
+    # Empty list = mint token for every RegisteredProfile on the server (sorted, max 80).
+    profile_names: list[str] = Field(default_factory=list, max_length=80)
     mint_secret: str = Field("", max_length=500)
 
 
@@ -53,16 +54,24 @@ def mint_extension_token(payload: ExtensionTokenRequest, db: Session = Depends(g
     ms = (settings.extension_mint_secret or "").strip()
     if ms and (payload.mint_secret or "").strip() != ms:
         raise HTTPException(403, "Invalid mint_secret")
-    names = sorted({(n or "").strip() for n in payload.profile_names if (n or "").strip()})[:80]
-    if not names:
-        raise HTTPException(400, "profile_names must contain at least one non-empty name")
+    names_explicit = sorted({(n or "").strip() for n in payload.profile_names if (n or "").strip()})[:80]
+    if names_explicit:
+        names = names_explicit
+        for n in names:
+            exists = db.scalar(select(RegisteredProfile.id).where(RegisteredProfile.name == n))
+            if exists is None:
+                raise HTTPException(400, f"Unknown server profile name: {n!r}")
+    else:
+        rows = db.scalars(select(RegisteredProfile).order_by(RegisteredProfile.name.asc())).all()
+        names = [(r.name or "").strip() for r in rows if (r.name or "").strip()][:80]
+        if not names:
+            raise HTTPException(
+                400,
+                "No registered profiles on the server. Ask an admin to add profiles before minting a token.",
+            )
     un = (payload.username or "").strip()[:200]
     if not un:
         raise HTTPException(400, "username required")
-    for n in names:
-        exists = db.scalar(select(RegisteredProfile.id).where(RegisteredProfile.name == n))
-        if exists is None:
-            raise HTTPException(400, f"Unknown server profile name: {n!r}")
     token = create_extension_access_token(username=un, profile_names=list(names))
     logger.info("minted extension token username=%s profiles=%s", un, names)
     return ExtensionTokenResponse(access_token=token)

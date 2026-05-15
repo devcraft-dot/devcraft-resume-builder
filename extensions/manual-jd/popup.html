@@ -175,9 +175,18 @@
     }
     .screenshot-actions button.primary { background: #7c3aed; color: #fff; border-color: #7c3aed; }
     .screenshot-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .screenshot-result { margin-top: 10px; font-size: 12px; word-break: break-all; }
-    .screenshot-result a { color: #5b21b6; font-weight: 600; }
-  </style>
+    .profile-readonly-name {
+      font-weight: 600; font-size: 14px; color: #111827; margin-bottom: 6px; word-break: break-word;
+    }
+    .profile-readonly-text {
+      font-size: 12px; line-height: 1.45; color: #374151; white-space: pre-wrap; word-break: break-word;
+      max-height: 220px; overflow-y: auto; padding: 10px; background: #f9fafb; border: 1px solid #e5e7eb;
+      border-radius: 6px; font-family: ui-monospace, monospace;
+    }
+    .profiles-empty-hint {
+      font-size: 12px; color: #6b7280; padding: 16px; text-align: center; border: 1px dashed #d1d5db;
+      border-radius: 8px; background: #fff;
+    }
 </head>
 <body>
   <div class="header">
@@ -252,10 +261,14 @@
   </div>
 
   <div id="panel-settings" class="panel">
-    <p class="hint" style="margin-bottom: 10px;">Profiles are shared with the Indeed extension. Edit here or there — same storage key.</p>
+    <p class="hint" style="margin-bottom: 10px;" id="profiles-sync-hint">
+      When the API uses <code>JWT_SECRET</code>, profile names and resume text are defined by an admin on the server — read-only here. You can still pick the <strong>AI model</strong> per profile for generation.
+    </p>
     <div class="profile-card" style="margin-bottom: 12px;">
       <div class="card-title" style="margin-bottom: 8px;">API access</div>
-      <p class="hint" style="margin-bottom: 8px;">When the server has <code>JWT_SECRET</code>, you need a token minted from your <strong>extension username</strong> and <strong>profile names</strong> (each name must exist on the server). Saving profiles re-mints the token if auth is on.</p>
+      <p class="hint" style="margin-bottom: 8px;" id="profiles-api-hint">
+        With server auth on: enter your <strong>extension username</strong>, then <strong>Get API token</strong> (includes every server-registered profile). Use <strong>Refresh from server</strong> after an admin updates profiles.
+      </p>
       <div class="field">
         <label for="ext-client-username">Extension username</label>
         <input id="ext-client-username" type="text" placeholder="e.g. cheuk-laptop" autocomplete="off" />
@@ -266,12 +279,12 @@
       </div>
       <div class="btn-row">
         <button type="button" id="btn-mint-token">Get API token</button>
-        <button type="button" class="primary" id="btn-pull-profiles">Pull texts from server</button>
+        <button type="button" class="primary" id="btn-pull-profiles">Refresh from server</button>
       </div>
       <p id="profiles-api-msg" class="hint" style="margin-top: 8px;"></p>
     </div>
     <div id="profiles-container"></div>
-    <div class="btn-row">
+    <div id="profiles-local-actions" class="btn-row">
       <button type="button" id="btn-add">Add profile</button>
       <button type="button" class="primary" id="btn-save">Save profiles</button>
       <span id="save-status" class="save-status"></span>

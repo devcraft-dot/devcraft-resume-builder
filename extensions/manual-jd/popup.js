@@ -29,24 +29,96 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
     btn.classList.add("active");
     $(`#panel-${btn.dataset.tab}`)?.classList.add("active");
     if (btn.dataset.tab === "run") refreshAuthBanner();
+    if (btn.dataset.tab === "settings") {
+      void refreshAuthMode().then(() => renderProfiles());
+    }
   });
 });
 
-/* ─── Profiles (same storage as Indeed: chrome.storage.sync profiles) ─ */
+/* ─── Profiles (chrome.storage.sync "profiles"; server-owned when JWT auth on) ─ */
 let profiles = [];
+/** When true (API has JWT_SECRET), names/text are read-only; mint uses all server profiles. */
+let serverLockedProfiles = false;
+
+async function refreshAuthMode() {
+  try {
+    const c = await fetchAuthConfig();
+    serverLockedProfiles = !!c?.auth_required;
+  } catch {
+    serverLockedProfiles = false;
+  }
+  const localRow = document.getElementById("profiles-local-actions");
+  if (localRow) localRow.style.display = serverLockedProfiles ? "none" : "flex";
+  const syncHint = document.getElementById("profiles-sync-hint");
+  const apiHint = document.getElementById("profiles-api-hint");
+  if (syncHint) {
+    syncHint.textContent = serverLockedProfiles
+      ? "When the API uses JWT_SECRET, profile names and resume text are defined by an admin on the server — read-only here. You can still pick the AI model per profile for generation."
+      : "Profiles are shared with the Indeed extension. Edit here or there — same storage key.";
+  }
+  if (apiHint) {
+    apiHint.textContent = serverLockedProfiles
+      ? "Enter your extension username, then Get API token (loads every server-registered profile). Refresh from server after an admin changes profiles."
+      : "When the server has JWT_SECRET, use Get API token and Refresh from server. Otherwise edit profiles below and Save.";
+  }
+}
 
 function esc(s) {
   return (s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+}
+
+function collectProfileModelsOnly() {
+  document.querySelectorAll(".p-model").forEach((el) => {
+    const i = parseInt(el.dataset.idx, 10);
+    if (!Number.isNaN(i) && profiles[i]) profiles[i].model = el.value;
+  });
+}
+
+function persistProfilesToSync() {
+  const un = ($("#ext-client-username")?.value || "").trim();
+  chrome.storage.sync.set({ profiles, manualJd_clientUsername: un });
 }
 
 function renderProfiles() {
   const container = $("#profiles-container");
   if (!container) return;
   container.innerHTML = "";
+  if (serverLockedProfiles && !profiles.length) {
+    const empty = document.createElement("div");
+    empty.className = "profiles-empty-hint";
+    empty.textContent =
+      "No profiles loaded yet. Enter your extension username and click Get API token (or Refresh from server if you already have a token).";
+    container.appendChild(empty);
+    return;
+  }
   profiles.forEach((p, i) => {
     const card = document.createElement("div");
     card.className = "profile-card";
-    card.innerHTML = `
+    if (serverLockedProfiles) {
+      card.innerHTML = `
+      <div class="card-header">
+        <span class="card-title">Profile #${i + 1}</span>
+      </div>
+      <div class="field">
+        <label>Profile name</label>
+        <div class="profile-readonly-name">${esc((p.name || "").trim() || "—")}</div>
+      </div>
+      <div class="field">
+        <label>AI model</label>
+        <select class="p-model" data-idx="${i}">
+          <option value="gpt-5.4-mini" ${p.model === "gpt-5.4-mini" ? "selected" : ""}>GPT-5.4 Mini</option>
+          <option value="gpt-5.4" ${p.model === "gpt-5.4" ? "selected" : ""}>GPT-5.4</option>
+          <option value="deepseek" ${p.model === "deepseek" ? "selected" : ""}>DeepSeek Chat</option>
+          <option value="deepseek-reasoner" ${p.model === "deepseek-reasoner" ? "selected" : ""}>DeepSeek Reasoner</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Profile text (from server)</label>
+        <div class="profile-readonly-text">${esc(p.text || "")}</div>
+      </div>
+    `;
+    } else {
+      card.innerHTML = `
       <div class="card-header">
         <span class="card-title">Profile #${i + 1}</span>
         ${profiles.length > 1 ? `<button type="button" class="btn-delete" data-idx="${i}" title="Delete">&times;</button>` : ""}
@@ -69,18 +141,32 @@ function renderProfiles() {
         <textarea class="p-text" data-idx="${i}" placeholder="Full resume / profile text…">${esc(p.text)}</textarea>
       </div>
     `;
+    }
     container.appendChild(card);
   });
 
-  container.querySelectorAll(".btn-delete").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      profiles.splice(parseInt(btn.dataset.idx, 10), 1);
-      renderProfiles();
+  if (!serverLockedProfiles) {
+    container.querySelectorAll(".btn-delete").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        profiles.splice(parseInt(btn.dataset.idx, 10), 1);
+        renderProfiles();
+      });
+    });
+  }
+
+  container.querySelectorAll(".p-model").forEach((el) => {
+    el.addEventListener("change", () => {
+      collectProfileModelsOnly();
+      persistProfilesToSync();
     });
   });
 }
 
 function collectProfiles() {
+  if (serverLockedProfiles) {
+    collectProfileModelsOnly();
+    return;
+  }
   document.querySelectorAll(".p-name").forEach((el) => {
     profiles[el.dataset.idx].name = el.value.trim();
   });
@@ -92,15 +178,19 @@ function collectProfiles() {
   });
 }
 
-function loadProfiles() {
-  chrome.storage.sync.get({ profiles: [], manualJd_clientUsername: "" }, (d) => {
-    profiles = d.profiles || [];
-    if (!profiles.length) {
-      profiles.push({ name: "Default", model: "gpt-5.4-mini", text: "" });
-    }
-    const u = document.getElementById("ext-client-username");
-    if (u) u.value = d.manualJd_clientUsername || "";
-    renderProfiles();
+async function loadProfiles() {
+  await refreshAuthMode();
+  await new Promise((resolve) => {
+    chrome.storage.sync.get({ profiles: [], manualJd_clientUsername: "" }, (d) => {
+      profiles = d.profiles || [];
+      if (!profiles.length && !serverLockedProfiles) {
+        profiles.push({ name: "Default", model: "gpt-5.4-mini", text: "" });
+      }
+      const u = document.getElementById("ext-client-username");
+      if (u) u.value = d.manualJd_clientUsername || "";
+      renderProfiles();
+      resolve();
+    });
   });
   chrome.storage.local.get({ manualJd_mintSecret: "" }, (d) => {
     const m = document.getElementById("mint-secret");
@@ -109,10 +199,45 @@ function loadProfiles() {
 }
 
 $("#btn-add")?.addEventListener("click", () => {
+  if (serverLockedProfiles) return;
   collectProfiles();
   profiles.push({ name: "", model: "gpt-5.4-mini", text: "" });
   renderProfiles();
 });
+
+async function pullProfilesFromServer(showMessage = true) {
+  const msgEl = document.getElementById("profiles-api-msg");
+  try {
+    const cfg = await fetchAuthConfig();
+    if (!cfg?.auth_required) {
+      if (msgEl && showMessage) msgEl.textContent = "Server auth is off — nothing to pull.";
+      return;
+    }
+    const tok = await getAccessToken();
+    if (!tok) {
+      if (msgEl && showMessage) msgEl.textContent = "Get an API token first.";
+      return;
+    }
+    const rows = await fetchExtensionProfiles();
+    if (!Array.isArray(rows)) throw new Error("Unexpected response from server");
+    const prevModel = new Map(profiles.map((p) => [(String(p.name || "")).trim(), p.model]));
+    profiles = rows.map((r) => ({
+      name: String(r.name || "").trim(),
+      text: String(r.profile_text || ""),
+      model: prevModel.get(String(r.name || "").trim()) || "gpt-5.4-mini",
+    }));
+    renderProfiles();
+    persistProfilesToSync();
+    if (msgEl && showMessage) {
+      msgEl.textContent = profiles.length
+        ? `Loaded ${profiles.length} profile(s) from server.`
+        : "Server returned no profiles for this token.";
+    }
+  } catch (e) {
+    if (msgEl && showMessage) msgEl.textContent = e?.message || String(e);
+    throw e;
+  }
+}
 
 async function mintExtensionApiToken(options = {}) {
   const silent = options.silent === true;
@@ -128,22 +253,33 @@ async function mintExtensionApiToken(options = {}) {
     if (msgEl && !silent) msgEl.textContent = "Server auth is off — no API token needed.";
     return false;
   }
-  collectProfiles();
   const un = ($("#ext-client-username")?.value || "").trim();
   if (!un) {
     if (msgEl) msgEl.textContent = "Enter extension username first.";
     return false;
   }
-  const names = profiles.map((p) => (p.name || "").trim()).filter(Boolean);
-  if (!names.length) {
-    if (msgEl) msgEl.textContent = "Add at least one profile with a non-empty name (must match server).";
-    return false;
+  if (!serverLockedProfiles) {
+    collectProfiles();
+    const names = profiles.map((p) => (p.name || "").trim()).filter(Boolean);
+    if (!names.length) {
+      if (msgEl) msgEl.textContent = "Add at least one profile with a non-empty name.";
+      return false;
+    }
   }
   const mintSecret = ($("#mint-secret")?.value || "").trim();
   try {
-    const data = await postExtensionToken(un, names, mintSecret);
+    const profileNamesForMint = serverLockedProfiles ? [] : profiles.map((p) => (p.name || "").trim()).filter(Boolean);
+    const data = await postExtensionToken(un, profileNamesForMint, mintSecret);
     await setAccessToken(data.access_token);
-    if (msgEl) msgEl.textContent = "API token saved.";
+    let pulledOk = false;
+    try {
+      await pullProfilesFromServer(false);
+      pulledOk = true;
+    } catch (e2) {
+      if (msgEl && !silent) msgEl.textContent = `Token saved; could not refresh profiles: ${e2?.message || e2}`;
+    }
+    if (pulledOk && msgEl && !silent) msgEl.textContent = "API token saved. Profiles loaded from server.";
+    if (pulledOk && msgEl && silent) msgEl.textContent = "";
     await refreshAuthBanner();
     return true;
   } catch (e) {
@@ -153,6 +289,7 @@ async function mintExtensionApiToken(options = {}) {
 }
 
 $("#btn-save")?.addEventListener("click", () => {
+  if (serverLockedProfiles) return;
   collectProfiles();
   const un = ($("#ext-client-username")?.value || "").trim();
   chrome.storage.sync.set({ profiles, manualJd_clientUsername: un }, async () => {
@@ -173,34 +310,15 @@ $("#btn-mint-token")?.addEventListener("click", () => {
 
 $("#btn-pull-profiles")?.addEventListener("click", async () => {
   const msgEl = document.getElementById("profiles-api-msg");
-  collectProfiles();
   try {
-    const cfg = await fetchAuthConfig();
-    if (!cfg?.auth_required) {
-      if (msgEl) msgEl.textContent = "Server auth is off — nothing to pull.";
-      return;
-    }
-    const tok = await getAccessToken();
-    if (!tok) {
-      if (msgEl) msgEl.textContent = "Get an API token first (Save profiles or Get API token).";
-      return;
-    }
-    const rows = await fetchExtensionProfiles();
-    if (!Array.isArray(rows)) throw new Error("Unexpected response from server");
-    const by = new Map(rows.map((r) => [(String(r.name || "")).trim(), String(r.profile_text || "")]));
-    let n = 0;
-    profiles.forEach((p) => {
-      const key = (p.name || "").trim();
-      if (key && by.has(key)) {
-        p.text = by.get(key);
-        n += 1;
-      }
-    });
-    renderProfiles();
-    if (msgEl) msgEl.textContent = n ? `Updated ${n} profile text(s) from server.` : "No matching profile names on the server for your cards.";
-  } catch (e) {
-    if (msgEl) msgEl.textContent = e?.message || String(e);
+    await pullProfilesFromServer(true);
+  } catch {
+    /* message set inside */
   }
+});
+
+$("#ext-client-username")?.addEventListener("change", () => {
+  persistProfilesToSync();
 });
 
 $("#mint-secret")?.addEventListener("change", () => {
@@ -468,7 +586,7 @@ async function refreshAuthBanner() {
     if (!token) {
       banner.className = "account-banner";
       banner.textContent =
-        "This API requires a JWT. Open Profiles: set extension username, then Save profiles or Get API token (profile names must exist on the server).";
+        "This API requires a JWT. Open Profiles: set extension username, then Get API token (profiles come from the server).";
       return;
     }
     try {
@@ -527,7 +645,12 @@ $("#btn-start")?.addEventListener("click", async () => {
   collectProfiles();
   const usable = profiles.filter((p) => (p.text || "").trim().length > 0);
   if (!usable.length) {
-    setStatus('No profile text — open "Profiles" and paste your resume facts.', "err");
+    setStatus(
+      serverLockedProfiles
+        ? 'No profile text — open "Profiles", use Get API token, then Refresh from server.'
+        : 'No profile text — open "Profiles" and paste your resume facts.',
+      "err",
+    );
     return;
   }
 
@@ -766,8 +889,8 @@ function applyPendingJdFromRail() {
   });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  loadProfiles();
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadProfiles();
   applyPendingJdFromRail();
   initScreenshotUpload();
   refreshAuthBanner();

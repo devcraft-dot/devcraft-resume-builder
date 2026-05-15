@@ -144,6 +144,31 @@ function escHtml(s) {
 }
 
 const HISTORY_PAGE_SIZE = 100;
+const HISTORY_DISMISSED_IDS_KEY = "indeed_historyDismissedGenerationIds";
+
+async function loadDismissedHistoryIds() {
+  const r = await chrome.storage.local.get(HISTORY_DISMISSED_IDS_KEY);
+  const arr = r[HISTORY_DISMISSED_IDS_KEY];
+  const set = new Set();
+  if (Array.isArray(arr)) {
+    for (const x of arr) {
+      const n = Number(x);
+      if (Number.isFinite(n) && n > 0) set.add(n);
+    }
+  }
+  return set;
+}
+
+async function mergeDismissedHistoryIds(ids) {
+  if (!ids.length) return;
+  const cur = await loadDismissedHistoryIds();
+  for (const id of ids) cur.add(id);
+  await chrome.storage.local.set({ [HISTORY_DISMISSED_IDS_KEY]: [...cur] });
+}
+
+async function clearDismissedHistoryIds() {
+  await chrome.storage.local.remove([HISTORY_DISMISSED_IDS_KEY]);
+}
 
 function startOfLocalDay(d) {
   const x = new Date(d);
@@ -214,20 +239,30 @@ async function renderHistory() {
     const dateFilter = $("#history-date-filter")?.value || "all";
     const data = await ResumeAuth.fetchMyGenerations(API_URL, 1, HISTORY_PAGE_SIZE, order);
     const loaded = data.items || [];
-    const filtered = loaded.filter((g) => passesHistoryDateFilter(g.created_at, dateFilter));
+    const dismissed = await loadDismissedHistoryIds();
+    const notDismissed = loaded.filter((g) => !dismissed.has(Number(g.id)));
+    const filtered = notDismissed.filter((g) => passesHistoryDateFilter(g.created_at, dateFilter));
+    const hiddenInList = loaded.length - notDismissed.length;
 
     if (countEl) {
       const f = filtered.length;
       const L = loaded.length;
+      const baseHidden = hiddenInList > 0 ? ` · ${hiddenInList} hidden in this extension only` : "";
       if (!L) countEl.textContent = "0 resumes in this list.";
-      else if (dateFilter === "all" || f === L)
-        countEl.textContent = `${f} resume${f === 1 ? "" : "s"} (all loaded, up to ${HISTORY_PAGE_SIZE}).`;
+      else if (dateFilter === "all" || f === notDismissed.length)
+        countEl.textContent = `${f} resume${f === 1 ? "" : "s"} visible (all loaded, up to ${HISTORY_PAGE_SIZE})${baseHidden}.`;
       else
-        countEl.textContent = `${f} resume${f === 1 ? "" : "s"} match this filter · ${L} loaded (up to ${HISTORY_PAGE_SIZE}; widen range or Refresh if older rows are missing).`;
+        countEl.textContent = `${f} resume${f === 1 ? "" : "s"} match this filter · ${notDismissed.length} visible of ${L} loaded (up to ${HISTORY_PAGE_SIZE})${baseHidden}.`;
     }
 
     if (!loaded.length) {
       wrap.innerHTML = "<p style='padding:8px;color:#6b7280;font-size:12px'>No generations yet.</p>";
+      return;
+    }
+
+    if (!notDismissed.length) {
+      wrap.innerHTML =
+        "<p style='padding:8px;color:#6b7280;font-size:12px'>All loaded rows are hidden in this extension only. Your generations are still on the server. Use “Show hidden again” to restore the list.</p>";
       return;
     }
 
@@ -282,7 +317,7 @@ $("#history-order")?.addEventListener("change", () => renderHistory());
 
 $("#history-date-filter")?.addEventListener("change", () => renderHistory());
 
-$("#btn-history-delete-selected")?.addEventListener("click", async () => {
+$("#btn-history-hide-selected")?.addEventListener("click", async () => {
   const wrap = $("#history-table-wrap");
   if (!wrap) return;
   const ids = [];
@@ -294,13 +329,20 @@ $("#btn-history-delete-selected")?.addEventListener("click", async () => {
     alert("Select at least one row.");
     return;
   }
-  if (!confirm(`Delete ${ids.length} generation(s)? This cannot be undone.`)) return;
-  try {
-    await ResumeAuth.bulkDeleteMyGenerations(API_URL, ids);
-    await renderHistory();
-  } catch (e) {
-    alert(e?.message || "Delete failed");
-  }
+  if (
+    !confirm(
+      `Hide ${ids.length} row(s) from this extension’s list only?\n\nYour resumes stay on the server; this only cleans up the local view.`,
+    )
+  )
+    return;
+  await mergeDismissedHistoryIds(ids);
+  await renderHistory();
+});
+
+$("#btn-history-show-hidden")?.addEventListener("click", async () => {
+  if (!confirm("Show all rows again that were hidden in this extension?")) return;
+  await clearDismissedHistoryIds();
+  await renderHistory();
 });
 
 $("#btn-refresh-history")?.addEventListener("click", () => renderHistory());

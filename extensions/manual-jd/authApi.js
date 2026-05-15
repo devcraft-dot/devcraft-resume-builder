@@ -140,24 +140,6 @@ async function fetchMyGenerations(baseUrl, page = 1, pageSize = 20, order = "des
   return res.json();
 }
 
-async function bulkDeleteMyGenerations(baseUrl, ids) {
-  if (!ids?.length) return true;
-  const headers = await authHeaders({ "Content-Type": "application/json" });
-  const res = await fetch(`${baseUrl}/api/me/generations/bulk-delete`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ ids }),
-  });
-  if (res.status === 401) {
-    throw new Error("Session expired — sign in again");
-  }
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(`API ${res.status}: ${text.slice(0, 500)}`);
-  }
-  return true;
-}
-
 globalThis.ResumeAuth = {
   ACCESS_TOKEN_KEY,
   USERNAME_PREF_KEY,
@@ -174,6 +156,5 @@ globalThis.ResumeAuth = {
   syncServerProfiles,
   getServerProfiles,
   fetchMyGenerations,
-  bulkDeleteMyGenerations,
   mapServerProfile,
 };

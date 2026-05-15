@@ -359,7 +359,7 @@
   <div id="panel-history" class="panel">
     <div class="run-context-card">
       <div class="run-context-title">Your generation history</div>
-      <p class="run-context-hint">Grouped by calendar day (local time) with date/time on each row for daily reporting. Filter by date range; the counter shows how many rows match.</p>
+      <p class="run-context-hint">Grouped by calendar day (local time) with date/time on each row. “Hide selected” only clears this extension’s list — your account data on the server is unchanged.</p>
       <p id="history-count" class="run-context-hint" style="margin-top:8px;font-weight:600;color:#111827"></p>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px">
@@ -378,7 +378,8 @@
           <option value="asc">Oldest first</option>
         </select>
       </label>
-      <button type="button" id="btn-history-delete-selected" class="btn-api-errors btn-api-errors-danger">Delete selected</button>
+      <button type="button" id="btn-history-hide-selected" class="btn-api-errors">Hide selected</button>
+      <button type="button" id="btn-history-show-hidden" class="btn-api-errors">Show hidden again</button>
       <button type="button" id="btn-refresh-history" class="btn-api-errors">Refresh</button>
     </div>
     <div id="history-table-wrap" class="api-error-pre" style="margin-top:10px;max-height:400px;overflow:auto">Sign in to load history.</div>

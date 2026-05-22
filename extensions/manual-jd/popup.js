@@ -447,10 +447,24 @@ function isAshbyJobUrl(url) {
   }
 }
 
-/** @returns {"greenhouse"|"ashby"|null} */
+function isWorkableJobUrl(url) {
+  if (!url || typeof url !== "string") return false;
+  try {
+    const u = new URL(url);
+    if (u.hostname.toLowerCase() !== "apply.workable.com") return false;
+    const parts = u.pathname.split("/").filter(Boolean);
+    const jIdx = parts.findIndex((p) => p.toLowerCase() === "j");
+    return jIdx >= 0 && jIdx < parts.length - 1 && parts[jIdx + 1].length >= 4;
+  } catch {
+    return false;
+  }
+}
+
+/** @returns {"greenhouse"|"ashby"|"workable"|null} */
 function detectJobBoardFromUrl(url) {
   if (isGreenhouseJobUrl(url)) return "greenhouse";
   if (isAshbyJobUrl(url)) return "ashby";
+  if (isWorkableJobUrl(url)) return "workable";
   return null;
 }
 
@@ -469,14 +483,16 @@ async function findJobBoardTabId() {
 }
 
 function boardLabel(board) {
-  return board === "ashby" ? "Ashby" : "Greenhouse";
+  if (board === "ashby") return "Ashby";
+  if (board === "workable") return "Workable";
+  return "Greenhouse";
 }
 
 async function scrapeJobBoardFromTab() {
   const tabId = await findJobBoardTabId();
   if (tabId == null) {
     throw new Error(
-      "No supported job tab found. Open a Greenhouse posting (…greenhouse… URL with /jobs/…) or an Ashby job on jobs.ashbyhq.com, focus that tab, then try again.",
+      "No supported job tab found. Open a Greenhouse posting (…greenhouse.io…/jobs/…), Ashby (jobs.ashbyhq.com), or Workable (apply.workable.com/…/j/…), focus that tab, then try again.",
     );
   }
   const tab = await chrome.tabs.get(tabId);
@@ -485,7 +501,12 @@ async function scrapeJobBoardFromTab() {
     throw new Error("Could not detect job board from tab URL.");
   }
 
-  const file = board === "greenhouse" ? "greenhouseScrapeInjected.js" : "ashbyScrapeInjected.js";
+  const file =
+    board === "greenhouse"
+      ? "greenhouseScrapeInjected.js"
+      : board === "ashby"
+        ? "ashbyScrapeInjected.js"
+        : "workableScrapeInjected.js";
   const ashby = board === "ashby";
   await chrome.scripting.executeScript({
     target: { tabId },
@@ -493,13 +514,16 @@ async function scrapeJobBoardFromTab() {
     ...(ashby ? { world: "MAIN" } : {}),
   });
 
+  const readScrape =
+    board === "greenhouse"
+      ? () => globalThis.__MANUAL_JD_GREENHOUSE_SCRAPE__
+      : board === "ashby"
+        ? () => globalThis.__MANUAL_JD_ASHBY_SCRAPE__
+        : () => globalThis.__MANUAL_JD_WORKABLE_SCRAPE__;
   const [{ result }] = await chrome.scripting.executeScript({
     target: { tabId },
     ...(ashby ? { world: "MAIN" } : {}),
-    func:
-      board === "greenhouse"
-        ? () => globalThis.__MANUAL_JD_GREENHOUSE_SCRAPE__
-        : () => globalThis.__MANUAL_JD_ASHBY_SCRAPE__,
+    func: readScrape,
   });
   return { result, board };
 }
@@ -550,6 +574,50 @@ $("#btn-autofill-job-tab")?.addEventListener("click", async () => {
 let running = false;
 /** Last successful /api/generate/manual id (for linking application snip upload). */
 let lastManualGenerationId = null;
+
+function runFormHasContent() {
+  const fields = ["job-title", "company", "salary", "jd", "reference-url"];
+  if (fields.some((id) => (document.getElementById(id)?.value || "").trim())) return true;
+  if (document.querySelectorAll("#questions-container .q-row").length) return true;
+  if (screenshotBlob) return true;
+  const dl = $("#downloads-list");
+  if (dl?.children?.length) return true;
+  return false;
+}
+
+function clearRunForm() {
+  const ids = ["job-title", "company", "salary", "jd", "reference-url"];
+  for (const id of ids) {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  }
+  const qc = $("#questions-container");
+  if (qc) qc.innerHTML = "";
+  setScreenshotPreviewFromBlob(null);
+  const res = $("#screenshot-result");
+  if (res) res.textContent = "";
+  const fileIn = $("#screenshot-file");
+  if (fileIn) fileIn.value = "";
+  renderDownloads([]);
+  lastManualGenerationId = null;
+  setStatus("Form cleared — enter the next job.", "");
+}
+
+$("#btn-clear-run")?.addEventListener("click", () => {
+  if (running) {
+    setStatus("Wait until generation finishes before clearing.", "err");
+    return;
+  }
+  if (runFormHasContent()) {
+    if (
+      !confirm(
+        "Clear everything on the Run tab?\n\nTitle, company, JD, questions, screenshot preview, and download links will be removed. Your generated files stay on Drive and in your account history.",
+      )
+    )
+      return;
+  }
+  clearRunForm();
+});
 
 $("#btn-start")?.addEventListener("click", async () => {
   if (running) return;
@@ -749,7 +817,7 @@ function initScreenshotUpload() {
   });
 }
 
-function applyPendingJdFromRail() {
+function applyPendingJdFromStorage() {
   chrome.storage.local.get(["manualJd_pendingJd"], (d) => {
     if (d.manualJd_pendingJd == null) return;
     const ta = document.getElementById("jd");
@@ -760,14 +828,14 @@ function applyPendingJdFromRail() {
     document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
     document.querySelector('.tab-btn[data-tab="run"]')?.classList.add("active");
     document.getElementById("panel-run")?.classList.add("active");
-    if (text.trim()) setStatus("Loaded JD from the page (book on the rail).", "ok");
+    if (text.trim()) setStatus("Loaded pending job description into the JD field.", "ok");
   });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   loadAuthFields();
   loadProfiles();
-  applyPendingJdFromRail();
+  applyPendingJdFromStorage();
   initScreenshotUpload();
 });
 
@@ -782,6 +850,6 @@ chrome.storage.onChanged.addListener((changes, area) => {
     document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
     document.querySelector('.tab-btn[data-tab="run"]')?.classList.add("active");
     document.getElementById("panel-run")?.classList.add("active");
-    setStatus("Updated JD from the page (book on the rail).", "ok");
+    setStatus("Updated job description from pending storage.", "ok");
   }
 });

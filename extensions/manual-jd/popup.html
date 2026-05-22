@@ -94,6 +94,19 @@
     }
     .btn-start:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 26px rgba(124, 58, 237, 0.4); }
     .btn-start:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-clear-run {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+    }
+    .btn-clear-run:hover:not(:disabled) {
+      background: var(--surface2);
+      border-color: #c4b5fd;
+      transform: none;
+    }
+    .btn-clear-run:disabled { opacity: 0.45; cursor: not-allowed; }
+    .run-actions-hint { font-size: 11px; color: var(--muted); margin-top: 14px; line-height: 1.45; }
     .autofill-row { margin-top: 12px; }
     .btn-autofill {
       width: 100%; padding: 9px 12px; font-size: 12px; font-weight: 600;
@@ -313,14 +326,16 @@
       <label for="reference-url">Posting URL (optional)</label>
       <input id="reference-url" type="url" placeholder="https://… — optional; used for de-duplication and tracking" />
       <div class="hint">If empty, the extension and server use a hash of title + company + JD + profile name (same as API).</div>
-      <p class="hint" style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #e5e7eb;">This UI opens in the browser <strong>side panel</strong> (click the extension icon or use the on-page rail). The rail can send selected text here as the job description.</p>
+      <p class="hint" style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #e5e7eb;">Open this extension from the <strong>toolbar icon</strong> — it uses Chrome’s <strong>side panel</strong>. Paste or autofill the job description here.</p>
     </div>
     <div class="autofill-row">
       <button type="button" class="btn-autofill" id="btn-autofill-job-tab">Autofill from job tab</button>
-      <p class="hint" style="margin-top: 6px;">Uses the focused or last-used tab: <strong>Greenhouse</strong> (<code>*.greenhouse.io</code> with <code>/jobs/</code> in the path) or <strong>Ashby</strong> (<code>jobs.ashbyhq.com/…/…</code>). Fills title, company, pay range when shown, full description, posting URL, and custom application questions (Greenhouse EEO blocks are skipped).</p>
+      <p class="hint" style="margin-top: 6px;">Uses the focused or last-used tab: <strong>Greenhouse</strong> (<code>*.greenhouse.io/jobs/…</code>), <strong>Ashby</strong> (<code>jobs.ashbyhq.com/…</code>), or <strong>Workable</strong> (<code>apply.workable.com/…/j/…</code>). Fills title, company, pay range when shown, full description, posting URL, and custom application questions (standard contact fields are skipped). On Workable, open the <strong>Application</strong> tab (<code>…/apply/</code>) to scrape screening questions.</p>
     </div>
+    <p class="run-actions-hint">After you generate (or if you pasted the wrong job), use <strong>Clear form</strong> to wipe this tab and enter the next posting.</p>
     <div class="controls">
       <button type="button" class="btn-start" id="btn-start">Start</button>
+      <button type="button" class="btn-clear-run" id="btn-clear-run" title="Clear title, company, JD, questions, screenshot, and download links">Clear form</button>
     </div>
     <div id="status-msg" class="status-msg">Ready. Sign in under Account and sync assigned profiles.</div>
     <div id="downloads-section" class="dl-section" style="display: none;">

@@ -247,6 +247,7 @@ def list_generations(
     page_size: int = Query(20, ge=1, le=100),
     q: str | None = Query(None, description="Search title or company"),
     stage: str | None = Query(None, description="Filter by pipeline stage"),
+    user_id: int | None = Query(None, description="Filter by user who generated the resume"),
 ):
     stmt = select(Generation).options(
         joinedload(Generation.user),
@@ -259,6 +260,10 @@ def list_generations(
         if st in PIPELINE_STAGES:
             stmt = stmt.where(Generation.stage == st)
             count_stmt = count_stmt.where(Generation.stage == st)
+
+    if user_id is not None:
+        stmt = stmt.where(Generation.user_id == user_id)
+        count_stmt = count_stmt.where(Generation.user_id == user_id)
 
     if q and q.strip():
         term = f"%{q.strip().lower()}%"

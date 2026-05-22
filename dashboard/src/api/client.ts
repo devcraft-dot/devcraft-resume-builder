@@ -93,6 +93,7 @@ export function fetchGenerations(
   pageSize: number,
   q?: string,
   stage?: string | null,
+  userId?: number | null,
 ) {
   const params = new URLSearchParams({
     page: String(page),
@@ -100,6 +101,7 @@ export function fetchGenerations(
   });
   if (q?.trim()) params.set("q", q.trim());
   if (stage?.trim()) params.set("stage", stage.trim());
+  if (userId != null) params.set("user_id", String(userId));
   return request<GenerationList>(`/api/generations?${params}`);
 }
 

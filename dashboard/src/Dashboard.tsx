@@ -10,10 +10,11 @@ import { createPortal } from "react-dom";
 import {
   deleteGeneration,
   driveExportUrl,
+  fetchAdminUsers,
   fetchGenerations,
   patchGeneration,
 } from "./api/client";
-import type { Generation, GenerationSnip } from "./api/types";
+import type { Generation, GenerationSnip, User } from "./api/types";
 import { STAGES } from "./api/types";
 
 const PAGE_SIZE = 20;
@@ -440,6 +441,8 @@ export function Dashboard({
   const [pages, setPages] = useState(0);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
+  const [userFilterId, setUserFilterId] = useState<number | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   /** Only one Files menu open at a time (avoids stacked popovers). */
@@ -465,6 +468,7 @@ export function Dashboard({
         PAGE_SIZE,
         search,
         stageFilter,
+        userFilterId,
       );
       setRows(data.items);
       setPages(data.pages);
@@ -474,11 +478,28 @@ export function Dashboard({
     } finally {
       setLoading(false);
     }
-  }, [page, search, stageFilter]);
+  }, [page, search, stageFilter, userFilterId]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [stageFilter]);
+
+  useEffect(() => {
+    fetchAdminUsers()
+      .then(setUsers)
+      .catch(() => setUsers([]));
+  }, []);
+
+  const userFilterLabel =
+    userFilterId != null
+      ? users.find((u) => u.id === userFilterId)?.username ??
+        rows.find((r) => r.user_id === userFilterId)?.generated_by_username ??
+        `User #${userFilterId}`
+      : null;
 
   useEffect(() => {
     if (
@@ -533,6 +554,29 @@ export function Dashboard({
               setPage(1);
             }}
           />
+          <select
+            className="dash-input w-full max-w-[11rem] sm:w-44"
+            value={userFilterId ?? ""}
+            onChange={(e) => {
+              const v = e.target.value;
+              setUserFilterId(v === "" ? null : Number(v));
+              setPage(1);
+            }}
+            title="Filter by user"
+          >
+            <option value="">All users</option>
+            {users
+              .slice()
+              .sort((a, b) => a.username.localeCompare(b.username))
+              .map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.username}
+                  {u.display_name && u.display_name !== u.username
+                    ? ` (${u.display_name})`
+                    : ""}
+                </option>
+              ))}
+          </select>
           {stageFilter ? (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-900">
               Stage: {stageFilter}
@@ -541,6 +585,22 @@ export function Dashboard({
                 className="ml-0.5 rounded-full p-0.5 text-violet-700 transition hover:bg-violet-200/80"
                 title="Clear stage filter"
                 onClick={() => onClearStageFilter?.()}
+              >
+                ×
+              </button>
+            </span>
+          ) : null}
+          {userFilterId != null ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-800">
+              User: {userFilterLabel}
+              <button
+                type="button"
+                className="ml-0.5 rounded-full p-0.5 text-slate-600 transition hover:bg-slate-200/80"
+                title="Clear user filter"
+                onClick={() => {
+                  setUserFilterId(null);
+                  setPage(1);
+                }}
               >
                 ×
               </button>

@@ -1,4 +1,18 @@
-importScripts("config.js", "authApi.js");
+importScripts("config.js", "authApi.js", "jobBoardScrape.js");
+
+chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+});
+
+async function ensureApiToken() {
+  const token = await ResumeAuth.getAccessToken();
+  if (!token) {
+    throw new Error("Sign in under Settings — API token required before running or calling the API");
+  }
+  return token;
+}
 
 const DEFAULT_STATE = {
   running: false,
@@ -447,12 +461,12 @@ async function findApplyTabAfterClick(clickSourceTabId, winId, idsBefore, timeou
         continue;
       if (u.startsWith("edge://") || u.startsWith("brave://")) continue;
       if (isIndeedJobListingViewUrl(u)) continue;
-      if (isIndeedBffTabUrl(u)) return t.id;
+      if (isIndeedBffTabUrl(u) || isExternalJobBoardTabUrl(u)) return t.id;
     }
     try {
       const t = await chrome.tabs.get(clickSourceTabId);
       const u = String(t.url || t.pendingUrl || "").trim();
-      if (isIndeedBffTabUrl(u)) return clickSourceTabId;
+      if (isIndeedBffTabUrl(u) || isExternalJobBoardTabUrl(u)) return clickSourceTabId;
     } catch {
       /* */
     }
@@ -533,6 +547,10 @@ function looksLikeIndeedApplyTabUrl(url) {
   );
 }
 
+function looksLikeSpawnedApplyTabUrl(url) {
+  return looksLikeIndeedApplyTabUrl(url) || isExternalJobBoardTabUrl(url);
+}
+
 async function closeSpawnedTabsExceptSearch(windowId, idsBefore, searchTabId) {
   try {
     const tabs = await chrome.tabs.query({ windowId });
@@ -540,7 +558,7 @@ async function closeSpawnedTabsExceptSearch(windowId, idsBefore, searchTabId) {
       .filter((t) => {
         if (idsBefore.has(t.id) || t.id === searchTabId) return false;
         const u = t.url || t.pendingUrl || "";
-        if (looksLikeIndeedApplyTabUrl(u)) return true;
+        if (looksLikeSpawnedApplyTabUrl(u)) return true;
         if (typeof t.openerTabId === "number" && t.openerTabId === searchTabId) return true;
         return false;
       })
@@ -624,11 +642,136 @@ function jobBaseFromEssentialsAndRow(essentials, row) {
   };
 }
 
+async function resolveExternalJobBoardUrl(detailTabId, row) {
+  const candidates = [];
+  const tp = String(row?.thirdPartyApplyUrl || "").trim();
+  if (tp && !/indeed\.com/i.test(tp)) candidates.push(tp);
+
+  try {
+    const e = await sendToTabRetry(detailTabId, "getExternalJobBoardUrl");
+    if (e?.url) candidates.push(e.url);
+  } catch {
+    /* */
+  }
+
+  try {
+    const [{ result }] = await chrome.scripting.executeScript({
+      target: { tabId: detailTabId },
+      world: "MAIN",
+      func: () => {
+        const out = [];
+        const pushMatches = (text, re) => {
+          let m;
+          while ((m = re.exec(text))) {
+            out.push(m[0].replace(/\\u002F/gi, "/").replace(/&amp;/g, "&"));
+          }
+        };
+        const html = document.documentElement?.innerHTML || "";
+        pushMatches(html, /https?:\/\/jobs\.ashbyhq\.com\/[^\s"'<>\\]+/gi);
+        pushMatches(
+          html,
+          /https?:\/\/(?:job-boards|boards)\.greenhouse\.io\/[^\s"'<>\\]+/gi,
+        );
+        pushMatches(html, /https?:\/\/[a-z0-9.-]+\.greenhouse\.io\/jobs\/[^\s"'<>\\]+/gi);
+        pushMatches(html, /https?:\/\/apply\.workable\.com\/[^\s"'<>\\]+/gi);
+        document
+          .querySelectorAll(
+            'a[href*="ashbyhq.com"], a[href*="greenhouse.io"], a[href*="apply.workable.com"]',
+          )
+          .forEach((a) => {
+            if (a.href) out.push(a.href);
+          });
+        const walk = (obj, depth) => {
+          if (depth > 12 || !obj) return;
+          if (typeof obj === "string") {
+            if (
+              /jobs\.ashbyhq\.com/i.test(obj) ||
+              /\.greenhouse\.io\/jobs\//i.test(obj) ||
+              /apply\.workable\.com/i.test(obj)
+            ) {
+              out.push(obj.replace(/\\u002F/gi, "/"));
+            }
+            return;
+          }
+          if (typeof obj !== "object") return;
+          for (const k of Object.keys(obj)) walk(obj[k], depth + 1);
+        };
+        try {
+          walk(window._initialData, 0);
+        } catch {
+          /* */
+        }
+        return out;
+      },
+    });
+    if (Array.isArray(result)) candidates.push(...result);
+  } catch {
+    /* */
+  }
+
+  const url = pickFirstJobBoardUrl(candidates);
+  if (!url) return null;
+  return { url, board: detectJobBoardFromUrl(url) };
+}
+
+async function scrapeExternalJobBoard(boardUrl, board, searchTabId, openerTabId) {
+  let tabId = null;
+  try {
+    const opts = { url: boardUrl, active: false };
+    if (typeof openerTabId === "number") opts.openerTabId = openerTabId;
+    else if (typeof searchTabId === "number") opts.openerTabId = searchTabId;
+    const t = await chrome.tabs.create(opts);
+    tabId = t?.id ?? null;
+  } catch {
+    const t = await chrome.tabs.create({ url: boardUrl, active: false });
+    tabId = t?.id ?? null;
+  }
+  if (tabId == null) return null;
+  try {
+    try {
+      await waitForTabComplete(tabId, 45000);
+    } catch {
+      /* */
+    }
+    await sleep(Math.max(DELAYS.DETAIL_TAB_SETTLE ?? 2500, 3000));
+    const botStatus = await waitForBotClearOnTab(tabId);
+    if (!botStatus.cleared) return { error: "bot-check" };
+    const scraped = await scrapeJobBoardTab(tabId, board);
+    return { scraped };
+  } finally {
+    try {
+      await chrome.tabs.remove(tabId);
+    } catch {
+      /* */
+    }
+  }
+}
+
+async function enrichJobFromExternalBoard(job, detailTabId, row, searchTabId, indeedUrl) {
+  let boardMeta = await resolveExternalJobBoardUrl(detailTabId, row);
+  if (!boardMeta?.url) return false;
+
+  const out = await scrapeExternalJobBoard(boardMeta.url, boardMeta.board, searchTabId, detailTabId);
+  if (!out?.scraped?.ok) {
+    console.warn(
+      "[Indeed ext] external board scrape failed",
+      out?.scraped?.error || out?.error || "unknown",
+      boardMeta.url,
+    );
+    return false;
+  }
+  const fromBoard = jobFromBoardScrape(out.scraped, indeedUrl);
+  if (!fromBoard?.description_text && !fromBoard?.title) return false;
+  Object.assign(job, fromBoard);
+  job.url = indeedUrl;
+  return true;
+}
+
 /**
  * On a job detail tab: click Indeed apply or company applystart, then read screener questions from
- * `window.bffContext` on the apply surface (new tab or same-tab navigation).
+ * `window.bffContext` on the apply surface (new tab or same-tab navigation), or scrape Greenhouse/Ashby.
  */
-async function fetchQuestionsViaApplyClick(clickSourceTabId, refocusTabId) {
+async function fetchQuestionsViaApplyClick(clickSourceTabId, refocusTabId, indeedUrl = "") {
   let winId;
   try {
     winId = (await chrome.tabs.get(clickSourceTabId)).windowId;
@@ -684,6 +827,18 @@ async function fetchQuestionsViaApplyClick(clickSourceTabId, refocusTabId) {
       url = (await chrome.tabs.get(applyTabId)).url || "";
     } catch {
       outcome = { questions: [], note: "apply-tab-missing" };
+      return outcome;
+    }
+
+    if (isExternalJobBoardTabUrl(url)) {
+      const board = detectJobBoardFromUrl(url);
+      const scraped = await scrapeJobBoardTab(applyTabId, board);
+      const boardJob = jobFromBoardScrape(scraped, indeedUrl);
+      outcome = {
+        questions: boardJob?.questions || [],
+        boardJob,
+        note: scraped?.ok ? "" : scraped?.error || "board-scrape-failed",
+      };
       return outcome;
     }
 
@@ -827,6 +982,7 @@ async function readBffRootFromApplyTab(applyTabId) {
 }
 
 async function generateResume(job, profile) {
+  await ensureApiToken();
   const body = {
     title: job.title || "",
     url: job.url || "",
@@ -887,6 +1043,8 @@ async function generateResume(job, profile) {
  */
 async function checkGenerationKeys(jdUrl, profilesList) {
   if (!jdUrl || !profilesList?.length) return [];
+  const token = await ResumeAuth.getAccessToken();
+  if (!token) return null;
   const items = profilesList
     .filter((p) => p.id)
     .map((p) => ({
@@ -936,6 +1094,17 @@ async function checkGenerationKeys(jdUrl, profilesList) {
 
 async function runLoop() {
   startKeepAlive();
+
+  try {
+    await ensureApiToken();
+  } catch (e) {
+    state.lastError = e?.message || "Sign in under Settings";
+    state.running = false;
+    await saveState();
+    broadcastState();
+    stopKeepAlive();
+    return;
+  }
 
   const profiles = await getProfiles();
   if (!profiles.length) {
@@ -1141,6 +1310,14 @@ async function runLoop() {
             }
 
             const job = jobBaseFromEssentialsAndRow(essentials, row);
+            let usedExternalBoard = await enrichJobFromExternalBoard(
+              job,
+              detailTabId,
+              row,
+              searchTabId,
+              indeedUrl,
+            );
+
             if (!job.title && !job.description_text) {
               state.scrapeIndex++;
               state.skipped++;
@@ -1187,12 +1364,27 @@ async function runLoop() {
               continue;
             }
 
-            state.lastError = `Fetching questions: ${job.title}`;
-            await saveState();
-            broadcastState();
+            if (!usedExternalBoard) {
+              state.lastError = `Fetching apply data: ${job.title}`;
+              await saveState();
+              broadcastState();
 
-            const { questions } = await fetchQuestionsViaApplyClick(detailTabId, searchTabId);
-            job.questions = questions || [];
+              const applyData = await fetchQuestionsViaApplyClick(
+                detailTabId,
+                searchTabId,
+                indeedUrl,
+              );
+              if (applyData.boardJob?.description_text || applyData.boardJob?.title) {
+                Object.assign(job, applyData.boardJob);
+                job.url = indeedUrl;
+                usedExternalBoard = true;
+              }
+              job.questions = applyData.questions || [];
+            } else {
+              state.lastError = `Using ${job.title} (external job board JD)`;
+              await saveState();
+              broadcastState();
+            }
             job.url = indeedUrl;
             if (state.paused) break;
 
@@ -1312,6 +1504,12 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     case "start": {
       (async () => {
         await loadState();
+        try {
+          await ensureApiToken();
+        } catch (e) {
+          sendResponse({ ok: false, error: e?.message || "Sign in required" });
+          return;
+        }
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         if (!tab?.url?.includes("indeed.com")) {
           sendResponse({ ok: false, error: "Not an Indeed page" });
@@ -1343,6 +1541,12 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     case "resume": {
       (async () => {
         await loadState();
+        try {
+          await ensureApiToken();
+        } catch (e) {
+          sendResponse({ ok: false, error: e?.message || "Sign in required" });
+          return;
+        }
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         if (!tab?.url?.includes("indeed.com")) {
           sendResponse({ ok: false, error: "Not an Indeed page" });

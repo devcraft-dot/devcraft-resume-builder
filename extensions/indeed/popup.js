@@ -422,8 +422,17 @@ function updateUI(s) {
   $("#btn-stop").disabled = isStopped;
 }
 
+async function requireSignedIn() {
+  const token = await ResumeAuth.getAccessToken();
+  if (token) return true;
+  alert("Sign in under Settings before starting. The API needs your access token.");
+  $("#btn-link-settings")?.click();
+  return false;
+}
+
 /* ─── Controls ──────────────────────────────────────────────────── */
-$("#btn-start").addEventListener("click", () => {
+$("#btn-start").addEventListener("click", async () => {
+  if (!(await requireSignedIn())) return;
   chrome.runtime.sendMessage(
     { action: "start", reset: true, profileIndex: 0 },
     (res) => {
@@ -432,7 +441,8 @@ $("#btn-start").addEventListener("click", () => {
   );
 });
 
-$("#btn-resume").addEventListener("click", () => {
+$("#btn-resume").addEventListener("click", async () => {
+  if (!(await requireSignedIn())) return;
   chrome.runtime.sendMessage({ action: "resume" }, (res) => {
     if (!res?.ok) alert(res?.error || "Failed to resume");
   });

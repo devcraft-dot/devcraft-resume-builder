@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Resume Builder — Manual JD",
-  "version": "1.4.1",
+  "version": "1.4.4",
   "description": "Paste a job description and generate resumes via the same API as the Indeed extension",
   "permissions": ["storage", "sidePanel", "tabs", "scripting"],
   "host_permissions": [
@@ -13,7 +13,9 @@
     "https://*.greenhouse.io/*",
     "http://*.greenhouse.io/*",
     "https://jobs.ashbyhq.com/*",
-    "http://jobs.ashbyhq.com/*"
+    "http://jobs.ashbyhq.com/*",
+    "https://apply.workable.com/*",
+    "http://apply.workable.com/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -33,18 +35,5 @@
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
-  },
-  "content_scripts": [
-    {
-      "matches": ["http://*/*", "https://*/*"],
-      "js": ["authApi.js", "manualExtensionCore.js", "content.js"],
-      "run_at": "document_idle"
-    }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": ["icons/icon16.png", "icons/icon48.png", "icons/icon128.png"],
-      "matches": ["http://*/*", "https://*/*"]
-    }
-  ]
+  }
 }

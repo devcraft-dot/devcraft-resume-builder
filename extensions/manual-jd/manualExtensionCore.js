@@ -1,5 +1,5 @@
 /**
- * Shared API + crypto for Manual JD (popup + content script).
+ * Shared API + crypto for Manual JD (side panel / popup).
  * Keep `API_URL` in sync with `config.js` and `manifest.json` host_permissions.
  */
 (function () {

@@ -162,6 +162,111 @@ function extractSmartApplyUrlFromPageHtml() {
   return "";
 }
 
+function isGreenhouseJobUrl(url) {
+  if (!url || typeof url !== "string") return false;
+  try {
+    const u = new URL(url);
+    if (!u.pathname.includes("/jobs/")) return false;
+    const h = u.hostname.toLowerCase();
+    return (
+      h === "job-boards.greenhouse.io" ||
+      h === "boards.greenhouse.io" ||
+      h.endsWith(".greenhouse.io")
+    );
+  } catch {
+    return false;
+  }
+}
+
+function isWorkableJobUrl(url) {
+  if (!url || typeof url !== "string") return false;
+  try {
+    const u = new URL(url);
+    if (u.hostname.toLowerCase() !== "apply.workable.com") return false;
+    const parts = u.pathname.split("/").filter(Boolean);
+    const jIdx = parts.findIndex((p) => p.toLowerCase() === "j");
+    return jIdx >= 0 && jIdx < parts.length - 1 && parts[jIdx + 1].length >= 4;
+  } catch {
+    return false;
+  }
+}
+
+function isAshbyJobUrl(url) {
+  if (!url || typeof url !== "string") return false;
+  try {
+    const u = new URL(url);
+    if (u.hostname.toLowerCase() !== "jobs.ashbyhq.com") return false;
+    const parts = u.pathname.split("/").filter(Boolean);
+    if (parts.length < 2) return false;
+    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const last = parts[parts.length - 1];
+    const idPart = last.toLowerCase() === "application" ? parts[parts.length - 2] : last;
+    return uuidRe.test(idPart);
+  } catch {
+    return false;
+  }
+}
+
+function normalizeJobBoardUrl(url) {
+  const s = String(url || "").trim();
+  if (!s) return "";
+  try {
+    const u = new URL(s);
+    if (u.hostname.toLowerCase() === "jobs.ashbyhq.com") {
+      const parts = u.pathname.split("/").filter(Boolean);
+      if (parts.length && parts[parts.length - 1].toLowerCase() === "application") {
+        parts.pop();
+        u.pathname = "/" + parts.join("/");
+      }
+    }
+    if (u.hostname.toLowerCase() === "apply.workable.com") {
+      const parts = u.pathname.split("/").filter(Boolean);
+      if (parts.length && parts[parts.length - 1].toLowerCase() === "apply") {
+        parts.pop();
+        u.pathname = "/" + parts.join("/");
+      }
+      if (!u.pathname.endsWith("/")) u.pathname += "/";
+    }
+    u.hash = "";
+    return u.href;
+  } catch {
+    return s.split("#")[0];
+  }
+}
+
+function externalJobBoardUrlFromDetailPane() {
+  const candidates = [];
+  const pane = jobDetailPaneRoot();
+  pane.querySelectorAll('a[href*="ashbyhq.com"], a[href*="greenhouse.io"], a[href*="apply.workable.com"]').forEach((a) => {
+    const u = absolutizeHref(a.href || a.getAttribute("href"));
+    if (u) candidates.push(u);
+  });
+  const urls = [];
+  collectHrefsFromOpenShadowRoots(pane, 0, urls);
+  candidates.push(...urls);
+
+  let raw = document.documentElement.innerHTML;
+  raw = raw.replace(/\\u002f/gi, "/").replace(/\\\//g, "/");
+  const patterns = [
+    /https?:\/\/jobs\.ashbyhq\.com\/[^\s"'<>\\]+/gi,
+    /https?:\/\/(?:job-boards|boards)\.greenhouse\.io\/[^\s"'<>\\]+/gi,
+    /https?:\/\/[a-z0-9.-]+\.greenhouse\.io\/jobs\/[^\s"'<>\\]+/gi,
+    /https?:\/\/apply\.workable\.com\/[^\s"'<>\\]+/gi,
+  ];
+  for (const re of patterns) {
+    let m;
+    while ((m = re.exec(raw))) {
+      candidates.push(m[0].replace(/&amp;/g, "&"));
+    }
+  }
+
+  for (const rawUrl of candidates) {
+    const u = normalizeJobBoardUrl(rawUrl);
+    if (isAshbyJobUrl(u) || isGreenhouseJobUrl(u) || isWorkableJobUrl(u)) return u;
+  }
+  return "";
+}
+
 function applyStartUrlFromDetailPane() {
   const smart = rejectIndeedJobPageHref(smartApplyUrlFromDetailPane());
   if (smart) return smart;
@@ -470,6 +575,9 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       break;
     case "getEssentialApplyPane":
       sendResponse({ essentials: getEssentialApplyPane() });
+      break;
+    case "getExternalJobBoardUrl":
+      sendResponse({ url: externalJobBoardUrlFromDetailPane() });
       break;
     case "clickIndeedApplyButton":
       sendResponse(clickIndeedApplyButton());

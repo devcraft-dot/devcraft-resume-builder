@@ -41,7 +41,7 @@ class Generation(Base):
     stage: Mapped[str] = mapped_column(String(50), default="generated")
     title: Mapped[str] = mapped_column(String(500))
     company_name: Mapped[str] = mapped_column(String(500), default="")
-    salary_range: Mapped[str] = mapped_column(String(200), default="")
+    salary_range: Mapped[str] = mapped_column(String(2000), default="")
     note: Mapped[str] = mapped_column(String(2000), default="")
     url: Mapped[str] = mapped_column(String(2000), index=True)
 

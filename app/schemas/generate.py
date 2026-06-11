@@ -45,7 +45,7 @@ class GenerateRequest(BaseModel):
     url: str = Field(..., min_length=1, max_length=2000)
     company_name: str = Field("", max_length=500)
     description_text: str = ""
-    salary_range: str = Field("", max_length=200)
+    salary_range: str = Field("", max_length=2000)
     questions: list[QuestionField] = Field(default_factory=list)
     profile_id: int = Field(..., ge=1)
 
@@ -56,7 +56,7 @@ class ManualGenerateRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=500)
     company_name: str = Field("", max_length=500)
     description_text: str = Field(..., min_length=1)
-    salary_range: str = Field("", max_length=200)
+    salary_range: str = Field("", max_length=2000)
     questions: list[QuestionField] = Field(default_factory=list)
     profile_id: int = Field(..., ge=1)
     reference_url: str = Field(
@@ -92,7 +92,7 @@ class GenerationPatch(BaseModel):
     stage: str | None = None
     title: str | None = Field(None, max_length=500)
     company_name: str | None = Field(None, max_length=500)
-    salary_range: str | None = Field(None, max_length=200)
+    salary_range: str | None = Field(None, max_length=2000)
     note: str | None = Field(None, max_length=2000)
     admin_checked: bool | None = None
 

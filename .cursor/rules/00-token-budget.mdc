@@ -1,0 +1,14 @@
+---
+description: Token and credit budget — always enforce minimal context and scoped work
+alwaysApply: true
+---
+
+# Token budget (always on)
+
+- Scope: `.cursor/plans/ACTIVE_TASK.md` only. Decline extra work politely.
+- Context: Read named files only. No repo-wide exploration, no "let me understand the whole codebase".
+- Search: `grep` with a path/glob first; avoid reading whole directories.
+- Output: Short status updates. No long summaries, no unsolicited markdown docs.
+- Edits: Smallest correct diff. No drive-by refactors or formatting sweeps.
+- Tests: Run only what the task names; report command + result briefly.
+- Finish: Update `ACTIVE_TASK.md` (status + files touched). Suggest a **new chat** for the next task.

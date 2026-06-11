@@ -1,0 +1,34 @@
+﻿# Secrets — block from AI entirely (best-effort)
+.env
+.env.*
+*.env
+app/.env
+app/credentials/
+**/*credentials*.json
+**/*service-account*.json
+**/*token*.json
+
+# Dependencies & build artifacts
+node_modules/
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+dist/
+build/
+.vercel/
+app/output/
+
+# Large or irrelevant to coding tasks
+scrapping/
+samples/
+*.docx
+*.pdf
+*.zip
+*.tar.gz
+
+# OS / IDE noise
+.DS_Store
+Thumbs.db
+.idea/

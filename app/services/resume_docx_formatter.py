@@ -1,31 +1,21 @@
 """
 ATS-oriented resume .docx generation.
 
-Renders model Markdown into .docx: layout, sections, bullets, and ``**emphasis**`` runs
-exactly as written. Structural styling only (name, section titles, experience header rows,
-Skills category labels). Skill list values are forced plain so only the category label is bold.
+Renders model Markdown into .docx with real bold formatting for ``**keyword**`` markers.
+Structural styling: name, section titles, experience header rows, skill category labels.
 
-Default layout targets a **final ATS + recruiter spec** (single column, text-only contact in the
-**document body**—never Word header/footer): **Calibri**, **22 pt** name, **11 pt** contact/body,
-**12 pt bold** section titles, **0.6 in** margins (within the common **~0.5–0.7 in** tight band;
-wider **0.75–1 in** is also widely recommended if you need more room). **Line spacing ~1.1** on
-body/bullets. **Name + contact (optional title) centered**; all other content **left-aligned**.
+Layout spec: **Cambria**, **26 pt** bold name, **11 pt** body, **11 pt bold** section titles,
+**0.5 in** narrow margins, **~1.1** line spacing. Name + contact centered; all other content
+left-aligned. Contact info in the document body, never Word header/footer.
 
-For quick scans, bold **job title and company** on one line creates clear anchors ([Resumly section scanning](https://www.resumly.ai/blog/optimizing-resume-sections-for-quick-scanning-by-recruiters)).
+Experience rows: bold **Role | Company** on line 1, Location | Dates on line 2.
+Bullets: 0.25 in hanging indent, tight stack, solid bullet leader.
+Skills: bold category label + tab stop + plain values for aligned wrapping.
 
-**Bullets:** **0.25 in** symmetric hanging indent ([Microsoft hanging indent](https://support.microsoft.com/en-us/office/indent-the-second-line-in-word-9d1b9955-d08a-4773-a900-d0a9e641279c)). **No extra paragraph space between consecutive bullets** (tight stack); **~4–6 pt** after the **last** bullet in a role as the “job block” gap. Solid **•** + space only (ATS-safe).
+Text cleanup: curly quotes to ASCII, collapsed whitespace, date normalization to
+``Month YYYY - Month YYYY`` with simple hyphens (no em/en dashes).
 
-**Skills (Category: values):** each line uses a **left tab stop** after the bold label so wrapped
-value text aligns under the value column—the usual Word pattern for label/value lines and
-recommended for consistent alignment in structured sections ([tab stops / ruler alignment](https://www.therecruitmentinsights.com/blog/resume-writing-tipstricks/005-resume-formatting-in-ms-wordstep-by-step)).
-
-Light touches on text: curly quotes to ASCII, collapsed whitespace, and date tokens in
-lines parsed through ``_clean_line`` (role/education rows, body lines) for consistent
-``Month YYYY`` spelling and **en-dash** (U+2013) between range endpoints — no verb substitution,
-JD keyword injection, or spelling rewrites.
-
-Known sections are reordered for output to: Summary → Skills → Experience (+ projects) →
-Education → other sections (e.g. certifications, application Q&A), regardless of model order.
+Sections reordered: Summary, Skills, Experience, Education, then other, regardless of model order.
 """
 
 from __future__ import annotations
@@ -65,7 +55,6 @@ _EXPERIENCE_SECTIONS = {
     "EDUCATION",
 }
 
-# Role + bullet blocks (exclude EDUCATION so education bullets stay a bit tighter).
 _EXPERIENCE_ROLE_SECTIONS = frozenset(
     {
         "WORK EXPERIENCE",
@@ -77,19 +66,16 @@ _EXPERIENCE_ROLE_SECTIONS = frozenset(
     }
 )
 
-# Final spec: Calibri 11 pt body, 22 pt name, 12 pt section titles, 0.6" margins, ~1.1 line spacing.
-_BODY_FONT = "Calibri"
+_BODY_FONT = "Cambria"
 _BODY_PT = 11.0
-_NAME_PT = 22.0
-_SECTION_TITLE_PT = 12.0
+_NAME_PT = 26.0
+_SECTION_TITLE_PT = 11.0
 _LINE_SPACING = 1.1
-_MARGINS_IN = 0.6
-# Hanging bullet: match Word’s common ~0.25 in list hang ([Microsoft hanging indent](https://support.microsoft.com/en-us/office/indent-the-second-line-in-word-9d1b9955-d08a-4773-a900-d0a9e641279c)).
+_MARGINS_IN = 0.5
 _BULLET_LEFT_INDENT_IN = 0.25
 _BULLET_FIRST_LINE_INDENT_IN = -0.25
 _BULLET_LEADER = "\u2022 "
-# Skills: label + tab + values; tab position balances short vs long category labels.
-_SKILL_VALUE_TAB_IN = 1.78
+_SKILL_VALUE_TAB_IN = 2.0
 
 
 def _safe_filename(value: str) -> str:
@@ -175,14 +161,12 @@ def _normalize_dates(text: str) -> str:
 
     s = _FULL_MONTH_RE.sub(_full, text)
     s = _ABBR_MONTH_RE.sub(_expand, s)
-    # Standardize range punctuation to en dash (May 2025 – March 2026).
-    en = "\u2013"
 
     def _range_dash(m: re.Match) -> str:
-        return f"{m.group(1)} {en} {m.group(2)}"
+        return f"{m.group(1)} - {m.group(2)}"
 
     s = re.sub(
-        r"([A-Za-z]+\s+\d{4})\s*[–—-]\s*([A-Za-z]+\s+\d{4}|Present)",
+        r"([A-Za-z]+\s+\d{4})\s*[\u2013\u2014-]\s*([A-Za-z]+\s+\d{4}|Present)",
         _range_dash,
         s,
     )
@@ -204,7 +188,7 @@ def _is_section_header(line: str) -> bool:
         check.isupper()
         and 3 <= len(check) <= 80
         and "|" not in check
-        and "•" not in check
+        and "\u2022" not in check
         and "@" not in check
         and not check.startswith("http")
     )
@@ -212,12 +196,12 @@ def _is_section_header(line: str) -> bool:
 
 def _line_is_role_or_degree_row(stripped: str, current_section: str) -> bool:
     """
-    Experience/education entry line: has | (dates) and/or Role — Company / Degree — School.
+    Experience/education entry line: has | (dates) and/or Role - Company / Degree - School.
     Models often emit ### headings instead of the pipe form; those must still become job_title rows.
     """
     if current_section not in _EXPERIENCE_SECTIONS:
         return False
-    if "•" in stripped:
+    if "\u2022" in stripped:
         return False
     clean = _clean_line(stripped)
     if not clean or len(clean) < 6:
@@ -226,7 +210,6 @@ def _line_is_role_or_degree_row(stripped: str, current_section: str) -> bool:
         return True
     if "\u2014" in clean or " -- " in clean:
         return True
-    # En dash or hyphen as separator: "Role - Company"
     if re.search(r"\s[-\u2013]\s", clean):
         return True
     return False
@@ -264,9 +247,6 @@ def _parse_resume(text: str) -> list[tuple[str, object]]:
                 result.append(("name", _clean_line(stripped)))
                 name_found = True
                 continue
-            # Treat as contact when the line clearly contains contact fields
-            # (pipes, email, phone, or a URL). Otherwise treat it as an optional
-            # title line, which is kept for backward compatibility.
             looks_like_contact = (
                 "|" in stripped
                 or "@" in stripped
@@ -277,7 +257,7 @@ def _parse_resume(text: str) -> list[tuple[str, object]]:
             if looks_like_contact:
                 result.append(("contact", stripped))
             elif not title_found:
-                result.append(("title", _clean_line(stripped)))
+                result.append(("contact", _clean_line(stripped)))
                 title_found = True
             else:
                 result.append(("contact", stripped))
@@ -291,7 +271,7 @@ def _parse_resume(text: str) -> list[tuple[str, object]]:
         if skills_section:
             skill_line = stripped
             bulleted = False
-            if stripped[0] in ("•", "·", "-", "*") and len(stripped) > 1 and stripped[1] in (" ", "\t"):
+            if stripped[0] in ("\u2022", "\u00b7", "-", "*") and len(stripped) > 1 and stripped[1] in (" ", "\t"):
                 skill_line = stripped[2:].strip()
                 bulleted = True
             if ":" in skill_line and not skill_line.startswith("http"):
@@ -301,8 +281,8 @@ def _parse_resume(text: str) -> list[tuple[str, object]]:
                 result.append(("skill", (label, values, bulleted)))
                 continue
 
-        if stripped[0] in ("•", "·", "-") and (len(stripped) < 2 or stripped[1] in (" ", "\t")):
-            result.append(("bullet", stripped.lstrip("•·- ").strip()))
+        if stripped[0] in ("\u2022", "\u00b7", "-") and (len(stripped) < 2 or stripped[1] in (" ", "\t")):
+            result.append(("bullet", stripped.lstrip("\u2022\u00b7- ").strip()))
             continue
         if stripped[0] == "*" and len(stripped) > 1 and stripped[1] == " ":
             result.append(("bullet", stripped[2:].strip()))
@@ -435,9 +415,7 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
 
     doc = Document()
 
-    # Experience / education meta lines: strong contrast for print + screen (not too light).
-    _EXP_COLOR_PRIMARY = RGBColor(0x21, 0x21, 0x21)
-    _EXP_COLOR_SECONDARY = RGBColor(0x42, 0x42, 0x42)
+    _COLOR_BLACK = RGBColor(0x00, 0x00, 0x00)
 
     for section in doc.sections:
         m = Inches(_MARGINS_IN)
@@ -491,7 +469,7 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
         bottom.set(qn("w:val"), "single")
         bottom.set(qn("w:sz"), "4")
         bottom.set(qn("w:space"), "1")
-        bottom.set(qn("w:color"), "D4DDE5")
+        bottom.set(qn("w:color"), "999999")
 
     def _next_non_empty_type(start_idx: int) -> str:
         for next_idx in range(start_idx + 1, len(items)):
@@ -549,13 +527,10 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
             run.bold = True
             run.font.name = _BODY_FONT
             run.font.size = Pt(_NAME_PT)
+            run.font.color.rgb = _COLOR_BLACK
 
         elif item_type == "title":
-            p = _para(space_before=0, space_after=3, align=WD_ALIGN_PARAGRAPH.CENTER)
-            run = p.add_run(str(content))
-            run.bold = False
-            run.font.name = _BODY_FONT
-            run.font.size = Pt(_SECTION_TITLE_PT)
+            continue
 
         elif item_type == "contact":
             p = _para(space_before=0, space_after=9, align=WD_ALIGN_PARAGRAPH.CENTER)
@@ -574,23 +549,15 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
             run.bold = True
             run.font.name = _BODY_FONT
             run.font.size = Pt(_SECTION_TITLE_PT)
+            run.font.color.rgb = _COLOR_BLACK
             _add_bottom_rule(p)
 
         elif item_type == "job_title":
             raw = re.sub(r"\*\*", "", str(content)).strip()
-            # Some upstream resumes mix ``|`` with tabs as the separator
-            # (e.g., ``Role  |  Company\tDates  |  Location``). Normalize
-            # any run of tab or multi-space that sits between `|` groups
-            # so the row splits cleanly into its 4 fields.
             normalized = re.sub(r"\t+", " | ", raw)
             parts = [x.strip() for x in normalized.split("|") if x.strip()]
             is_education = "EDUCATION" in current_section
 
-            # Pipe row from model: Role | Company | Dates | Location (Experience) or
-            # School | Degree | Years | Location (Education).
-            #
-            # Experience: Line 1 bold Title | bold Company; Line 2 Location | Dates (secondary).
-            # Education: Line 1 bold Degree | bold School; Line 2 Location | Years (secondary).
             if is_education and len(parts) >= 3:
                 school = parts[0]
                 degree = parts[1] if len(parts) > 1 else ""
@@ -599,31 +566,18 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
 
                 p1 = _para(space_before=6, space_after=3)
                 if degree and school:
-                    _add_plain(p1, degree, bold=True, size=_BODY_PT, color=_EXP_COLOR_PRIMARY)
-                    _add_plain(p1, " | ", bold=False, size=_BODY_PT, color=_EXP_COLOR_PRIMARY)
-                    _add_plain(
-                        p1,
-                        school,
-                        bold=True,
-                        italic=False,
-                        size=_BODY_PT,
-                        color=_EXP_COLOR_PRIMARY,
-                    )
+                    _add_plain(p1, degree, bold=True, size=_BODY_PT, color=_COLOR_BLACK)
+                    _add_plain(p1, " | ", bold=False, size=_BODY_PT, color=_COLOR_BLACK)
+                    _add_plain(p1, school, bold=True, size=_BODY_PT, color=_COLOR_BLACK)
                 elif school:
-                    _add_plain(p1, school, bold=True, size=_BODY_PT, color=_EXP_COLOR_PRIMARY)
+                    _add_plain(p1, school, bold=True, size=_BODY_PT, color=_COLOR_BLACK)
                 elif degree:
-                    _add_plain(p1, degree, bold=True, size=_BODY_PT, color=_EXP_COLOR_PRIMARY)
+                    _add_plain(p1, degree, bold=True, size=_BODY_PT, color=_COLOR_BLACK)
 
                 line2 = " | ".join(x for x in (location, years) if x)
                 if line2:
                     p2 = _para(space_before=0, space_after=8)
-                    _add_plain(
-                        p2,
-                        line2,
-                        bold=False,
-                        size=_BODY_PT,
-                        color=_EXP_COLOR_SECONDARY,
-                    )
+                    _add_plain(p2, line2, bold=False, size=_BODY_PT, color=_COLOR_BLACK)
 
             elif not is_education and len(parts) >= 3:
                 role = parts[0]
@@ -631,53 +585,30 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
                 dates = parts[2] if len(parts) > 2 else ""
                 location = parts[3] if len(parts) > 3 else ""
 
-                # Line 1–2: readable gap between title|company and location|dates;
-                # line 2: extra space after before bullets.
                 p1 = _para(space_before=8, space_after=3)
                 if role and company:
-                    _add_plain(p1, role, bold=True, size=_BODY_PT, color=_EXP_COLOR_PRIMARY)
-                    _add_plain(p1, " | ", bold=False, size=_BODY_PT, color=_EXP_COLOR_PRIMARY)
-                    _add_plain(
-                        p1,
-                        company,
-                        bold=True,
-                        italic=False,
-                        size=_BODY_PT,
-                        color=_EXP_COLOR_PRIMARY,
-                    )
+                    _add_plain(p1, role, bold=True, size=_BODY_PT, color=_COLOR_BLACK)
+                    _add_plain(p1, " | ", bold=False, size=_BODY_PT, color=_COLOR_BLACK)
+                    _add_plain(p1, company, bold=True, size=_BODY_PT, color=_COLOR_BLACK)
                 elif role:
-                    _add_plain(p1, role, bold=True, size=_BODY_PT, color=_EXP_COLOR_PRIMARY)
+                    _add_plain(p1, role, bold=True, size=_BODY_PT, color=_COLOR_BLACK)
                 elif company:
-                    _add_plain(
-                        p1,
-                        company,
-                        bold=True,
-                        italic=False,
-                        size=_BODY_PT,
-                        color=_EXP_COLOR_PRIMARY,
-                    )
+                    _add_plain(p1, company, bold=True, size=_BODY_PT, color=_COLOR_BLACK)
 
                 line2 = " | ".join(x for x in (location, dates) if x)
                 if line2:
                     p2 = _para(space_before=0, space_after=6)
-                    _add_plain(
-                        p2,
-                        line2,
-                        bold=False,
-                        size=_BODY_PT,
-                        color=_EXP_COLOR_SECONDARY,
-                    )
+                    _add_plain(p2, line2, bold=False, size=_BODY_PT, color=_COLOR_BLACK)
 
             else:
-                # Fallback for oddly shaped lines (em-dash, 2 parts, etc.).
                 first = parts[0] if parts else raw
                 if "\u2014" in first:
                     sub = [x.strip() for x in first.split("\u2014", 1)]
-                    role_co = f"{sub[0]} \u2014 {sub[1]}"
+                    role_co = f"{sub[0]} - {sub[1]}"
                     right = ""
                 elif "--" in first:
                     sub = [x.strip() for x in first.split("--", 1)]
-                    role_co = f"{sub[0]} \u2014 {sub[1]}"
+                    role_co = f"{sub[0]} - {sub[1]}"
                     right = ""
                 elif len(parts) >= 2:
                     role_co = f"{parts[1]}, {parts[0]}"
@@ -687,7 +618,7 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
                     right = ""
                 p = _para(space_before=6, space_after=4)
                 _set_right_tab(p)
-                _add_plain(p, role_co, bold=True, size=_BODY_PT)
+                _add_plain(p, role_co, bold=True, size=_BODY_PT, color=_COLOR_BLACK)
                 if right:
                     _add_plain(p, "\t", size=_BODY_PT)
                     _add_plain(p, right, size=_BODY_PT)
@@ -720,8 +651,6 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
             label_out = _short_skill_category_label(str(label))
             plain_values = _strip_md_spans_for_skill_values(str(values))
             p = _para(space_before=2, space_after=7)
-            # Hanging-style wrap for long value lists: continuation lines align under the value
-            # column (after tab), not under the category label.
             p.paragraph_format.tab_stops.add_tab_stop(
                 Inches(_SKILL_VALUE_TAB_IN),
                 WD_TAB_ALIGNMENT.LEFT,
@@ -730,11 +659,11 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
             r_label.bold = True
             r_label.font.name = _BODY_FONT
             r_label.font.size = Pt(_BODY_PT)
-            # Values stay plain (no per-item bolding); only the category label is bold.
             _add_md_runs(p, plain_values, base_size_pt=_BODY_PT)
 
         elif item_type == "body":
-            sa = 6 if current_section == "SUMMARY" else 0
+            is_summary = "SUMMARY" in current_section
+            sa = 6 if is_summary else 0
             p = _para(space_before=0, space_after=sa)
             p.paragraph_format.left_indent = Inches(0)
             p.paragraph_format.first_line_indent = Inches(0)
@@ -750,12 +679,7 @@ def build_formatted_resume_docx(resume_text: str, job, profile_name: str) -> tup
 
     candidate_name = (profile_name or "").strip() or "Candidate"
     company_name = getattr(job, "company_name", None) or ""
-    job_title = getattr(job, "title", None) or "Role"
-    today = date.today().isoformat()
-    filename = (
-        f"{_safe_filename(candidate_name)}_{_safe_filename(company_name)}"
-        f"_{_safe_filename(job_title)}_{today}.docx"
-    )
+    filename = f"{_safe_filename(candidate_name)}_{_safe_filename(company_name)}.docx"
     buf = BytesIO()
     doc.save(buf)
     buf.seek(0)

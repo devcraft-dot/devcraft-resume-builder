@@ -12,7 +12,7 @@ from docx.shared import Inches, Pt
 
 from app.services.resume_docx_formatter import build_formatted_resume_docx
 
-_BODY_FONT = "Calibri"
+_BODY_FONT = "Cambria"
 
 
 @dataclass

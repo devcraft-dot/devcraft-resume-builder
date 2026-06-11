@@ -1,0 +1,13 @@
+---
+description: FastAPI backend conventions for app/
+globs: app/**/*.py, api/**/*.py
+alwaysApply: false
+---
+
+# Python backend
+
+- Routes in `app/api/routes/`; schemas in `app/schemas/`; models in `app/models/`.
+- Business logic in `app/services/`, not in route handlers.
+- Settings from `app/core/config.py` — use env vars, never commit secrets.
+- DB via SQLAlchemy in `app/core/db.py`; primary entity `Generation`.
+- Match existing error handling and response shapes in neighboring routes.

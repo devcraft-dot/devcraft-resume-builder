@@ -1,0 +1,12 @@
+---
+description: React dashboard conventions for dashboard/
+globs: dashboard/**/*.ts, dashboard/**/*.tsx, dashboard/**/*.css
+alwaysApply: false
+---
+
+# Dashboard (Vite + React 19 + Tailwind 4)
+
+- API calls through `dashboard/src/api/client.ts` and `VITE_API_URL`.
+- Functional components, TypeScript strict — no `any` without reason.
+- Keep UI changes minimal; match existing component patterns in `dashboard/src/`.
+- Lint: `npm run lint` from `dashboard/`.

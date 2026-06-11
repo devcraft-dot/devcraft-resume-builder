@@ -1,0 +1,28 @@
+# Exclude from codebase search/indexing (AI can still read if you @-mention them)
+# See: https://cursor.com/docs/reference/ignore-file
+
+# Planning & reference docs — not needed in every search
+docs/
+BACKEND_IMPROVEMENT_PLAN.md
+VERCEL_DEPLOYMENT_PLAN.md
+PROJECT.md
+
+# Static rules/templates — reference manually when generating resumes
+resume_rules/
+templates/
+
+# Scraping artifacts & samples
+scrapping/
+samples/
+urls/
+
+# Migrations — read only when task is DB-related
+migrations/
+
+# Dashboard lockfile (already in default ignore; explicit for clarity)
+dashboard/node_modules/
+dashboard/dist/
+
+# Extension packaged builds
+extensions/**/dist/
+extensions/**/*.zip

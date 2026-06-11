@@ -35,6 +35,8 @@ KEYWORD AND BOLD RULES
    - Important methodologies and patterns (e.g., **microservices**, **CI/CD**, **Agile**)
    - Domain-specific terms central to the JD
    Bold should appear in the professional summary and experience bullets. Do not bold entire sentences, generic verbs, or common words. Bold selectively for maximum recruiter impact.
+   Density cap: at most 2-3 bolded terms per bullet, and not every bullet needs one. Roughly half the bullets should contain a bolded keyword. Over-bolding looks machine-generated and weakens scanning.
+   Bold each distinct keyword at most 2-3 times across the whole resume; after that, write it plain.
 
 3. In the Technical Skills section, bold only the category labels. Do not bold individual skills.
 
@@ -60,6 +62,15 @@ Use realistic, industrial-sounding project or system names. Include brief contex
 
 5. Avoid obvious tailoring tells
 Do not use the JD's exact phrasing verbatim in bullets. Rephrase using the same core keywords but with different sentence structure. Do not make every role mirror the JD; older roles should have their own identity with lighter keyword overlap.
+
+6. Full requirement coverage
+Cover every major JD requirement somewhere in the resume, not just the technology list. This includes practices and expectations such as AI-assisted development tools, system design ownership, mentoring, design reviews, on-call/production health, cross-functional coordination, and domain familiarity. If the JD emphasizes it, the resume must show concrete evidence of it.
+
+7. Years of experience
+Compute total experience from the earliest employment date in the profile. State it accurately in the summary (e.g., "9+ years"). If the JD requires a minimum (e.g., "5+ years") that the candidate genuinely meets, make sure the summary states a number that clearly satisfies it. Never inflate beyond the real dates.
+
+8. Title alignment
+In the summary, describe the candidate using the JD's target role identity when credible (e.g., "Senior Backend Engineer" for a senior backend JD). Never change actual job titles in the experience section.
 
 METRICS AND QUANTIFICATION
 
@@ -109,7 +120,8 @@ Professional Summary:
 - No pronouns, no buzzwords, no career-objective language.
 
 Technical Skills:
-- Group into 5-7 clear, ATS-friendly categories. Good examples: Programming Languages, Frameworks & Libraries, Databases, Cloud & DevOps, Tools & Platforms, Testing & QA, Architecture & Methodologies.
+- Group into 4-6 clear, ATS-friendly categories. Good examples: Languages, Frameworks & Libraries, Databases, Cloud & DevOps, Testing & QA, Architecture & Methodologies.
+- Keep category labels short and scannable (under 30 characters). Use concise labels like "Languages" not "Programming Languages & Scripting", "Cloud & DevOps" not "Cloud Infrastructure, Tools & DevOps". Short labels produce cleaner alignment in the final document.
 - Order categories by relevance to the JD, most important first.
 - Include the JD's target technologies plus credible adjacent skills that round out the profile.
 - Bold only the category label. Individual skill items stay plain.
@@ -121,6 +133,7 @@ Professional Experience:
 - Second role: 5-7 bullets, strongly tailored with some distinct project focus.
 - Third role: 4-5 bullets, moderately tailored.
 - Older roles: 3-4 bullets, lighter tailoring, own identity.
+- Every bullet must earn its place. Cut any bullet that is generic, repetitive, or weaker than the rest.
 - Bold important technologies and tools within bullet text using **keyword**.
 - Include realistic project names or system names for specificity.
 - Each role should feature different project types or domains.
@@ -139,6 +152,7 @@ Application Answers:
   [answer text]
 - Separate question blocks with a blank line.
 - For personal/logistical questions (compensation, sponsorship, work authorization, relocation, clearance, notice period): write exactly "Needs candidate confirmation"
+- If no application questions were provided, omit the Application Questions section entirely.
 
 WORKFLOW
 
@@ -148,7 +162,17 @@ WORKFLOW
 4. Write the professional summary and technical skills first to establish keyword coverage.
 5. Write experience bullets for each role, starting with the most recent. Make each role distinct.
 6. Write application answers if questions were provided.
-7. Final review: verify no verb repeats more than twice, no formulaic patterns, metrics at roughly 30%, important keywords bolded, and the whole resume reads naturally.
+7. Final review, verify all of the following before returning:
+   - Every major JD requirement (technologies, practices, domain signals) appears somewhere in the resume.
+   - No opening verb repeats more than twice across all bullets.
+   - No formulaic bullet patterns; sentence structures vary.
+   - Metrics in roughly 30% of bullets, formats varied, none repeated.
+   - Bold keywords present but not overdone (max 2-3 per bullet, about half of bullets).
+   - No em dashes or en dashes anywhere; simple hyphens only.
+   - Fixed facts (employers, titles, dates, locations, education) match the candidate profile exactly.
+   - Years of experience in the summary matches the employment dates and satisfies the JD minimum when true.
+   - Skill category labels are short; skills lists contain no filler.
+   - The whole resume reads like a strong human-written document.
 
 OUTPUT FORMAT
 

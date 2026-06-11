@@ -14,7 +14,7 @@ export function ProfilesView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<RegisteredProfile | null>(null);
-  const [form, setForm] = useState({ name: "", model: "gpt-5.4-mini", profile_text: "" });
+  const [form, setForm] = useState({ name: "", model: "gpt-5.5", profile_text: "" });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -33,8 +33,8 @@ export function ProfilesView() {
   }, [load]);
 
   function startCreate() {
-    setEditing({ id: 0, name: "", model: "gpt-5.4-mini", profile_text: "", created_at: "", updated_at: "" });
-    setForm({ name: "", model: "gpt-5.4-mini", profile_text: "" });
+    setEditing({ id: 0, name: "", model: "gpt-5.5", profile_text: "", created_at: "", updated_at: "" });
+    setForm({ name: "", model: "gpt-5.5", profile_text: "" });
   }
 
   async function startEdit(id: number) {

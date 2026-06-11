@@ -75,7 +75,8 @@ _MARGINS_IN = 0.5
 _BULLET_LEFT_INDENT_IN = 0.25
 _BULLET_FIRST_LINE_INDENT_IN = -0.25
 _BULLET_LEADER = "\u2022 "
-_SKILL_VALUE_TAB_IN = 2.0
+_SKILL_VALUE_TAB_IN = 2.2
+_SKILL_HANGING_INDENT_IN = 2.2
 
 
 def _safe_filename(value: str) -> str:
@@ -278,6 +279,8 @@ def _parse_resume(text: str) -> list[tuple[str, object]]:
                 idx = skill_line.index(":")
                 label = skill_line[:idx].replace("**", "").replace("__", "").strip()
                 values = skill_line[idx + 1 :].strip()
+                if values.startswith("**") and "**" not in values[2:]:
+                    values = values[2:].strip()
                 result.append(("skill", (label, values, bulleted)))
                 continue
 
@@ -650,7 +653,9 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
             label, values, _bulleted = content  # type: ignore[misc]
             label_out = _short_skill_category_label(str(label))
             plain_values = _strip_md_spans_for_skill_values(str(values))
-            p = _para(space_before=2, space_after=7)
+            p = _para(space_before=0, space_after=3)
+            p.paragraph_format.left_indent = Inches(_SKILL_HANGING_INDENT_IN)
+            p.paragraph_format.first_line_indent = Inches(-_SKILL_HANGING_INDENT_IN)
             p.paragraph_format.tab_stops.add_tab_stop(
                 Inches(_SKILL_VALUE_TAB_IN),
                 WD_TAB_ALIGNMENT.LEFT,

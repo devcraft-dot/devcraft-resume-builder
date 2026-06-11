@@ -1,4 +1,4 @@
-"""Multi-model resume generation via OpenAI-compatible APIs (GPT-5.4, DeepSeek)."""
+"""Multi-model resume generation via OpenAI-compatible APIs (GPT-5.5/5.4, DeepSeek V4)."""
 
 from __future__ import annotations
 
@@ -20,6 +20,12 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 MODEL_REGISTRY: dict[str, dict[str, Any]] = {
+    "gpt-5.5": {
+        "api_key_field": "openai_api_key",
+        "base_url_field": "openai_base_url",
+        "model_id": "gpt-5.5",
+        "invoke": "responses",
+    },
     "gpt-5.4": {
         "api_key_field": "openai_api_key",
         "base_url_field": "openai_base_url",
@@ -32,16 +38,30 @@ MODEL_REGISTRY: dict[str, dict[str, Any]] = {
         "model_id": "gpt-5.4-mini",
         "invoke": "responses",
     },
+    "deepseek-v4-pro": {
+        "api_key_field": "deepseek_api_key",
+        "base_url_field": "deepseek_base_url",
+        "model_id": "deepseek-v4-pro",
+        "invoke": "chat",
+    },
+    "deepseek-v4-flash": {
+        "api_key_field": "deepseek_api_key",
+        "base_url_field": "deepseek_base_url",
+        "model_id": "deepseek-v4-flash",
+        "invoke": "chat",
+    },
+    # Legacy profile keys: deepseek-chat/-reasoner API aliases retire 2026-07-24,
+    # so route existing profiles straight to the V4 model IDs.
     "deepseek": {
         "api_key_field": "deepseek_api_key",
         "base_url_field": "deepseek_base_url",
-        "model_id": "deepseek-chat",
+        "model_id": "deepseek-v4-flash",
         "invoke": "chat",
     },
     "deepseek-reasoner": {
         "api_key_field": "deepseek_api_key",
         "base_url_field": "deepseek_base_url",
-        "model_id": "deepseek-reasoner",
+        "model_id": "deepseek-v4-pro",
         "invoke": "chat",
     },
 }
@@ -286,7 +306,7 @@ def _generate_with_chat_completions(client: OpenAI, model_id: str, prompt: str) 
         model=model_id,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.5,
-        max_tokens=8192,
+        max_tokens=16384,
     )
     if not completion.choices:
         raise ValueError("Chat completion returned no choices")

@@ -12,7 +12,16 @@ if TYPE_CHECKING:
     from app.models.generation import Generation
 
 
-ALLOWED_MODELS = ("gpt-5.4", "gpt-5.4-mini", "deepseek", "deepseek-reasoner")
+ALLOWED_MODELS = (
+    "gpt-5.5",
+    "gpt-5.4",
+    "gpt-5.4-mini",
+    "deepseek-v4-pro",
+    "deepseek-v4-flash",
+    # Legacy keys kept for existing profiles; mapped to V4 model IDs in openai_service.
+    "deepseek",
+    "deepseek-reasoner",
+)
 
 
 def canonical_url_for_manual_entry(

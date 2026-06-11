@@ -121,8 +121,9 @@ export interface AssignedProfile {
 }
 
 export const ALLOWED_MODELS = [
+  "gpt-5.5",
   "gpt-5.4",
   "gpt-5.4-mini",
-  "deepseek",
-  "deepseek-reasoner",
+  "deepseek-v4-pro",
+  "deepseek-v4-flash",
 ] as const;

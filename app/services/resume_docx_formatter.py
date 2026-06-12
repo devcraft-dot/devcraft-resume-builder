@@ -392,6 +392,106 @@ def _short_skill_category_label(label: str) -> str:
     return _SKILL_LABEL_SHORT.get(key, str(label or "").strip())
 
 
+_YEAR_RE = re.compile(r"\b(19|20)\d{2}\b")
+_YEAR_RANGE_RE = re.compile(
+    r"\b((?:19|20)\d{2})\s*[\u2013\u2014-]\s*((?:19|20)\d{2})\b"
+)
+_SCHOOL_RE = re.compile(
+    r"\b(University|College|Institute|School|Academy|Polytechnic)\b",
+    re.IGNORECASE,
+)
+
+
+def _contains_year(text: str) -> bool:
+    s = str(text or "")
+    return bool(_YEAR_RANGE_RE.search(s) or _YEAR_RE.search(s))
+
+
+def _extract_year_range(text: str) -> str:
+    """Preserve start-end ranges from profile (e.g. 2016-2019 -> 2016 - 2019)."""
+    s = str(text or "").strip()
+    m = _YEAR_RANGE_RE.search(s)
+    if m:
+        return f"{m.group(1)} - {m.group(2)}"
+    m = _YEAR_RE.search(s)
+    if m:
+        return m.group(0)
+    return s
+
+
+def _looks_like_school(text: str) -> bool:
+    return bool(_SCHOOL_RE.search(str(text or "")))
+
+
+def _split_pipe_parts(raw: str) -> list[str]:
+    normalized = re.sub(r"\t+", " | ", re.sub(r"\*\*", "", str(raw)).strip())
+    return [x.strip() for x in normalized.split("|") if x.strip()]
+
+
+def _parse_education_fields(parts: list[str]) -> tuple[str, str, str, str]:
+    """
+    Normalize to (degree, school, location, years).
+    Profile format: School | Degree | StartYear-EndYear | Location
+    Common model output: Degree | School  then  Location | StartYear-EndYear
+    """
+    clean = [p.strip() for p in parts if p.strip()]
+    if not clean:
+        return "", "", "", ""
+
+    if len(clean) >= 4:
+        a, b, c, d = clean[0], clean[1], clean[2], clean[3]
+        if _looks_like_school(a) and not _looks_like_school(b):
+            school, degree = a, b
+        elif _looks_like_school(b):
+            degree, school = a, b
+        else:
+            school, degree = a, b
+        if _contains_year(c) and not _contains_year(d):
+            location, years = d, _extract_year_range(c)
+        elif _contains_year(d) and not _contains_year(c):
+            location, years = c, _extract_year_range(d)
+        else:
+            location, years = d, _extract_year_range(c)
+        return degree, school, location, years
+
+    if len(clean) == 3:
+        a, b, c = clean
+        if _looks_like_school(a):
+            return b, a, "", _extract_year_range(c)
+        if _looks_like_school(b):
+            return a, b, "", _extract_year_range(c)
+        return a, b, "", _extract_year_range(c)
+
+    if len(clean) == 2:
+        a, b = clean
+        if _contains_year(a) or _contains_year(b):
+            if _contains_year(b):
+                return "", "", a, _extract_year_range(b)
+            return "", "", b, _extract_year_range(a)
+        if _looks_like_school(b):
+            return a, b, "", ""
+        if _looks_like_school(a):
+            return b, a, "", ""
+        return a, b, "", ""
+
+    return clean[0], "", "", ""
+
+
+def _next_education_subline(items: list[tuple[str, object]], start_idx: int) -> tuple[int, list[str]] | None:
+    """If the next row is a 2-part location|year education line, return its index and parts."""
+    for j in range(start_idx + 1, len(items)):
+        item_type, content = items[j]
+        if item_type == "empty":
+            continue
+        if item_type != "job_title":
+            return None
+        parts = _split_pipe_parts(str(content))
+        if len(parts) == 2 and (_contains_year(parts[0]) or _contains_year(parts[1])):
+            return j, parts
+        return None
+    return None
+
+
 def _add_md_runs(paragraph, text: str, base_size_pt: float, bold_base: bool = False) -> None:
     from docx.shared import Pt
 
@@ -519,8 +619,11 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
             run.font.color.rgb = color
 
     current_section = ""
+    consumed_indices: set[int] = set()
 
     for idx, (item_type, content) in enumerate(items):
+        if idx in consumed_indices:
+            continue
         if item_type == "empty":
             continue
 
@@ -556,33 +659,48 @@ def _build_docx(items: list[tuple[str, object]]) -> object:
             _add_bottom_rule(p)
 
         elif item_type == "job_title":
-            raw = re.sub(r"\*\*", "", str(content)).strip()
-            normalized = re.sub(r"\t+", " | ", raw)
-            parts = [x.strip() for x in normalized.split("|") if x.strip()]
-            is_education = "EDUCATION" in current_section
+            parts = _split_pipe_parts(str(content))
+            is_education = current_section == "EDUCATION"
 
-            if is_education and len(parts) >= 3:
-                school = parts[0]
-                degree = parts[1] if len(parts) > 1 else ""
-                years = parts[2] if len(parts) > 2 else ""
-                location = parts[3] if len(parts) > 3 else ""
+            if is_education:
+                merged_parts = list(parts)
+                if (
+                    len(parts) == 2
+                    and not _contains_year(parts[0])
+                    and not _contains_year(parts[1])
+                ):
+                    nxt = _next_education_subline(items, idx)
+                    if nxt:
+                        consumed_indices.add(nxt[0])
+                        loc, yr = nxt[1]
+                        if _contains_year(yr):
+                            merged_parts = parts + [loc, yr]
+                        else:
+                            merged_parts = parts + [yr, loc]
 
-                p1 = _para(space_before=6, space_after=3)
-                if degree and school:
-                    _add_plain(p1, degree, bold=True, size=_BODY_PT, color=_COLOR_BLACK)
-                    _add_plain(p1, " | ", bold=False, size=_BODY_PT, color=_COLOR_BLACK)
-                    _add_plain(p1, school, bold=True, size=_BODY_PT, color=_COLOR_BLACK)
-                elif school:
-                    _add_plain(p1, school, bold=True, size=_BODY_PT, color=_COLOR_BLACK)
-                elif degree:
-                    _add_plain(p1, degree, bold=True, size=_BODY_PT, color=_COLOR_BLACK)
+                degree, school, location, years = _parse_education_fields(merged_parts)
 
-                line2 = " | ".join(x for x in (location, years) if x)
-                if line2:
+                if degree or school:
+                    p1 = _para(space_before=6, space_after=3)
+                    if degree and school:
+                        _add_plain(p1, degree, bold=True, size=_BODY_PT, color=_COLOR_BLACK)
+                        _add_plain(p1, " | ", bold=False, size=_BODY_PT, color=_COLOR_BLACK)
+                        _add_plain(p1, school, bold=True, size=_BODY_PT, color=_COLOR_BLACK)
+                    elif degree:
+                        _add_plain(p1, degree, bold=True, size=_BODY_PT, color=_COLOR_BLACK)
+                    else:
+                        _add_plain(p1, school, bold=True, size=_BODY_PT, color=_COLOR_BLACK)
+
+                if location or years:
+                    years_fmt = _normalize_dates(years) if years else ""
+                    line2 = " | ".join(x for x in (location, years_fmt) if x)
                     p2 = _para(space_before=0, space_after=8)
                     _add_plain(p2, line2, bold=False, size=_BODY_PT, color=_COLOR_BLACK)
+                elif not (degree or school):
+                    p = _para(space_before=6, space_after=8)
+                    _add_plain(p, " | ".join(parts), bold=False, size=_BODY_PT, color=_COLOR_BLACK)
 
-            elif not is_education and len(parts) >= 3:
+            elif len(parts) >= 3:
                 role = parts[0]
                 company = parts[1]
                 dates = parts[2] if len(parts) > 2 else ""

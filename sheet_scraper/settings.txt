@@ -1,32 +1,32 @@
 # Google Sheet settings (edit before running fetch_sheet_urls.py)
 #
+# --- Option A: Public sheet (no login) ---
 # Spreadsheet ID from the URL:
 # https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit
-spreadsheet_id=1lNXw3FFOL58tQ95UYqAF9NU897gH7hggbijULyA90W4
+#spreadsheet_id=1R0GbUEEwis8zThaOLDMzaMJ37Fx5DNsxEINtO-Y5B4E
 
 # Worksheet tab id (gid) from the URL hash: .../edit?gid=0
-# Public sheets are fetched via CSV export — no Google account needed.
 worksheet_gid=0
 
-# Optional tab name (only used if worksheet_gid is blank)
-# worksheet=Bid List
+# --- Option B: Private sheet (you use Gmail) ---
+# 1. Open the sheet while logged into Google
+# 2. File → Download → Comma Separated Values (.csv)
+# 3. Save as sheet_scraper/input/sheet.csv
+# 4. Uncomment the line below (and you can leave spreadsheet_id as-is)
+local_csv=input/sheet.csv
 
 # First data row (1-based) on the FIRST run only. Later runs resume from fetch_state.json.
-start_row=898
+start_row=458
 
 # Set true to ignore saved progress and start again from start_row above
 reset_progress=false
 
-# Progress file (relative to output_dir)
-# state_file=fetch_state.json
-
-# Column with job posting URL (Bid List sheet uses F = "Job URL")
-url_column=F
+# Column with job posting URL
+url_column=C
 
 # Optional metadata columns (leave blank to skip)
-company_column=C
+company_column=B
 role_column=D
-status_column=B
 
 # Output directory (relative to this folder)
 output_dir=output

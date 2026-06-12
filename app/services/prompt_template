@@ -142,7 +142,11 @@ Professional Experience:
 
 Education:
 - Keep concise.
-- Emit as: School | Degree, Major | Graduation Year | Location
+- Use exact education dates from the candidate profile as a start year - end year range (e.g. 2016 - 2019). Never collapse to a single graduation year when the profile has a range.
+- Two lines per degree (same layout as experience headers):
+  Degree, Major | School
+  Location | Start Year - End Year
+- Or one line: School | Degree, Major | Start Year - End Year | Location
 
 Application Answers:
 - Align answers with the resume content. Do not introduce major claims the resume does not support.
@@ -193,7 +197,8 @@ Role | Company | Month YYYY - Month YYYY | Location
 - Bullet point
 
 ## Education
-School | Degree, Major | Year | Location
+Degree, Major | School
+Location | Start Year - End Year
 
 ## Application Questions
 Question: [question text]

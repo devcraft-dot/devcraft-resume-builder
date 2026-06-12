@@ -107,6 +107,23 @@
     }
     .btn-clear-run:disabled { opacity: 0.45; cursor: not-allowed; }
     .run-actions-hint { font-size: 11px; color: var(--muted); margin-top: 14px; line-height: 1.45; }
+    .queue-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .queue-controls button {
+      flex: 1; min-width: 72px; padding: 10px 8px; font-size: 12px; font-weight: 700;
+      border: none; border-radius: 10px; cursor: pointer;
+    }
+    .btn-queue-start { background: linear-gradient(135deg, #6d28d9, #7c3aed); color: #fff; }
+    .btn-queue-pause { background: #f59e0b; color: #fff; }
+    .btn-queue-stop { background: #ef4444; color: #fff; }
+    .btn-queue-reset { background: #64748b; color: #fff; }
+    .queue-stats {
+      margin-top: 12px; padding: 12px 14px; border-radius: 12px;
+      background: var(--surface); border: 1px solid var(--border); font-size: 12px;
+    }
+    .queue-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 8px; }
+    .queue-stat-num { font-size: 18px; font-weight: 800; }
+    .queue-stat-label { font-size: 9px; color: var(--muted); text-transform: uppercase; }
+    .queue-file-meta { font-size: 11px; color: var(--muted); margin-top: 8px; line-height: 1.45; word-break: break-word; }
     .autofill-row { margin-top: 12px; }
     .btn-autofill {
       width: 100%; padding: 9px 12px; font-size: 12px; font-weight: 600;
@@ -276,6 +293,7 @@
     <h1>Manual JD</h1>
     <div class="tab-row">
       <button type="button" class="tab-btn active" data-tab="run">Run</button>
+      <button type="button" class="tab-btn" data-tab="queue">Queue</button>
       <button type="button" class="tab-btn" data-tab="settings">Account</button>
       <button type="button" class="tab-btn" data-tab="history">My resumes</button>
     </div>
@@ -344,6 +362,32 @@
     </div>
   </div>
 
+  <div id="panel-queue" class="panel">
+    <p class="hint">Load <code>manualJD-support.json</code> from the sheet scraper, then run automation like the Indeed extension: open each URL, autofill (Greenhouse / Ashby / Workable), and generate for every synced profile.</p>
+    <div class="field">
+      <label for="queue-json-file">Support URLs JSON</label>
+      <input id="queue-json-file" type="file" accept=".json,application/json" />
+      <p id="queue-file-meta" class="queue-file-meta">No queue loaded.</p>
+    </div>
+    <div class="queue-stats">
+      <div class="queue-stats-grid">
+        <div><div id="queue-stat-index" class="queue-stat-num">0</div><div class="queue-stat-label">Index</div></div>
+        <div><div id="queue-stat-total" class="queue-stat-num">0</div><div class="queue-stat-label">Total</div></div>
+        <div><div id="queue-stat-generated" class="queue-stat-num">0</div><div class="queue-stat-label">Generated</div></div>
+        <div><div id="queue-stat-skipped" class="queue-stat-num">0</div><div class="queue-stat-label">Skipped</div></div>
+      </div>
+      <div id="queue-current-url" class="hint" style="margin-top:6px;word-break:break-all;"></div>
+    </div>
+    <div class="queue-controls">
+      <button type="button" class="btn-queue-start" id="btn-queue-start">Start</button>
+      <button type="button" class="btn-queue-pause" id="btn-queue-resume">Resume</button>
+      <button type="button" class="btn-queue-pause" id="btn-queue-pause">Pause</button>
+      <button type="button" class="btn-queue-stop" id="btn-queue-stop">Stop</button>
+      <button type="button" class="btn-queue-reset" id="btn-queue-reset">Reset</button>
+    </div>
+    <div id="queue-status-msg" class="status-msg" style="margin-top:12px;">Load a JSON file, sign in, sync profiles, then Start.</div>
+  </div>
+
   <div id="panel-settings" class="panel">
     <p class="hint" style="margin-bottom:10px;line-height:1.4">
       Sign in with the <strong>username and password</strong> your admin created in the dashboard.
@@ -393,6 +437,7 @@
 
   <script src="config.js"></script>
   <script src="authApi.js"></script>
+  <script src="jobBoardUtils.js"></script>
   <script src="manualExtensionCore.js"></script>
   <script src="popup.js"></script>
 </body>

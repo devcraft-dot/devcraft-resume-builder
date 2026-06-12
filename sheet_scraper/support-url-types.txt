@@ -1,0 +1,11 @@
+# Manual JD extension autofill support rules (one per line)
+# Format: board_name:substring   (case-insensitive match anywhere in URL)
+# Or:     regex:board_name:REGEX
+#
+# board_name must be one of: greenhouse, ashby, workable
+
+greenhouse:greenhouse.io/jobs/
+greenhouse:job-boards.greenhouse.io/
+greenhouse:boards.greenhouse.io/
+ashby:jobs.ashbyhq.com/
+workable:apply.workable.com/

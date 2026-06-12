@@ -1,0 +1,26 @@
+# Google Sheet settings (edit before running fetch_sheet_urls.py)
+#
+# Spreadsheet ID from the URL:
+# https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit
+spreadsheet_id=1lNXw3FFOL58tQ95UYqAF9NU897gH7hggbijULyA90W4
+
+# Worksheet tab name (bottom tab in Google Sheets)
+worksheet=Sheet1
+
+# First data row (1-based). Row 1 is usually the header row.
+start_row=898
+
+# Column with job posting URL (Bid List sheet uses F = "Job URL")
+url_column=F
+
+# Optional metadata columns (leave blank to skip)
+company_column=C
+role_column=D
+status_column=B
+
+# Service account JSON file path (relative to this folder)
+# Or set env var GOOGLE_SERVICE_ACCOUNT_JSON to the full JSON string.
+service_account_json=service_account.json
+
+# Output directory (relative to this folder)
+output_dir=output

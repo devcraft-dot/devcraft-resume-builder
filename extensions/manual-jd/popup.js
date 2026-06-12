@@ -23,6 +23,7 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
     btn.classList.add("active");
     $(`#panel-${btn.dataset.tab}`)?.classList.add("active");
     if (btn.dataset.tab === "history") renderHistory();
+    if (btn.dataset.tab === "queue") refreshQueueUi();
   });
 });
 
@@ -414,58 +415,22 @@ function renderDownloads(results) {
 
 $("#btn-add-question")?.addEventListener("click", () => addQuestionRow());
 
+const JBU = globalThis.JobBoardUtils;
+
 function isGreenhouseJobUrl(url) {
-  if (!url || typeof url !== "string") return false;
-  try {
-    const u = new URL(url);
-    if (!u.pathname.includes("/jobs/")) return false;
-    const h = u.hostname.toLowerCase();
-    return (
-      h === "job-boards.greenhouse.io" ||
-      h === "boards.greenhouse.io" ||
-      h.endsWith(".greenhouse.io")
-    );
-  } catch {
-    return false;
-  }
+  return JBU.isGreenhouseJobUrl(url);
 }
-
-/** Public Ashby board: /{orgSlug}/{jobPostingId}( /application ) */
 function isAshbyJobUrl(url) {
-  if (!url || typeof url !== "string") return false;
-  try {
-    const u = new URL(url);
-    if (u.hostname.toLowerCase() !== "jobs.ashbyhq.com") return false;
-    const parts = u.pathname.split("/").filter(Boolean);
-    if (parts.length < 2) return false;
-    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const last = parts[parts.length - 1];
-    const idPart = last.toLowerCase() === "application" ? parts[parts.length - 2] : last;
-    return uuidRe.test(idPart);
-  } catch {
-    return false;
-  }
+  return JBU.isAshbyJobUrl(url);
 }
-
 function isWorkableJobUrl(url) {
-  if (!url || typeof url !== "string") return false;
-  try {
-    const u = new URL(url);
-    if (u.hostname.toLowerCase() !== "apply.workable.com") return false;
-    const parts = u.pathname.split("/").filter(Boolean);
-    const jIdx = parts.findIndex((p) => p.toLowerCase() === "j");
-    return jIdx >= 0 && jIdx < parts.length - 1 && parts[jIdx + 1].length >= 4;
-  } catch {
-    return false;
-  }
+  return JBU.isWorkableJobUrl(url);
 }
-
-/** @returns {"greenhouse"|"ashby"|"workable"|null} */
 function detectJobBoardFromUrl(url) {
-  if (isGreenhouseJobUrl(url)) return "greenhouse";
-  if (isAshbyJobUrl(url)) return "ashby";
-  if (isWorkableJobUrl(url)) return "workable";
-  return null;
+  return JBU.detectJobBoardFromUrl(url);
+}
+function boardLabel(board) {
+  return JBU.boardLabel(board);
 }
 
 async function findJobBoardTabId() {
@@ -480,12 +445,6 @@ async function findJobBoardTabId() {
   const any = await chrome.tabs.query({});
   const jobTab = any.find((t) => detectJobBoardFromUrl(t.url));
   return jobTab?.id ?? null;
-}
-
-function boardLabel(board) {
-  if (board === "ashby") return "Ashby";
-  if (board === "workable") return "Workable";
-  return "Greenhouse";
 }
 
 async function scrapeJobBoardFromTab() {
@@ -503,10 +462,10 @@ async function scrapeJobBoardFromTab() {
 
   const file =
     board === "greenhouse"
-      ? "greenhouseScrapeInjected.js"
+      ? JBU.scrapeScriptFile("greenhouse")
       : board === "ashby"
-        ? "ashbyScrapeInjected.js"
-        : "workableScrapeInjected.js";
+        ? JBU.scrapeScriptFile("ashby")
+        : JBU.scrapeScriptFile("workable");
   const ashby = board === "ashby";
   await chrome.scripting.executeScript({
     target: { tabId },
@@ -514,12 +473,7 @@ async function scrapeJobBoardFromTab() {
     ...(ashby ? { world: "MAIN" } : {}),
   });
 
-  const readScrape =
-    board === "greenhouse"
-      ? () => globalThis.__MANUAL_JD_GREENHOUSE_SCRAPE__
-      : board === "ashby"
-        ? () => globalThis.__MANUAL_JD_ASHBY_SCRAPE__
-        : () => globalThis.__MANUAL_JD_WORKABLE_SCRAPE__;
+  const readScrape = () => globalThis[JBU.scrapeGlobalName(board)];
   const [{ result }] = await chrome.scripting.executeScript({
     target: { tabId },
     ...(ashby ? { world: "MAIN" } : {}),
@@ -837,7 +791,127 @@ document.addEventListener("DOMContentLoaded", () => {
   loadProfiles();
   applyPendingJdFromStorage();
   initScreenshotUpload();
+  initQueuePanel();
 });
+
+/* ─── Queue automation (manualJD-support.json) ─────────────────── */
+const QUEUE_STORAGE_KEY = "manualJd_urlQueue";
+
+function setQueueStatus(text, kind) {
+  const el = $("#queue-status-msg");
+  if (!el) return;
+  el.textContent = text;
+  el.className = "status-msg" + (kind ? ` ${kind}` : "");
+}
+
+function renderQueueState(s) {
+  const st = s || {};
+  const idxEl = $("#queue-stat-index");
+  const totEl = $("#queue-stat-total");
+  const genEl = $("#queue-stat-generated");
+  const skipEl = $("#queue-stat-skipped");
+  const curEl = $("#queue-current-url");
+  if (idxEl) idxEl.textContent = String(st.queueIndex ?? 0);
+  if (totEl) totEl.textContent = String(st.total ?? 0);
+  if (genEl) genEl.textContent = String(st.generated ?? 0);
+  if (skipEl) skipEl.textContent = String(st.skipped ?? 0);
+  if (curEl) {
+    curEl.textContent = st.currentUrl
+      ? `Current: ${st.currentTitle ? st.currentTitle + " — " : ""}${st.currentUrl}`
+      : "";
+  }
+  const msg = st.lastError || "";
+  if (st.running && !st.paused) setQueueStatus(msg || "Running…", "run");
+  else if (st.paused) setQueueStatus(msg || "Paused", "err");
+  else if (msg) setQueueStatus(msg, st.failed ? "err" : "ok");
+}
+
+async function refreshQueueUi() {
+  const stored = await chrome.storage.local.get(QUEUE_STORAGE_KEY);
+  const doc = stored[QUEUE_STORAGE_KEY];
+  const meta = $("#queue-file-meta");
+  if (meta) {
+    const n = Array.isArray(doc?.items) ? doc.items.length : 0;
+    meta.textContent = n
+      ? `Loaded ${n} supported URL(s)${doc.generated_at ? ` · ${doc.generated_at}` : ""}`
+      : "No queue loaded.";
+  }
+  chrome.runtime.sendMessage({ action: "queueGetState" }, (res) => {
+    if (res?.ok && res.state) renderQueueState(res.state);
+  });
+}
+
+function initQueuePanel() {
+  $("#queue-json-file")?.addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const items = Array.isArray(data.items) ? data.items : Array.isArray(data.urls) ? data.urls : null;
+      if (!items?.length) {
+        setQueueStatus("JSON must contain a non-empty items[] array.", "err");
+        return;
+      }
+      for (const it of items) {
+        if (!String(it.url || "").trim()) {
+          setQueueStatus("Each item needs a url field.", "err");
+          return;
+        }
+      }
+      await chrome.storage.local.set({ [QUEUE_STORAGE_KEY]: data });
+      await chrome.runtime.sendMessage({ action: "queueReset" });
+      setQueueStatus(`Loaded ${items.length} URL(s). Click Start to begin.`, "ok");
+      refreshQueueUi();
+    } catch (err) {
+      setQueueStatus(err?.message || "Invalid JSON file", "err");
+    }
+    e.target.value = "";
+  });
+
+  $("#btn-queue-start")?.addEventListener("click", () => {
+    chrome.runtime.sendMessage({ action: "queueStart", reset: true }, (res) => {
+      if (!res?.ok) setQueueStatus(res?.error || "Failed to start", "err");
+      else refreshQueueUi();
+    });
+  });
+
+  $("#btn-queue-pause")?.addEventListener("click", () => {
+    chrome.runtime.sendMessage({ action: "queuePause" }, (res) => {
+      if (!res?.ok) setQueueStatus(res?.error || "Failed to pause", "err");
+      else refreshQueueUi();
+    });
+  });
+
+  $("#btn-queue-resume")?.addEventListener("click", () => {
+    chrome.runtime.sendMessage({ action: "queueStart", reset: false }, (res) => {
+      if (!res?.ok) setQueueStatus(res?.error || "Failed to resume", "err");
+      else refreshQueueUi();
+    });
+  });
+
+  $("#btn-queue-stop")?.addEventListener("click", () => {
+    chrome.runtime.sendMessage({ action: "queueStop" }, (res) => {
+      if (!res?.ok) setQueueStatus(res?.error || "Failed to stop", "err");
+      else refreshQueueUi();
+    });
+  });
+
+  $("#btn-queue-reset")?.addEventListener("click", () => {
+    chrome.runtime.sendMessage({ action: "queueReset" }, (res) => {
+      if (!res?.ok) setQueueStatus(res?.error || "Failed to reset", "err");
+      else refreshQueueUi();
+    });
+  });
+
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg?.type === "manualJdQueueState" && msg.state) {
+      renderQueueState(msg.state);
+    }
+  });
+
+  refreshQueueUi();
+}
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local" || changes.manualJd_pendingJd == null) return;

@@ -1,3 +1,5 @@
+importScripts("config.js", "authApi.js", "jobBoardUtils.js", "manualExtensionCore.js", "queueAutomation.js");
+
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -14,12 +16,15 @@ async function openSidePanelFor(sender) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "manualJdQueueState") return;
+
   if (message.action === "openSidePanel") {
     openSidePanelFor(sender)
       .then(() => sendResponse({ ok: true }))
       .catch((e) => sendResponse({ ok: false, error: String(e?.message || e) }));
     return true;
   }
+
   if (message.action === "stashSelectionAndOpenPanel") {
     (async () => {
       try {
@@ -34,5 +39,41 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     })();
     return true;
   }
+
+  if (message.action === "queueStart") {
+    ManualJDQueue.startQueue(!!message.reset)
+      .then(() => sendResponse({ ok: true }))
+      .catch((e) => sendResponse({ ok: false, error: String(e?.message || e) }));
+    return true;
+  }
+
+  if (message.action === "queuePause") {
+    ManualJDQueue.pauseQueue()
+      .then(() => sendResponse({ ok: true }))
+      .catch((e) => sendResponse({ ok: false, error: String(e?.message || e) }));
+    return true;
+  }
+
+  if (message.action === "queueStop") {
+    ManualJDQueue.stopQueue()
+      .then(() => sendResponse({ ok: true }))
+      .catch((e) => sendResponse({ ok: false, error: String(e?.message || e) }));
+    return true;
+  }
+
+  if (message.action === "queueReset") {
+    ManualJDQueue.resetQueueState()
+      .then(() => sendResponse({ ok: true }))
+      .catch((e) => sendResponse({ ok: false, error: String(e?.message || e) }));
+    return true;
+  }
+
+  if (message.action === "queueGetState") {
+    ManualJDQueue.getState()
+      .then((s) => sendResponse({ ok: true, state: s }))
+      .catch((e) => sendResponse({ ok: false, error: String(e?.message || e) }));
+    return true;
+  }
+
   return undefined;
 });

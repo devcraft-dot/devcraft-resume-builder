@@ -120,10 +120,42 @@
       margin-top: 12px; padding: 12px 14px; border-radius: 12px;
       background: var(--surface); border: 1px solid var(--border); font-size: 12px;
     }
-    .queue-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 8px; }
+    .queue-stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 8px; }
     .queue-stat-num { font-size: 18px; font-weight: 800; }
     .queue-stat-label { font-size: 9px; color: var(--muted); text-transform: uppercase; }
     .queue-file-meta { font-size: 11px; color: var(--muted); margin-top: 8px; line-height: 1.45; word-break: break-word; }
+    .queue-progress-wrap { margin-top: 10px; display: flex; align-items: center; gap: 10px; }
+    .queue-progress-bar {
+      flex: 1; height: 8px; border-radius: 999px; background: #e2e8f0; overflow: hidden;
+    }
+    .queue-progress-fill {
+      height: 100%; width: 0%; border-radius: 999px;
+      background: linear-gradient(90deg, #6d28d9, #7c3aed);
+      transition: width 0.35s ease;
+    }
+    .queue-progress-label { font-size: 11px; font-weight: 700; color: var(--muted); min-width: 36px; text-align: right; }
+    .queue-phase-badge {
+      display: inline-block; margin-top: 10px; padding: 4px 10px; border-radius: 999px;
+      font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+      background: #ede9fe; color: #5b21b6;
+    }
+    .queue-phase-badge.run { background: #dbeafe; color: #1e40af; }
+    .queue-phase-badge.ok { background: #d1fae5; color: #065f46; }
+    .queue-phase-badge.err { background: #fee2e2; color: #991b1b; }
+    .queue-phase-badge.wait { background: #fef3c7; color: #92400e; }
+    .queue-current-job {
+      margin-top: 10px; padding: 10px 12px; border-radius: 10px;
+      background: var(--surface2); border: 1px solid var(--border); font-size: 12px; line-height: 1.5;
+    }
+    .queue-current-job strong { display: block; font-size: 13px; margin-bottom: 4px; word-break: break-word; }
+    .queue-current-job .meta { color: var(--muted); font-size: 11px; word-break: break-all; }
+    .queue-activity-log {
+      margin-top: 12px; max-height: 220px; overflow: auto; padding: 10px 12px;
+      border-radius: 10px; background: #0f172a; color: #e2e8f0; font-size: 10px;
+      line-height: 1.55; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: pre-wrap; word-break: break-word; border: 1px solid #1e293b;
+    }
+    .queue-activity-log .log-empty { color: #64748b; font-style: italic; }
     .autofill-row { margin-top: 12px; }
     .btn-autofill {
       width: 100%; padding: 9px 12px; font-size: 12px; font-weight: 600;
@@ -371,12 +403,22 @@
     </div>
     <div class="queue-stats">
       <div class="queue-stats-grid">
-        <div><div id="queue-stat-index" class="queue-stat-num">0</div><div class="queue-stat-label">Index</div></div>
+        <div><div id="queue-stat-index" class="queue-stat-num">0</div><div class="queue-stat-label">Done</div></div>
         <div><div id="queue-stat-total" class="queue-stat-num">0</div><div class="queue-stat-label">Total</div></div>
         <div><div id="queue-stat-generated" class="queue-stat-num">0</div><div class="queue-stat-label">Generated</div></div>
         <div><div id="queue-stat-skipped" class="queue-stat-num">0</div><div class="queue-stat-label">Skipped</div></div>
+        <div><div id="queue-stat-failed" class="queue-stat-num">0</div><div class="queue-stat-label">Failed</div></div>
       </div>
-      <div id="queue-current-url" class="hint" style="margin-top:6px;word-break:break-all;"></div>
+      <div class="queue-progress-wrap">
+        <div class="queue-progress-bar"><div id="queue-progress-fill" class="queue-progress-fill"></div></div>
+        <div id="queue-progress-label" class="queue-progress-label">0%</div>
+      </div>
+      <div id="queue-phase-badge" class="queue-phase-badge">Idle</div>
+      <div id="queue-current-job" class="queue-current-job">
+        <strong>No job in progress</strong>
+        <span class="meta">Load JSON and click Start.</span>
+      </div>
+      <div id="queue-profile-progress" class="hint" style="margin-top:8px;"></div>
     </div>
     <div class="queue-controls">
       <button type="button" class="btn-queue-start" id="btn-queue-start">Start</button>
@@ -386,6 +428,7 @@
       <button type="button" class="btn-queue-reset" id="btn-queue-reset">Reset</button>
     </div>
     <div id="queue-status-msg" class="status-msg" style="margin-top:12px;">Load a JSON file, sign in, sync profiles, then Start.</div>
+    <pre id="queue-activity-log" class="queue-activity-log"><span class="log-empty">Activity log will appear here while the queue runs.</span></pre>
   </div>
 
   <div id="panel-settings" class="panel">

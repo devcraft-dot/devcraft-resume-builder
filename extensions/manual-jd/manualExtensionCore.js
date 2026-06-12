@@ -59,10 +59,10 @@
       }));
     if (!items.length) return [];
     try {
-      const res = await ResumeAuth.apiFetch(API_URL, "/api/check-generation-keys", {
+      const res = await ResumeAuth.apiFetchWithRetry(API_URL, "/api/check-generation-keys", {
         method: "POST",
         body: JSON.stringify({ items }),
-      });
+      }, { retries: 2, baseDelayMs: 1500, timeoutMs: 30000 });
       if (!res.ok) {
         const text = await res.text().catch(() => res.statusText);
         let detail = text?.slice(0, 1200) || res.statusText;
@@ -124,12 +124,20 @@
     };
     let res;
     try {
-      res = await ResumeAuth.apiFetch(API_URL, "/api/generate/manual", {
+      res = await ResumeAuth.apiFetchWithRetry(API_URL, "/api/generate/manual", {
         method: "POST",
         body: JSON.stringify(body),
+      }, {
+        retries: 4,
+        baseDelayMs: 4000,
+        timeoutMs: 180000,
       });
     } catch (e) {
       const msg = e?.message || String(e);
+      const detail =
+        msg === "Failed to fetch"
+          ? `API unreachable (${API_URL}): ${msg}. Usually Vercel timeout/overload or a network blip — wait ~1 min and Resume. Not a CORS misconfiguration if earlier jobs succeeded.`
+          : `Network error (${API_URL}): ${msg}`;
       await appendApiErrorLog({
         path: "/api/generate/manual",
         method: "POST",
@@ -137,7 +145,7 @@
         detail: msg,
         context: `${job.title} · ${profile.name || "default"}`,
       });
-      throw new Error(`Network/CORS (${API_URL}): ${msg}`);
+      throw new Error(detail);
     }
     if (!res.ok) {
       const text = await res.text().catch(() => res.statusText);
@@ -216,9 +224,7 @@
   }
 
   async function fetchHealth() {
-    const res = await fetch(`${API_URL}/health`, { method: "GET" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    return ResumeAuth.fetchHealth(API_URL);
   }
 
   globalThis.ManualJD = {

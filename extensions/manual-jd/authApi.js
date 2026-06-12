@@ -49,6 +49,61 @@ async function apiFetch(baseUrl, path, init = {}) {
   return fetch(`${baseUrl}${path}`, { ...init, headers });
 }
 
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+/**
+ * Retry transient network / gateway errors. "Failed to fetch" from the service worker
+ * is often Vercel 502/504 or overload — browsers report it like a CORS failure.
+ */
+async function apiFetchWithRetry(baseUrl, path, init = {}, opts = {}) {
+  const retries = opts.retries ?? 3;
+  const baseDelayMs = opts.baseDelayMs ?? 2500;
+  const retryStatuses = opts.retryStatuses ?? [429, 502, 503, 504];
+  const timeoutMs = opts.timeoutMs ?? 0;
+  let lastErr;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const reqInit = { ...init };
+      if (timeoutMs > 0 && typeof AbortSignal !== "undefined" && AbortSignal.timeout) {
+        reqInit.signal = AbortSignal.timeout(timeoutMs);
+      }
+      const res = await apiFetch(baseUrl, path, reqInit);
+      if (retryStatuses.includes(res.status) && attempt < retries) {
+        await sleep(baseDelayMs * (attempt + 1));
+        continue;
+      }
+      return res;
+    } catch (e) {
+      lastErr = e;
+      const msg = e?.message || String(e);
+      const retryable =
+        msg === "Failed to fetch" ||
+        e?.name === "AbortError" ||
+        e?.name === "TimeoutError" ||
+        /network|fetch/i.test(msg);
+      if (retryable && attempt < retries) {
+        await sleep(baseDelayMs * (attempt + 1));
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw lastErr;
+}
+
+async function fetchHealth(baseUrl, timeoutMs = 15000) {
+  const init = { method: "GET" };
+  if (typeof AbortSignal !== "undefined" && AbortSignal.timeout) {
+    init.signal = AbortSignal.timeout(timeoutMs);
+  }
+  const res = await fetch(`${baseUrl}/health`, init);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
 function parseLoginError(text) {
   try {
     const j = JSON.parse(text);
@@ -152,6 +207,9 @@ globalThis.ResumeAuth = {
   login,
   signOut,
   apiFetch,
+  apiFetchWithRetry,
+  fetchHealth,
+  sleep,
   fetchMyProfiles,
   syncServerProfiles,
   getServerProfiles,

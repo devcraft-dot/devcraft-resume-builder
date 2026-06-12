@@ -23,7 +23,12 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
     btn.classList.add("active");
     $(`#panel-${btn.dataset.tab}`)?.classList.add("active");
     if (btn.dataset.tab === "history") renderHistory();
-    if (btn.dataset.tab === "queue") refreshQueueUi();
+    if (btn.dataset.tab === "queue") {
+      refreshQueueUi();
+      startQueuePoll();
+    } else {
+      stopQueuePoll();
+    }
   });
 });
 
@@ -796,6 +801,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 /* ─── Queue automation (manualJD-support.json) ─────────────────── */
 const QUEUE_STORAGE_KEY = "manualJd_urlQueue";
+let queuePollTimer = null;
 
 function setQueueStatus(text, kind) {
   const el = $("#queue-status-msg");
@@ -804,26 +810,131 @@ function setQueueStatus(text, kind) {
   el.className = "status-msg" + (kind ? ` ${kind}` : "");
 }
 
+function phaseLabel(phase) {
+  const map = {
+    idle: "Idle",
+    opening: "Opening tab",
+    loading: "Loading page",
+    scraping: "Scraping JD",
+    generating: "Generating",
+    between: "Between jobs",
+    done: "Complete",
+  };
+  return map[phase] || phase || "Idle";
+}
+
+function phaseBadgeClass(st) {
+  if (st.paused) return "wait";
+  if (st.phase === "done") return "ok";
+  if (st.failed > 0 && !st.running) return "err";
+  if (st.running) return "run";
+  return "";
+}
+
+function formatQueueLogLine(entry) {
+  const t = entry?.t || "??:??:??";
+  const m = entry?.m || "";
+  const prefix =
+    entry?.level === "err" ? "✗" : entry?.level === "ok" ? "✓" : entry?.level === "skip" ? "−" : "·";
+  return `[${t}] ${prefix} ${m}`;
+}
+
 function renderQueueState(s) {
   const st = s || {};
   const idxEl = $("#queue-stat-index");
   const totEl = $("#queue-stat-total");
   const genEl = $("#queue-stat-generated");
   const skipEl = $("#queue-stat-skipped");
-  const curEl = $("#queue-current-url");
-  if (idxEl) idxEl.textContent = String(st.queueIndex ?? 0);
-  if (totEl) totEl.textContent = String(st.total ?? 0);
+  const failEl = $("#queue-stat-failed");
+  const fillEl = $("#queue-progress-fill");
+  const pctEl = $("#queue-progress-label");
+  const badgeEl = $("#queue-phase-badge");
+  const jobEl = $("#queue-current-job");
+  const profEl = $("#queue-profile-progress");
+  const logEl = $("#queue-activity-log");
+
+  const done = Number(st.queueIndex) || 0;
+  const total = Number(st.total) || 0;
+  const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+
+  if (idxEl) idxEl.textContent = String(done);
+  if (totEl) totEl.textContent = String(total);
   if (genEl) genEl.textContent = String(st.generated ?? 0);
   if (skipEl) skipEl.textContent = String(st.skipped ?? 0);
-  if (curEl) {
-    curEl.textContent = st.currentUrl
-      ? `Current: ${st.currentTitle ? st.currentTitle + " — " : ""}${st.currentUrl}`
-      : "";
+  if (failEl) failEl.textContent = String(st.failed ?? 0);
+  if (fillEl) fillEl.style.width = `${pct}%`;
+  if (pctEl) pctEl.textContent = `${pct}%`;
+
+  if (badgeEl) {
+    badgeEl.textContent = st.paused ? "Paused" : phaseLabel(st.phase);
+    badgeEl.className = "queue-phase-badge " + phaseBadgeClass(st);
   }
-  const msg = st.lastError || "";
-  if (st.running && !st.paused) setQueueStatus(msg || "Running…", "run");
-  else if (st.paused) setQueueStatus(msg || "Paused", "err");
-  else if (msg) setQueueStatus(msg, st.failed ? "err" : "ok");
+
+  if (jobEl) {
+    if (st.running || st.phase === "done" || st.currentUrl) {
+      const title = st.currentTitle || "Untitled role";
+      const company = st.currentCompany ? `@ ${st.currentCompany}` : "";
+      const jobNum = st.currentJobNum || (done + (st.running ? 1 : 0));
+      const board = st.currentBoard ? JobBoardUtils.boardLabel(st.currentBoard) : "";
+      jobEl.innerHTML = `
+        <strong>${esc(title)} ${esc(company)}</strong>
+        <span class="meta">Job ${jobNum}${total ? ` / ${total}` : ""}${board ? ` · ${esc(board)}` : ""}</span>
+        ${st.currentUrl ? `<span class="meta">${esc(st.currentUrl)}</span>` : ""}`;
+    } else {
+      jobEl.innerHTML =
+        '<strong>No job in progress</strong><span class="meta">Load JSON and click Start.</span>';
+    }
+  }
+
+  if (profEl) {
+    const pi = Number(st.profileIndex) || 0;
+    const pt = Number(st.profileTotal) || 0;
+    if (st.phase === "generating" && pt > 0) {
+      const name = st.profileName ? ` — ${st.profileName}` : "";
+      profEl.textContent = `Profile progress: ${pi}/${pt}${name}`;
+    } else if (st.running && st.phase === "scraping") {
+      profEl.textContent = "Reading job description and application fields from the page…";
+    } else if (st.running && st.phase === "loading") {
+      profEl.textContent = "Waiting for the job posting tab to finish loading…";
+    } else if (st.running && st.phase === "opening") {
+      profEl.textContent = "Opening a background tab for this posting…";
+    } else if (st.running && st.phase === "between") {
+      profEl.textContent = "Closing tab and preparing the next job…";
+    } else {
+      profEl.textContent = "";
+    }
+  }
+
+  if (logEl) {
+    const lines = Array.isArray(st.progressLog) ? st.progressLog : [];
+    if (!lines.length) {
+      logEl.innerHTML = '<span class="log-empty">Activity log will appear here while the queue runs.</span>';
+    } else {
+      logEl.textContent = lines.map(formatQueueLogLine).join("\n");
+    }
+  }
+
+  const live = st.statusMessage || st.lastError || "";
+  if (st.running && !st.paused) setQueueStatus(live || "Running…", "run");
+  else if (st.paused) setQueueStatus(live || "Paused", "err");
+  else if (live) setQueueStatus(live, st.failed ? "err" : st.phase === "done" ? "ok" : "");
+}
+
+function stopQueuePoll() {
+  if (queuePollTimer) {
+    clearInterval(queuePollTimer);
+    queuePollTimer = null;
+  }
+}
+
+function startQueuePoll() {
+  stopQueuePoll();
+  queuePollTimer = setInterval(() => {
+    if (!$("#panel-queue")?.classList.contains("active")) return;
+    chrome.runtime.sendMessage({ action: "queueGetState" }, (res) => {
+      if (res?.ok && res.state) renderQueueState(res.state);
+    });
+  }, 1500);
 }
 
 async function refreshQueueUi() {
@@ -910,7 +1021,15 @@ function initQueuePanel() {
     }
   });
 
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local" || !changes.manualJd_queueState) return;
+    if ($("#panel-queue")?.classList.contains("active")) {
+      renderQueueState(changes.manualJd_queueState.newValue);
+    }
+  });
+
   refreshQueueUi();
+  if ($("#panel-queue")?.classList.contains("active")) startQueuePoll();
 }
 
 chrome.storage.onChanged.addListener((changes, area) => {
